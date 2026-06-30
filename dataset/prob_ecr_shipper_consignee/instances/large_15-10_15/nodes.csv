@@ -1,0 +1,27 @@
+node_name,type,lng,lat,storage_capacity,initial_inventory,holding_cost,renting_cost
+Dalian Port,seaport,121.6338,38.9156,5019,1456,76,2124
+Yingkou Port,seaport,122.2327,40.6628,5376,1674,67,2033
+Dandong Port,seaport,123.7345,39.9703,5153,1622,74,2389
+Shenyang,dryport,123.45861385456854,41.67520983545736,3169,807,34,3862
+Anshan,dryport,122.988710400541,41.10633823780713,3268,992,32,4180
+Changchun,dryport,125.3171543812934,43.81455528760234,2732,859,37,4257
+Tonghua,dryport,125.93407202023883,41.72615590762644,2904,757,34,4265
+Harbin,dryport,128.02898733565797,45.800983174891144,2773,761,38,4773
+Shenyang_Sujiatun,shipper,123.342,41.665,,,,
+Anshan_Qianshan,shipper,122.958,41.07,,,,
+Anshan_Xiuyan,shipper,123.288,40.285,,,,
+Changchun_Jingkai,shipper,125.296939,43.788735,,,,
+Tonghua_Meihekou,shipper,125.687,42.531,,,,
+Tonghua_Jian,shipper,126.193,41.126,,,,
+Harbin_Acheng,shipper,126.958,45.548,,,,
+Shenyang_Yuhong,consignee,123.308,41.794,,,,
+Shenyang_Tiexi,consignee,123.376,41.803,,,,
+Shenyang_Liaozhong,consignee,122.732,41.516,,,,
+Anshan_Tiedong,consignee,122.991,41.11,,,,
+Changchun_Lvyuan,consignee,125.2012,43.789,,,,
+Changchun_Nongan,consignee,125.175,44.429,,,,
+Changchun_Jiutai,consignee,125.85,44.152,,,,
+Tonghua_Dongchang,consignee,125.955,41.728,,,,
+Harbin_Pingfang,consignee,126.5876,45.6234,,,,
+Harbin_Shuangcheng,consignee,126.313,45.383,,,,
+Harbin_Songbei,consignee,126.51,45.808,,,,

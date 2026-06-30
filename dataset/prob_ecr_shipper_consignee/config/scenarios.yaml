@@ -1,0 +1,76 @@
+# ECR Instance Generation Scenarios
+#
+# This file defines pre-configured scenarios for batch instance generation.
+# Run with: poetry run python -m generator.cli batch --config config/scenarios.yaml --output-dir instances
+
+scenarios:
+  # 1. Small-scale baseline instance
+  # 5 consignees + 3 shippers, 5 periods
+  small_5-3_5:
+    scale: small
+    consignees_per_dryport:
+      Shenyang: 1
+      Anshan: 1
+      Changchun: 1
+      Tonghua: 1
+      Harbin: 1
+    shippers_per_dryport:
+      Shenyang: 1
+      Anshan: 1
+      Changchun: 1
+      Tonghua: 0
+      Harbin: 0
+    periods: 5
+    seed: 42
+
+  # 2. Medium-scale instance
+  # 10 consignees + 6 shippers, 10 periods
+  medium_10-6_10:
+    scale: medium
+    consignees_per_dryport:
+      Shenyang: 2
+      Anshan: 2
+      Changchun: 2
+      Tonghua: 2
+      Harbin: 2
+    shippers_per_dryport:
+      Shenyang: 1
+      Anshan: 1
+      Changchun: 2
+      Tonghua: 1
+      Harbin: 1
+    periods: 10
+    seed: 42
+
+  # 3. Large-scale instance
+  # 15 consignees + 10 shippers, 15 periods
+  large_15-10_15:
+    scale: large
+    consignees_per_dryport:
+      Shenyang: 3
+      Anshan: 3
+      Changchun: 3
+      Tonghua: 3
+      Harbin: 3
+    shippers_per_dryport:
+      Shenyang: 2
+      Anshan: 2
+      Changchun: 2
+      Tonghua: 2
+      Harbin: 2
+    periods: 15
+    seed: 42
+
+  # 4. High transport cost scenario (based on small scale)
+  # Transport costs increased by 50%
+  high_cost_5-3_5:
+    base: small_5-3_5
+    cost_perturbation: 1.5
+    seed: 42
+
+  # 5. Low demand scenario (based on small scale)
+  # Demand/supply reduced by 30%
+  low_demand_5-3_5:
+    base: small_5-3_5
+    demand_perturbation: 0.7
+    seed: 42

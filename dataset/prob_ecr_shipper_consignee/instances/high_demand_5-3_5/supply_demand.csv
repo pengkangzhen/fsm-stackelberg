@@ -1,0 +1,121 @@
+node,period,type,quantity
+Dalian Port,1,supply,142
+Dalian Port,2,supply,172
+Dalian Port,3,supply,182
+Dalian Port,4,supply,151
+Dalian Port,5,supply,139
+Yingkou Port,1,supply,135
+Yingkou Port,2,supply,177
+Yingkou Port,3,supply,149
+Yingkou Port,4,supply,188
+Yingkou Port,5,supply,188
+Dandong Port,1,supply,156
+Dandong Port,2,supply,198
+Dandong Port,3,supply,140
+Dandong Port,4,supply,191
+Dandong Port,5,supply,188
+Shenyang,1,supply,212
+Shenyang,2,supply,199
+Shenyang,3,supply,237
+Shenyang,4,supply,240
+Shenyang,5,supply,226
+Anshan,1,supply,186
+Anshan,2,supply,174
+Anshan,3,supply,176
+Anshan,4,supply,221
+Anshan,5,supply,198
+Changchun,1,supply,170
+Changchun,2,supply,199
+Changchun,3,supply,163
+Changchun,4,supply,163
+Changchun,5,supply,225
+Tonghua,1,supply,193
+Tonghua,2,supply,214
+Tonghua,3,supply,168
+Tonghua,4,supply,175
+Tonghua,5,supply,166
+Harbin,1,supply,241
+Harbin,2,supply,222
+Harbin,3,supply,244
+Harbin,4,supply,189
+Harbin,5,supply,214
+Shenyang_Tiexi,1,supply,9
+Shenyang_Tiexi,2,supply,10
+Shenyang_Tiexi,3,supply,10
+Shenyang_Tiexi,4,supply,7
+Shenyang_Tiexi,5,supply,9
+Anshan_Tiedong,1,supply,9
+Anshan_Tiedong,2,supply,9
+Anshan_Tiedong,3,supply,8
+Anshan_Tiedong,4,supply,9
+Anshan_Tiedong,5,supply,7
+Changchun_Lvyuan,1,supply,8
+Changchun_Lvyuan,2,supply,8
+Changchun_Lvyuan,3,supply,10
+Changchun_Lvyuan,4,supply,10
+Changchun_Lvyuan,5,supply,8
+Tonghua_Dongchang,1,supply,9
+Tonghua_Dongchang,2,supply,7
+Tonghua_Dongchang,3,supply,10
+Tonghua_Dongchang,4,supply,10
+Tonghua_Dongchang,5,supply,8
+Harbin_Songbei,1,supply,9
+Harbin_Songbei,2,supply,9
+Harbin_Songbei,3,supply,7
+Harbin_Songbei,4,supply,9
+Harbin_Songbei,5,supply,9
+Dalian Port,1,demand,432
+Dalian Port,2,demand,520
+Dalian Port,3,demand,405
+Dalian Port,4,demand,394
+Dalian Port,5,demand,486
+Yingkou Port,1,demand,379
+Yingkou Port,2,demand,439
+Yingkou Port,3,demand,446
+Yingkou Port,4,demand,345
+Yingkou Port,5,demand,466
+Dandong Port,1,demand,464
+Dandong Port,2,demand,504
+Dandong Port,3,demand,451
+Dandong Port,4,demand,561
+Dandong Port,5,demand,588
+Shenyang,1,demand,288
+Shenyang,2,demand,246
+Shenyang,3,demand,253
+Shenyang,4,demand,250
+Shenyang,5,demand,198
+Anshan,1,demand,370
+Anshan,2,demand,360
+Anshan,3,demand,369
+Anshan,4,demand,381
+Anshan,5,demand,356
+Changchun,1,demand,347
+Changchun,2,demand,309
+Changchun,3,demand,324
+Changchun,4,demand,282
+Changchun,5,demand,313
+Tonghua,1,demand,405
+Tonghua,2,demand,419
+Tonghua,3,demand,306
+Tonghua,4,demand,342
+Tonghua,5,demand,444
+Harbin,1,demand,324
+Harbin,2,demand,334
+Harbin,3,demand,343
+Harbin,4,demand,315
+Harbin,5,demand,316
+Shenyang_Sujiatun,1,demand,54
+Shenyang_Sujiatun,2,demand,60
+Shenyang_Sujiatun,3,demand,51
+Shenyang_Sujiatun,4,demand,45
+Shenyang_Sujiatun,5,demand,63
+Anshan_Xiuyan,1,demand,54
+Anshan_Xiuyan,2,demand,45
+Anshan_Xiuyan,3,demand,42
+Anshan_Xiuyan,4,demand,45
+Anshan_Xiuyan,5,demand,54
+Changchun_Jingkai,1,demand,60
+Changchun_Jingkai,2,demand,51
+Changchun_Jingkai,3,demand,42
+Changchun_Jingkai,4,demand,51
+Changchun_Jingkai,5,demand,63

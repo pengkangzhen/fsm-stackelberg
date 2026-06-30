@@ -1,0 +1,186 @@
+{
+    "shippers": {
+        "Shenyang": [
+            {
+                "name": "Shenyang_Sujiatun",
+                "name_zh": "沈阳市_苏家屯区",
+                "location": {
+                    "lng": 123.342,
+                    "lat": 41.665
+                }
+            }
+        ],
+        "Anshan": [
+            {
+                "name": "Anshan_Qianshan",
+                "name_zh": "鞍山市_千山区",
+                "location": {
+                    "lng": 122.958,
+                    "lat": 41.070
+                }
+            },
+            {
+                "name": "Anshan_Haicheng",
+                "name_zh": "鞍山市_海城市",
+                "location": {
+                    "lng": 122.685,
+                    "lat": 40.881
+                }
+            },
+            {
+                "name": "Anshan_Xiuyan",
+                "name_zh": "鞍山市_岫岩满族自治县",
+                "location": {
+                    "lng": 123.288,
+                    "lat": 40.285
+                }
+            }
+        ],
+        "Changchun": [
+            {
+                "name": "Changchun_Jingkai",
+                "name_zh": "长春市_经济技术开发区",
+                "location": {
+                    "lng": 125.296939,
+                    "lat": 43.788735
+                }
+            }
+        ],
+        "Tonghua": [
+            {
+                "name": "Tonghua_Meihekou",
+                "name_zh": "通化市_梅河口市",
+                "location": {
+                    "lng": 125.687,
+                    "lat": 42.531
+                }
+            },
+            {
+                "name": "Tonghua_Jian",
+                "name_zh": "通化市_集安市",
+                "location": {
+                    "lng": 126.193,
+                    "lat": 41.126
+                }
+            }
+        ],
+        "Harbin": [
+            {
+                "name": "Harbin_Acheng",
+                "name_zh": "哈尔滨市_阿城区",
+                "location": {
+                    "lng": 126.958,
+                    "lat": 45.548
+                }
+            }
+        ]
+    },
+    "consignees": {
+        "Shenyang": [
+            {
+                "name": "Shenyang_Tiexi",
+                "name_zh": "沈阳市_铁西区",
+                "location": {
+                    "lng": 123.376,
+                    "lat": 41.803
+                }
+            },
+            {
+                "name": "Shenyang_Hunnan",
+                "name_zh": "沈阳市_浑南区",
+                "location": {
+                    "lng": 123.573,
+                    "lat": 41.715
+                }
+            },
+            {
+                "name": "Shenyang_Yuhong",
+                "name_zh": "沈阳市_于洪区",
+                "location": {
+                    "lng": 123.308,
+                    "lat": 41.794
+                }
+            },
+            {
+                "name": "Shenyang_Liaozhong",
+                "name_zh": "沈阳市_辽中区",
+                "location": {
+                    "lng": 122.732,
+                    "lat": 41.516
+                }
+            }
+        ],
+        "Anshan": [
+            {
+                "name": "Anshan_Tiedong",
+                "name_zh": "鞍山市_铁东区",
+                "location": {
+                    "lng": 122.991,
+                    "lat": 41.110
+                }
+            }
+        ],
+        "Changchun": [
+            {
+                "name": "Changchun_Lvyuan",
+                "name_zh": "长春市_绿园区",
+                "location": {
+                    "lng": 125.2012,
+                    "lat": 43.7890
+                }
+            },
+            {
+                "name": "Changchun_Nongan",
+                "name_zh": "长春市_农安县",
+                "location": {
+                    "lng": 125.175,
+                    "lat": 44.429
+                }
+            },
+            {
+                "name": "Changchun_Jiutai",
+                "name_zh": "长春市_九台区",
+                "location": {
+                    "lng": 125.850,
+                    "lat": 44.152
+                }
+            }
+        ],
+        "Tonghua": [
+            {
+                "name": "Tonghua_Dongchang",
+                "name_zh": "通化市_东昌区",
+                "location": {
+                    "lng": 125.955,
+                    "lat": 41.728
+                }
+            }
+        ],
+        "Harbin": [
+            {
+                "name": "Harbin_Pingfang",
+                "name_zh": "哈尔滨市_平房区",
+                "location": {
+                    "lng": 126.5876,
+                    "lat": 45.6234
+                }
+            },
+            {
+                "name": "Harbin_Shuangcheng",
+                "name_zh": "哈尔滨市_双城区",
+                "location": {
+                    "lng": 126.313,
+                    "lat": 45.383
+                }
+            },
+            {
+                "name": "Harbin_Songbei",
+                "name_zh": "哈尔滨市_松北区",
+                "location": {
+                    "lng": 126.510,
+                    "lat": 45.808
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "instance_name": "small_5-3_5",
+  "scale": "small",
+  "num_shippers": 3,
+  "num_consignees": 5,
+  "periods": 5,
+  "perturbations": {
+    "cost": 1.0,
+    "demand": 1.0,
+    "holding_cost": 1.0,
+    "renting_cost": 1.0
+  },
+  "seed": 42
+}

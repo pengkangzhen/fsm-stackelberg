@@ -1,0 +1,4 @@
+mode,unit_cost_per_km,speed_km_per_period
+truck,4.8,500
+rail,1.83,300
+barge,0.92,200

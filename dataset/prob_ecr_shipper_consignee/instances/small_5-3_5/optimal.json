@@ -1,0 +1,27 @@
+{
+  "status": "OPTIMAL",
+  "objective": 2603948.3,
+  "best_bound": 2603948.3,
+  "mip_gap": 0.0,
+  "runtime_s": 0.003660917282104492,
+  "truth_type": "optimal",
+  "sol_count": 3,
+  "instance_name": "small_5-3_5",
+  "periods": 5,
+  "num_nodes": 16,
+  "num_allowed_arcs": 173,
+  "metadata": {
+    "instance_name": "small_5-3_5",
+    "scale": "small",
+    "num_shippers": 3,
+    "num_consignees": 5,
+    "periods": 5,
+    "perturbations": {
+      "cost": 1.0,
+      "demand": 1.0,
+      "holding_cost": 1.0,
+      "renting_cost": 1.0
+    },
+    "seed": 42
+  }
+}

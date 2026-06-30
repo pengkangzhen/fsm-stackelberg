@@ -1,0 +1,511 @@
+node,period,type,quantity
+Dalian Port,1,supply,170
+Dalian Port,2,supply,162
+Dalian Port,3,supply,170
+Dalian Port,4,supply,154
+Dalian Port,5,supply,125
+Dalian Port,6,supply,148
+Dalian Port,7,supply,121
+Dalian Port,8,supply,133
+Dalian Port,9,supply,125
+Dalian Port,10,supply,137
+Dalian Port,11,supply,162
+Dalian Port,12,supply,142
+Dalian Port,13,supply,121
+Dalian Port,14,supply,177
+Dalian Port,15,supply,155
+Yingkou Port,1,supply,169
+Yingkou Port,2,supply,162
+Yingkou Port,3,supply,154
+Yingkou Port,4,supply,150
+Yingkou Port,5,supply,179
+Yingkou Port,6,supply,147
+Yingkou Port,7,supply,142
+Yingkou Port,8,supply,166
+Yingkou Port,9,supply,177
+Yingkou Port,10,supply,182
+Yingkou Port,11,supply,179
+Yingkou Port,12,supply,151
+Yingkou Port,13,supply,168
+Yingkou Port,14,supply,129
+Yingkou Port,15,supply,175
+Dandong Port,1,supply,189
+Dandong Port,2,supply,130
+Dandong Port,3,supply,134
+Dandong Port,4,supply,128
+Dandong Port,5,supply,150
+Dandong Port,6,supply,161
+Dandong Port,7,supply,182
+Dandong Port,8,supply,176
+Dandong Port,9,supply,186
+Dandong Port,10,supply,172
+Dandong Port,11,supply,151
+Dandong Port,12,supply,176
+Dandong Port,13,supply,149
+Dandong Port,14,supply,140
+Dandong Port,15,supply,187
+Shenyang,1,supply,200
+Shenyang,2,supply,196
+Shenyang,3,supply,167
+Shenyang,4,supply,171
+Shenyang,5,supply,210
+Shenyang,6,supply,174
+Shenyang,7,supply,239
+Shenyang,8,supply,188
+Shenyang,9,supply,218
+Shenyang,10,supply,191
+Shenyang,11,supply,172
+Shenyang,12,supply,228
+Shenyang,13,supply,170
+Shenyang,14,supply,161
+Shenyang,15,supply,179
+Anshan,1,supply,184
+Anshan,2,supply,203
+Anshan,3,supply,212
+Anshan,4,supply,203
+Anshan,5,supply,213
+Anshan,6,supply,224
+Anshan,7,supply,175
+Anshan,8,supply,160
+Anshan,9,supply,190
+Anshan,10,supply,206
+Anshan,11,supply,238
+Anshan,12,supply,187
+Anshan,13,supply,239
+Anshan,14,supply,207
+Anshan,15,supply,188
+Changchun,1,supply,207
+Changchun,2,supply,203
+Changchun,3,supply,165
+Changchun,4,supply,171
+Changchun,5,supply,213
+Changchun,6,supply,182
+Changchun,7,supply,197
+Changchun,8,supply,215
+Changchun,9,supply,211
+Changchun,10,supply,176
+Changchun,11,supply,205
+Changchun,12,supply,148
+Changchun,13,supply,182
+Changchun,14,supply,213
+Changchun,15,supply,209
+Tonghua,1,supply,156
+Tonghua,2,supply,162
+Tonghua,3,supply,164
+Tonghua,4,supply,185
+Tonghua,5,supply,180
+Tonghua,6,supply,205
+Tonghua,7,supply,171
+Tonghua,8,supply,147
+Tonghua,9,supply,156
+Tonghua,10,supply,214
+Tonghua,11,supply,208
+Tonghua,12,supply,212
+Tonghua,13,supply,211
+Tonghua,14,supply,177
+Tonghua,15,supply,148
+Harbin,1,supply,172
+Harbin,2,supply,236
+Harbin,3,supply,176
+Harbin,4,supply,226
+Harbin,5,supply,219
+Harbin,6,supply,169
+Harbin,7,supply,184
+Harbin,8,supply,171
+Harbin,9,supply,190
+Harbin,10,supply,171
+Harbin,11,supply,213
+Harbin,12,supply,196
+Harbin,13,supply,163
+Harbin,14,supply,201
+Harbin,15,supply,190
+Shenyang_Yuhong,1,supply,11
+Shenyang_Yuhong,2,supply,9
+Shenyang_Yuhong,3,supply,13
+Shenyang_Yuhong,4,supply,12
+Shenyang_Yuhong,5,supply,12
+Shenyang_Yuhong,6,supply,10
+Shenyang_Yuhong,7,supply,14
+Shenyang_Yuhong,8,supply,10
+Shenyang_Yuhong,9,supply,9
+Shenyang_Yuhong,10,supply,13
+Shenyang_Yuhong,11,supply,13
+Shenyang_Yuhong,12,supply,11
+Shenyang_Yuhong,13,supply,11
+Shenyang_Yuhong,14,supply,13
+Shenyang_Yuhong,15,supply,13
+Shenyang_Tiexi,1,supply,14
+Shenyang_Tiexi,2,supply,11
+Shenyang_Tiexi,3,supply,11
+Shenyang_Tiexi,4,supply,10
+Shenyang_Tiexi,5,supply,10
+Shenyang_Tiexi,6,supply,12
+Shenyang_Tiexi,7,supply,10
+Shenyang_Tiexi,8,supply,12
+Shenyang_Tiexi,9,supply,9
+Shenyang_Tiexi,10,supply,13
+Shenyang_Tiexi,11,supply,13
+Shenyang_Tiexi,12,supply,10
+Shenyang_Tiexi,13,supply,10
+Shenyang_Tiexi,14,supply,11
+Shenyang_Tiexi,15,supply,14
+Shenyang_Liaozhong,1,supply,11
+Shenyang_Liaozhong,2,supply,10
+Shenyang_Liaozhong,3,supply,11
+Shenyang_Liaozhong,4,supply,12
+Shenyang_Liaozhong,5,supply,12
+Shenyang_Liaozhong,6,supply,10
+Shenyang_Liaozhong,7,supply,12
+Shenyang_Liaozhong,8,supply,11
+Shenyang_Liaozhong,9,supply,12
+Shenyang_Liaozhong,10,supply,13
+Shenyang_Liaozhong,11,supply,10
+Shenyang_Liaozhong,12,supply,12
+Shenyang_Liaozhong,13,supply,13
+Shenyang_Liaozhong,14,supply,14
+Shenyang_Liaozhong,15,supply,10
+Anshan_Tiedong,1,supply,10
+Anshan_Tiedong,2,supply,11
+Anshan_Tiedong,3,supply,12
+Anshan_Tiedong,4,supply,10
+Anshan_Tiedong,5,supply,11
+Anshan_Tiedong,6,supply,10
+Anshan_Tiedong,7,supply,10
+Anshan_Tiedong,8,supply,14
+Anshan_Tiedong,9,supply,12
+Anshan_Tiedong,10,supply,14
+Anshan_Tiedong,11,supply,13
+Anshan_Tiedong,12,supply,10
+Anshan_Tiedong,13,supply,9
+Anshan_Tiedong,14,supply,10
+Anshan_Tiedong,15,supply,12
+Changchun_Lvyuan,1,supply,12
+Changchun_Lvyuan,2,supply,10
+Changchun_Lvyuan,3,supply,12
+Changchun_Lvyuan,4,supply,10
+Changchun_Lvyuan,5,supply,13
+Changchun_Lvyuan,6,supply,12
+Changchun_Lvyuan,7,supply,11
+Changchun_Lvyuan,8,supply,11
+Changchun_Lvyuan,9,supply,10
+Changchun_Lvyuan,10,supply,13
+Changchun_Lvyuan,11,supply,10
+Changchun_Lvyuan,12,supply,14
+Changchun_Lvyuan,13,supply,14
+Changchun_Lvyuan,14,supply,12
+Changchun_Lvyuan,15,supply,12
+Changchun_Nongan,1,supply,9
+Changchun_Nongan,2,supply,12
+Changchun_Nongan,3,supply,11
+Changchun_Nongan,4,supply,13
+Changchun_Nongan,5,supply,9
+Changchun_Nongan,6,supply,11
+Changchun_Nongan,7,supply,12
+Changchun_Nongan,8,supply,10
+Changchun_Nongan,9,supply,13
+Changchun_Nongan,10,supply,13
+Changchun_Nongan,11,supply,11
+Changchun_Nongan,12,supply,10
+Changchun_Nongan,13,supply,10
+Changchun_Nongan,14,supply,10
+Changchun_Nongan,15,supply,13
+Changchun_Jiutai,1,supply,13
+Changchun_Jiutai,2,supply,11
+Changchun_Jiutai,3,supply,11
+Changchun_Jiutai,4,supply,11
+Changchun_Jiutai,5,supply,13
+Changchun_Jiutai,6,supply,13
+Changchun_Jiutai,7,supply,10
+Changchun_Jiutai,8,supply,10
+Changchun_Jiutai,9,supply,13
+Changchun_Jiutai,10,supply,13
+Changchun_Jiutai,11,supply,11
+Changchun_Jiutai,12,supply,13
+Changchun_Jiutai,13,supply,11
+Changchun_Jiutai,14,supply,10
+Changchun_Jiutai,15,supply,9
+Tonghua_Dongchang,1,supply,10
+Tonghua_Dongchang,2,supply,11
+Tonghua_Dongchang,3,supply,9
+Tonghua_Dongchang,4,supply,10
+Tonghua_Dongchang,5,supply,14
+Tonghua_Dongchang,6,supply,12
+Tonghua_Dongchang,7,supply,11
+Tonghua_Dongchang,8,supply,10
+Tonghua_Dongchang,9,supply,13
+Tonghua_Dongchang,10,supply,12
+Tonghua_Dongchang,11,supply,11
+Tonghua_Dongchang,12,supply,12
+Tonghua_Dongchang,13,supply,11
+Tonghua_Dongchang,14,supply,13
+Tonghua_Dongchang,15,supply,12
+Harbin_Pingfang,1,supply,12
+Harbin_Pingfang,2,supply,12
+Harbin_Pingfang,3,supply,11
+Harbin_Pingfang,4,supply,11
+Harbin_Pingfang,5,supply,10
+Harbin_Pingfang,6,supply,13
+Harbin_Pingfang,7,supply,12
+Harbin_Pingfang,8,supply,14
+Harbin_Pingfang,9,supply,10
+Harbin_Pingfang,10,supply,12
+Harbin_Pingfang,11,supply,9
+Harbin_Pingfang,12,supply,14
+Harbin_Pingfang,13,supply,13
+Harbin_Pingfang,14,supply,12
+Harbin_Pingfang,15,supply,13
+Harbin_Shuangcheng,1,supply,9
+Harbin_Shuangcheng,2,supply,11
+Harbin_Shuangcheng,3,supply,12
+Harbin_Shuangcheng,4,supply,11
+Harbin_Shuangcheng,5,supply,14
+Harbin_Shuangcheng,6,supply,13
+Harbin_Shuangcheng,7,supply,13
+Harbin_Shuangcheng,8,supply,10
+Harbin_Shuangcheng,9,supply,10
+Harbin_Shuangcheng,10,supply,13
+Harbin_Shuangcheng,11,supply,9
+Harbin_Shuangcheng,12,supply,13
+Harbin_Shuangcheng,13,supply,13
+Harbin_Shuangcheng,14,supply,11
+Harbin_Shuangcheng,15,supply,11
+Harbin_Songbei,1,supply,13
+Harbin_Songbei,2,supply,12
+Harbin_Songbei,3,supply,11
+Harbin_Songbei,4,supply,10
+Harbin_Songbei,5,supply,11
+Harbin_Songbei,6,supply,14
+Harbin_Songbei,7,supply,11
+Harbin_Songbei,8,supply,10
+Harbin_Songbei,9,supply,9
+Harbin_Songbei,10,supply,11
+Harbin_Songbei,11,supply,12
+Harbin_Songbei,12,supply,10
+Harbin_Songbei,13,supply,12
+Harbin_Songbei,14,supply,12
+Harbin_Songbei,15,supply,9
+Dalian Port,1,demand,152
+Dalian Port,2,demand,145
+Dalian Port,3,demand,153
+Dalian Port,4,demand,205
+Dalian Port,5,demand,148
+Dalian Port,6,demand,203
+Dalian Port,7,demand,164
+Dalian Port,8,demand,190
+Dalian Port,9,demand,211
+Dalian Port,10,demand,170
+Dalian Port,11,demand,170
+Dalian Port,12,demand,151
+Dalian Port,13,demand,170
+Dalian Port,14,demand,180
+Dalian Port,15,demand,191
+Yingkou Port,1,demand,170
+Yingkou Port,2,demand,191
+Yingkou Port,3,demand,129
+Yingkou Port,4,demand,187
+Yingkou Port,5,demand,177
+Yingkou Port,6,demand,190
+Yingkou Port,7,demand,182
+Yingkou Port,8,demand,156
+Yingkou Port,9,demand,172
+Yingkou Port,10,demand,128
+Yingkou Port,11,demand,134
+Yingkou Port,12,demand,187
+Yingkou Port,13,demand,135
+Yingkou Port,14,demand,151
+Yingkou Port,15,demand,131
+Dandong Port,1,demand,199
+Dandong Port,2,demand,219
+Dandong Port,3,demand,213
+Dandong Port,4,demand,197
+Dandong Port,5,demand,202
+Dandong Port,6,demand,233
+Dandong Port,7,demand,188
+Dandong Port,8,demand,162
+Dandong Port,9,demand,196
+Dandong Port,10,demand,211
+Dandong Port,11,demand,200
+Dandong Port,12,demand,176
+Dandong Port,13,demand,179
+Dandong Port,14,demand,212
+Dandong Port,15,demand,199
+Shenyang,1,demand,82
+Shenyang,2,demand,105
+Shenyang,3,demand,88
+Shenyang,4,demand,104
+Shenyang,5,demand,102
+Shenyang,6,demand,101
+Shenyang,7,demand,102
+Shenyang,8,demand,77
+Shenyang,9,demand,106
+Shenyang,10,demand,86
+Shenyang,11,demand,107
+Shenyang,12,demand,88
+Shenyang,13,demand,85
+Shenyang,14,demand,85
+Shenyang,15,demand,84
+Anshan,1,demand,160
+Anshan,2,demand,147
+Anshan,3,demand,122
+Anshan,4,demand,174
+Anshan,5,demand,177
+Anshan,6,demand,161
+Anshan,7,demand,155
+Anshan,8,demand,170
+Anshan,9,demand,123
+Anshan,10,demand,123
+Anshan,11,demand,136
+Anshan,12,demand,152
+Anshan,13,demand,156
+Anshan,14,demand,153
+Anshan,15,demand,135
+Changchun,1,demand,95
+Changchun,2,demand,111
+Changchun,3,demand,123
+Changchun,4,demand,116
+Changchun,5,demand,103
+Changchun,6,demand,121
+Changchun,7,demand,99
+Changchun,8,demand,88
+Changchun,9,demand,119
+Changchun,10,demand,101
+Changchun,11,demand,106
+Changchun,12,demand,114
+Changchun,13,demand,128
+Changchun,14,demand,107
+Changchun,15,demand,100
+Tonghua,1,demand,145
+Tonghua,2,demand,121
+Tonghua,3,demand,133
+Tonghua,4,demand,163
+Tonghua,5,demand,142
+Tonghua,6,demand,144
+Tonghua,7,demand,116
+Tonghua,8,demand,128
+Tonghua,9,demand,148
+Tonghua,10,demand,120
+Tonghua,11,demand,114
+Tonghua,12,demand,118
+Tonghua,13,demand,137
+Tonghua,14,demand,124
+Tonghua,15,demand,157
+Harbin,1,demand,129
+Harbin,2,demand,152
+Harbin,3,demand,141
+Harbin,4,demand,116
+Harbin,5,demand,154
+Harbin,6,demand,112
+Harbin,7,demand,139
+Harbin,8,demand,129
+Harbin,9,demand,143
+Harbin,10,demand,142
+Harbin,11,demand,111
+Harbin,12,demand,124
+Harbin,13,demand,124
+Harbin,14,demand,149
+Harbin,15,demand,131
+Shenyang_Sujiatun,1,demand,14
+Shenyang_Sujiatun,2,demand,12
+Shenyang_Sujiatun,3,demand,13
+Shenyang_Sujiatun,4,demand,12
+Shenyang_Sujiatun,5,demand,11
+Shenyang_Sujiatun,6,demand,13
+Shenyang_Sujiatun,7,demand,12
+Shenyang_Sujiatun,8,demand,12
+Shenyang_Sujiatun,9,demand,11
+Shenyang_Sujiatun,10,demand,11
+Shenyang_Sujiatun,11,demand,13
+Shenyang_Sujiatun,12,demand,11
+Shenyang_Sujiatun,13,demand,12
+Shenyang_Sujiatun,14,demand,10
+Shenyang_Sujiatun,15,demand,11
+Anshan_Qianshan,1,demand,11
+Anshan_Qianshan,2,demand,10
+Anshan_Qianshan,3,demand,10
+Anshan_Qianshan,4,demand,13
+Anshan_Qianshan,5,demand,10
+Anshan_Qianshan,6,demand,10
+Anshan_Qianshan,7,demand,14
+Anshan_Qianshan,8,demand,10
+Anshan_Qianshan,9,demand,13
+Anshan_Qianshan,10,demand,11
+Anshan_Qianshan,11,demand,10
+Anshan_Qianshan,12,demand,13
+Anshan_Qianshan,13,demand,9
+Anshan_Qianshan,14,demand,11
+Anshan_Qianshan,15,demand,12
+Anshan_Xiuyan,1,demand,11
+Anshan_Xiuyan,2,demand,14
+Anshan_Xiuyan,3,demand,13
+Anshan_Xiuyan,4,demand,13
+Anshan_Xiuyan,5,demand,14
+Anshan_Xiuyan,6,demand,14
+Anshan_Xiuyan,7,demand,10
+Anshan_Xiuyan,8,demand,9
+Anshan_Xiuyan,9,demand,12
+Anshan_Xiuyan,10,demand,11
+Anshan_Xiuyan,11,demand,13
+Anshan_Xiuyan,12,demand,12
+Anshan_Xiuyan,13,demand,12
+Anshan_Xiuyan,14,demand,13
+Anshan_Xiuyan,15,demand,12
+Changchun_Jingkai,1,demand,10
+Changchun_Jingkai,2,demand,9
+Changchun_Jingkai,3,demand,12
+Changchun_Jingkai,4,demand,13
+Changchun_Jingkai,5,demand,10
+Changchun_Jingkai,6,demand,12
+Changchun_Jingkai,7,demand,10
+Changchun_Jingkai,8,demand,12
+Changchun_Jingkai,9,demand,14
+Changchun_Jingkai,10,demand,13
+Changchun_Jingkai,11,demand,10
+Changchun_Jingkai,12,demand,13
+Changchun_Jingkai,13,demand,12
+Changchun_Jingkai,14,demand,10
+Changchun_Jingkai,15,demand,10
+Tonghua_Meihekou,1,demand,10
+Tonghua_Meihekou,2,demand,11
+Tonghua_Meihekou,3,demand,11
+Tonghua_Meihekou,4,demand,12
+Tonghua_Meihekou,5,demand,10
+Tonghua_Meihekou,6,demand,11
+Tonghua_Meihekou,7,demand,13
+Tonghua_Meihekou,8,demand,10
+Tonghua_Meihekou,9,demand,11
+Tonghua_Meihekou,10,demand,10
+Tonghua_Meihekou,11,demand,11
+Tonghua_Meihekou,12,demand,13
+Tonghua_Meihekou,13,demand,10
+Tonghua_Meihekou,14,demand,11
+Tonghua_Meihekou,15,demand,13
+Tonghua_Jian,1,demand,13
+Tonghua_Jian,2,demand,13
+Tonghua_Jian,3,demand,12
+Tonghua_Jian,4,demand,10
+Tonghua_Jian,5,demand,9
+Tonghua_Jian,6,demand,12
+Tonghua_Jian,7,demand,14
+Tonghua_Jian,8,demand,13
+Tonghua_Jian,9,demand,11
+Tonghua_Jian,10,demand,12
+Tonghua_Jian,11,demand,9
+Tonghua_Jian,12,demand,10
+Tonghua_Jian,13,demand,12
+Tonghua_Jian,14,demand,13
+Tonghua_Jian,15,demand,9
+Harbin_Acheng,1,demand,9
+Harbin_Acheng,2,demand,10
+Harbin_Acheng,3,demand,12
+Harbin_Acheng,4,demand,13
+Harbin_Acheng,5,demand,10
+Harbin_Acheng,6,demand,11
+Harbin_Acheng,7,demand,11
+Harbin_Acheng,8,demand,11
+Harbin_Acheng,9,demand,10
+Harbin_Acheng,10,demand,9
+Harbin_Acheng,11,demand,12
+Harbin_Acheng,12,demand,12
+Harbin_Acheng,13,demand,12
+Harbin_Acheng,14,demand,10
+Harbin_Acheng,15,demand,9
