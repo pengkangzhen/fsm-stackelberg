@@ -33,3 +33,19 @@ results/
 # Gurobi
 gurobi.log
 gurobi.lic
+
+# Windows ADS junk
+*:Zone.Identifier
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.abs
+*.toc
+*.lof
+*.lot

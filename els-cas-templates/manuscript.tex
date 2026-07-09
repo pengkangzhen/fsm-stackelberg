@@ -1,0 +1,716 @@
+%% fsm-stackelberg — manuscript draft (cas-sc)
+%% Status: Proposed Method section is the focus of this draft; Introduction,
+%%         Problem Definition, Experiments and Conclusion are placeholders.
+%% Compile: latexmk -pdf manuscript.tex  (run inside els-cas-templates/)
+
+\PassOptionsToPackage{hyperfootnotes=false}{hyperref}
+\documentclass[a4paper,fleqn]{cas-sc}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[authoryear,longnamesfirst]{natbib}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocodex}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,fit,shapes.geometric}
+
+\graphicspath{{figs/}}
+
+%% Graceful figure fallback: draws a labelled placeholder when the artwork
+%% is not yet available, so the document always compiles.
+\newcommand{\figplaceholder}[2][0.9\linewidth]{%
+  \begin{tikzpicture}
+    \draw[thick,dashed,gray!55,fill=gray!4] (0,0) rectangle (#1,4.6cm);
+    \node[gray!60,font=\itshape\small,align=center,text width=0.85\linewidth]
+      at (0.5*#1,2.3cm) {#2};
+  \end{tikzpicture}}
+
+%% Semi-formal proposition box (avoids depending on a theorem environment).
+\newtcolorbox{propbox}[1][]{enhanced,breakable,
+  colback=blue!2,colframe=blue!45,boxrule=0.4pt,arc=3pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,
+  fonttitle=\bfseries,coltitle=black,title=Proposition,#1}
+
+\newcommand{\Ecal}{\mathcal{E}}
+\newcommand{\Acal}{\mathcal{A}}
+\newcommand{\Qcal}{\mathcal{Q}}
+\newcommand{\Scal}{\mathcal{S}}
+\newcommand{\tri}{\triangleright}
+
+\begin{document}
+
+\shorttitle{FSM-Stackelberg Diagnosis--Repair for Agentic NLO}
+\shortauthors{Peng et al.}
+
+\title[mode=title]{A State-Machine Stackelberg Game for Diagnosis--Repair in Natural-Language Optimization}
+
+\author[dlmu]{Kangzhen Peng}\ead{pengkangzhen@dlmu.edu.cn}
+\affiliation[dlmu]{organization={College of Transportation Engineering, Dalian Maritime University},
+  addressline={No. 1 Linghai Road}, city={Dalian}, postcode={116026}, state={Liaoning}, country={China}}
+
+\begin{abstract}
+% TODO: full abstract once experiments land. The method contribution described
+% here is the diagnosis--repair redesign; the pipeline and ECR benchmark are
+% inherited from the MAKO baseline.
+[Draft] We recast the error diagnosis and repair stage of an LLM multi-agent
+optimization pipeline as a Stackelberg \emph{inspection game} defined on a
+state machine. A LangGraph finite-state machine orchestrates role-specialized
+agents (Data Engineer $\to$ Model Expert $\to$ Python Developer $\to$ Solver)
+and serves as the stage-game apparatus. When a solve fails, the diagnosis
+agent acts as an \emph{inspector} (the Stackelberg leader) that commits, first
+and observably, to an inspection policy: a probing order following the
+pipeline's causal dependency (data $\tri$ model $\tri$ code) together with
+\emph{executed refutation} --- verifying every response by a real re-solve
+rather than by cheap talk. The accused agents are \emph{inspectees} (the
+followers): because a downstream layer is routinely implicated by an upstream
+defect it did not cause, each accused agent has a genuine private incentive to
+deflect blame and avoid wasted repair, so its interests are not aligned with
+truthful attribution. We show that the inspector's committed causal-order,
+executed-refutation policy induces the truthful best response --- a guilty
+layer complies and repairs, an innocent layer's deflection is verified ---
+replacing the baseline's single-judge LLM accusation. We formalize the
+mechanism, state a proposition on causal-order inspection, and instantiate it
+for Empty Container Repositioning.
+\end{abstract}
+
+\begin{highlights}
+\item Diagnosis--repair is cast as a Stackelberg inspection game defined on a LangGraph state machine as the stage-game apparatus.
+\item The diagnosis agent is an inspector that commits, first-mover, to a causal-order (data $\tri$ model $\tri$ code) probing policy with executed refutation.
+\item Accused agents are inspectees with a genuine deflection incentive; the inspector's commitment induces truthful attribution.
+\item A proposition links causal-order inspection to a strictly smaller viable root-cause set than single-judge diagnosis.
+\end{highlights}
+
+\begin{keywords}
+\sep large language model
+\sep multi-agent system
+\sep Stackelberg game
+\sep finite-state machine
+\sep automated optimization modeling
+\sep empty container repositioning
+\end{keywords}
+
+\maketitle
+
+%==============================================================================
+\section{Introduction}
+\label{sec:intro}
+% TODO: full introduction.
+This paper addresses the reliability of LLM multi-agent pipelines that
+automatically formulate and solve operations-research (OR) optimization
+problems from natural language. We inherit a working pipeline --- the MAKO
+framework~\citep{wu2024autogen} --- and focus on its weakest link: when the
+solver fails, attributing the failure to the correct pipeline stage and
+repairing it. We propose a state-machine Stackelberg game for this
+diagnosis--repair stage.
+
+\paragraph{Thesis.} Attributing a failed solve is not a neutral classification
+task but a game with conflicting interests, and the pipeline's causal layering
+(\emph{data $\tri$ model $\tri$ code}) makes it precisely a Stackelberg
+\emph{inspection game}. Because an upstream defect manifests as a downstream
+symptom, an accused downstream agent is often innocent, and it has a genuine
+private incentive to deflect blame upstream and avoid the cost of a repair
+that could not fix the true cause anyway. The diagnosis agent is therefore an
+\emph{inspector} that moves first and commits --- observably --- to an
+inspection policy: probe the layers in causal order and verify every response
+by \emph{executed refutation} (a real re-solve), not by an unverifiable
+confidence score. This commitment is what gives the mechanism teeth: it makes
+truthful compliance the best response of a guilty layer and verified deflection
+the best response of an innocent one, so the accused can neither confess
+falsely nor deflect dishonestly for free. Aligning the probing order with the
+causal order gives the first move causal meaning --- a probe of a layer
+upstream of the true root cause is settled by re-solve before the inspector
+descends. The remainder of the draft develops the method
+(Section~\ref{sec:method}); Problem Definition, Experiments and Conclusion are
+placeholders pending the experimental campaign.
+
+%==============================================================================
+\section{Problem Definition}
+\label{sec:ecr_model}
+% TODO: verbatim ECR model inherited from the baseline (parameters, variables,
+% flow-balance and capacity constraints). Sketched here only so the method is
+% self-contained.
+We adopt the three-echelon Empty Container Repositioning (ECR) problem of the
+baseline: a single-commodity, multi-period network flow on a directed graph
+$G=(N,E)$ whose nodes partition into sea ports $H$, dry ports $L$, consignees
+$P$ and shippers $Q$, with arc set $\mathcal{A}\subseteq N\times N\times\Omega$
+encoding admissible movements. The deterministic ground-truth instance used
+for evaluation has a known optimum, supplying the strict-success rule
+(\textsc{Optimal} with optimality gap $\le 10^{-3}$) and the root-cause labels
+required by the diagnosis mechanism below.
+
+%==============================================================================
+\section{Proposed Method}
+\label{sec:method}
+
+This section develops the proposed framework bottom-up. We define the agents
+and their interfaces (Section~\ref{sec:agents}), compose them into a
+state-machine architecture (Section~\ref{sec:architecture}), and specify their
+communication through a shared blackboard (Section~\ref{sec:comm}). We then
+describe the incremental knowledge enhancement that grounds formulation
+decisions (Section~\ref{sec:ikd}). The final two subsections present the core
+contribution: a Stackelberg \emph{inspection game} for diagnosis--repair
+defined \emph{on} the state machine (Section~\ref{sec:stackelberg}) and its
+algorithmic realization (Section~\ref{sec:algorithm}). Throughout, the
+framework targets
+\emph{layered-error} natural-language optimization --- OR pipelines with a
+data $\to$ model $\to$ code dependency in which errors propagate strictly
+downstream and contaminate downstream signals; we do not claim gains for
+general LLM reasoning.
+
+%------------------------------------------------------------------------------
+\subsection{Agent Definitions}
+\label{sec:agents}
+
+We retain the baseline's role-specialized agents. Let
+$\Acal=\{a_1,\dots,a_5\}$, with $a_1=$~DataEngineer, $a_2=$~ModelExpert,
+$a_3=$~PythonDeveloper, $a_4=$~SolverExecutor, $a_5=$~DiagnosisAgent. Each
+agent is characterized by a tuple
+\begin{equation}\label{eq:agent}
+a_i=(i,\,\mathcal{R}_i,\,\mathcal{T}_i,\,\mathcal{B}_i,\,\mathcal{H}_i),
+\end{equation}
+where $i$ is a unique identifier, $\mathcal{R}_i$ the functional role,
+$\mathcal{T}_i$ the prompt template encoding role-specific instructions and
+output-format constraints, $\mathcal{B}_i$ an optional knowledge base (active
+only for $a_2$, whose modeling decisions are domain-specialized), and
+$\mathcal{H}_i$ the hyper-parameter configuration (temperature,
+\texttt{top\_p}, \texttt{max\_tokens}).
+
+The five roles decompose the modeling task along the causal order
+\emph{data $\tri$ model $\tri$ code}. \texttt{DataEngineer} ($a_1$) parses the
+problem description and raw instance into structured parameters with symbol
+anchoring for downstream consistency; \texttt{ModelExpert} ($a_2$) designs the
+optimization model (decision variables, objective, constraints);
+\texttt{PythonDeveloper} ($a_3$) translates the formulation into executable
+solver code; \texttt{SolverExecutor} ($a_4$) runs the code in a sandbox,
+validates the result against the strict-success rule, and reports status;
+\texttt{DiagnosisAgent} ($a_5$) analyzes any failure and drives repair.
+
+Each correctable agent exposes two maps: a \emph{forward} map $a_i^{+}$ that
+produces its nominal output, and a \emph{backward} (repair) map $a_i^{-}$ that,
+given an error signal, either accepts responsibility and emits a corrected
+output or rebuts. Agent $a_i$ receives an input assembled from prior outputs,
+\begin{equation}\label{eq:forward}
+x^{(i)}\gets f_i(y^{(0)},y^{(1)},\dots,y^{(i-1)}),\qquad
+y^{(i)}\gets a_i^{+}(x^{(i)}),
+\end{equation}
+where $f_i$ selects the necessary dependencies. The backward map is invoked
+only on the agent implicated by diagnosis (Section~\ref{sec:stackelberg}).
+
+%------------------------------------------------------------------------------
+\subsection{Multi-Agent Architecture and State-Machine Orchestration}
+\label{sec:architecture}
+
+The agents of Section~\ref{sec:agents} are composed into an extended
+finite-state machine rather than a free-form graph. The pipeline is compiled as
+\begin{equation}\label{eq:fsm}
+M=(\Qcal,\,q_0,\,\Delta,\,\Scal,\,K),
+\end{equation}
+where $\Qcal$ is a finite set of control states (the graph nodes), $q_0$ the
+unique entry state, $\Delta$ the transition map, $\Scal$ the shared blackboard
+(Section~\ref{sec:comm}), and $K$ the transition budget. The state set is
+\begin{equation}
+\Qcal=\{\,q_{\textsc{de}},q_{\textsc{me}},q_{\textsc{kl}},q_{\textsc{pd}},
+q_{\textsc{se}},q_{\textsc{dg}}\,\}\;\cup\;\{\,q_{\textsc{de}}^{-},
+q_{\textsc{me}}^{-},q_{\textsc{pd}}^{-}\,\},
+\end{equation}
+comprising six forward states --- one per agent in $\{a_1,\dots,a_5\}$ plus a
+dedicated \textsc{KnowledgeLoader} state --- and three backward (repair)
+states, one per correctable agent. The entry state is $q_0=q_{\textsc{de}}$ and
+the lone terminal is $\textsc{End}$. Figure~\ref{fig:fsm} depicts $M$.
+
+\begin{figure}[pos=htbp]
+\centering
+\figplaceholder{Figure placeholder: the finite-state machine $M$.\\
+Forward chain $q_{\textsc{de}}\!\to\!q_{\textsc{me}}\!\to\!\{q_{\textsc{kl}}\}\!\to\!q_{\textsc{pd}}\!\to\!q_{\textsc{se}}$;\\
+diagnosis--repair cycle $q_{\textsc{se}}\!\to\!q_{\textsc{dg}}\!\to\!q^{-}\!\to\!(\text{resume}\,/\,\text{re-diagnose}\,/\,\textsc{End})$.\\
+\emph{Artwork to be supplied.}}
+\caption{The extended finite-state machine $M=(\Qcal,q_0,\Delta,\Scal,K)$. Solid arrows: the forward chain with the incremental-knowledge loop (Section~\ref{sec:ikd}). Dashed arrows: the diagnosis--repair cycle, whose return edge is determined by the Stackelberg verdict (Section~\ref{sec:stackelberg}).}
+\label{fig:fsm}
+\end{figure}
+
+\paragraph{Transitions are pure functions of the blackboard.} The transition
+map $\Delta$ is realized by five routing functions, each a pure map
+$\Scal\to\Qcal$:
+\begin{itemize}
+    \item $\delta_{\textsc{me}}$: after ModelExpert, branch to
+    \textsc{KnowledgeLoader} iff it requests not-yet-loaded modules, else to
+    PythonDeveloper --- this edge realizes the incremental-knowledge loop of
+    Section~\ref{sec:ikd};
+    \item $\delta_{\textsc{kl}}$: after KnowledgeLoader, return to ModelExpert
+    iff new knowledge was added (a refinement loop), else proceed to
+    PythonDeveloper;
+    \item $\delta_{\textsc{se}}$: after SolverExecutor, terminate on success
+    or budget exhaustion, otherwise route to DiagnosisAgent;
+    \item $\delta_{\textsc{dg}}$: after DiagnosisAgent, route to the backward
+    state of the implicated agent (the diagnosis verdict);
+    \item $\delta^{-}$: after a backward step, either resume the pipeline
+    downstream from the repaired agent, re-enter diagnosis, or terminate ---
+    depending on whether the repair was accepted and which agent was repaired.
+\end{itemize}
+The retry budget $K$ (\texttt{max\_retries}) bounds the number of
+diagnosis--repair cycles, i.e., it is the FSM's transition budget over the
+diagnostic sub-graph.
+
+\paragraph{The FSM is the stage-game apparatus, not scaffolding.} The state
+machine is the structural substrate of the contribution because it is the
+object on which the repair game is defined. Its states are stage-game states,
+and --- once the repair game is in play --- the transitions
+$\delta_{\textsc{dg}}$ and $\delta^{-}$ become functions of the players'
+strategy profile (the inspector's committed inspection policy and the
+inspectee's verified response; Section~\ref{sec:stackelberg}) rather than of a
+fixed heuristic. Treating $M$
+as the stage-game apparatus is what lets the commitment order carry
+\emph{causal} meaning and what supports the proposition in
+Section~\ref{sec:stackelberg}; without this formalization, the FSM would be
+indistinguishable from generic graph orchestration.
+
+%------------------------------------------------------------------------------
+\subsection{Inter-Agent Communication via a Shared Blackboard}
+\label{sec:comm}
+
+Agents never exchange messages pairwise. All communication is mediated by a
+single typed blackboard $\Scal$ (realized as the \texttt{AgentState} schema):
+every node reads its inputs from $\Scal$ and writes its outputs back to
+$\Scal$, and the transition functions $\Delta$ route solely on $\Scal$'s
+contents. This \emph{shared-state, no-direct-links} design has three
+consequences.
+
+\paragraph{Control and payload on one schema, separated by reader.} $\Scal$
+carries both \emph{control state} and \emph{data payload}. Control fields ---
+retry count, the currently implicated agent, a resolved flag, the diagnosis
+mode, the round counter, the retry budget --- drive $\Delta$ and are the only
+fields a routing function inspects. Data fields --- each agent's output, the
+assembled error evidence, execution metrics, the loaded knowledge modules, and
+the ground-truth objective --- carry the pipeline's content and are read by the
+agent that fires next. Colocating these concerns on one schema while
+separating their readers is what makes the FSM's transitions both data-aware
+and cheap to reason about.
+
+\paragraph{A consistent, fixed data view.} A deterministic preprocessor runs
+once, before any LLM agent fires, and writes a canonical view of the raw
+instance into $\Scal$. Every downstream agent therefore reasons over an
+identical data basis, eliminating a class of data-parsing races that would
+otherwise masquerade as modeling or coding errors and confuse the diagnosis
+mechanism.
+
+\paragraph{Append-by-field history.} Communication is append-by-field rather
+than overwrite: a backward step writes a corrected output together with a
+resolved flag without erasing the prior forward outputs. The diagnosis
+mechanism can therefore inspect the full input--output history
+$\{(x^{(i)},y^{(i)})\}$ when attributing a failure. This history is the
+evidence base $\Ecal$ on which the Stackelberg game of
+Section~\ref{sec:stackelberg} is defined, and its completeness is what makes
+blame attributable rather than heuristic.
+
+%------------------------------------------------------------------------------
+\subsection{Incremental Knowledge Enhancement}
+\label{sec:ikd}
+
+Mathematical modeling ($a_2$) is the most domain-specialized stage and the
+stage most prone to formulation errors, so \texttt{ModelExpert} is equipped
+with a domain knowledge base $\mathcal{B}_2$ of OR templates and solver APIs.
+Naive one-shot injection of all of $\mathcal{B}_2$ overloads the context
+window and dilutes attention; moreover, optimization modeling has rigid
+logical dependencies --- a constraint cannot be formulated before its
+variables are defined --- that semantic-similarity retrieval cannot respect.
+We therefore adopt an \emph{incremental knowledge disclosure} (IKD) strategy:
+knowledge is loaded progressively, aligned with the modeling state.
+
+Formally, instead of conditioning $a_2$ on $\mathcal{B}_2$ at once, we
+decompose the modeling trajectory and, at each step, apply a disclosure
+policy
+\begin{equation}\label{eq:ikd}
+\mathcal{B}_t=\pi(S_t,\,\mathcal{B}_2),
+\end{equation}
+which selects the subset $\mathcal{B}_t\subset\mathcal{B}_2$ relevant to the
+current modeling state $S_t$ (e.g.\ ``variables defined, objective pending'').
+In the FSM this is realized by the $\delta_{\textsc{me}}/\delta_{\textsc{kl}}$
+loop: whenever \texttt{ModelExpert} requests a not-yet-loaded module, $\Delta$
+routes to \textsc{KnowledgeLoader}, the module is written into $\Scal$, and
+control returns to \texttt{ModelExpert} for a refinement pass; once no new
+module is requested, $\Delta$ proceeds to \texttt{PythonDeveloper}. IKD thereby
+reduces the conditional search space at each step and mitigates formulation
+hallucination --- a prerequisite for clean attribution, since a knowledge-gap
+failure must not be confused with the modeling and code errors the
+diagnosis--repair game is designed to localize.
+
+%------------------------------------------------------------------------------
+\subsection{The Stackelberg Diagnosis--Repair Game as an Inspection Game}
+\label{sec:stackelberg}
+
+\paragraph{Why a game, not a single judge.} The baseline diagnoses a failed
+solve with what it calls an ``adversarial'' protocol: (i) a static heuristic
+prior over candidate agents keyed on the solver status (\textsc{Crash}
+$\Rightarrow$ code first; \textsc{Optimal}-but-wrong-objective $\Rightarrow$
+model first); (ii) a \emph{single} LLM call returning a suspect, a confidence,
+and a rationale; (iii) a backward step in which the accused agent
+self-verifies. The baseline is candid that this is role-asymmetric but
+\emph{not} game-theoretic --- it ``does not assume utility-maximizing agents,
+opposed payoff functions, or equilibrium behavior.'' There is no payoff
+structure, no equilibrium concept, no leader--follower commitment, and no
+strategic interaction among agents.
+
+We argue that the conflicting-interest structure is nonetheless already
+present and is being ignored. Under the causal layering of
+Section~\ref{sec:layered}, an upstream defect surfaces as a downstream
+symptom, so the agent an observation implicates is frequently \emph{not} the
+one at fault. A correctly self-interested accused agent should therefore
+\emph{deflect} blame it does not deserve and decline a repair that cannot fix
+an upstream cause --- exactly the incentive of an inspectee facing an
+inspector. We accordingly cast diagnosis--repair as a Stackelberg
+\emph{inspection game}~\citep{avenhaus2002inspection,maschler1966inspection},
+a canonical class of leader--follower games in which an inspector commits to a
+monitoring policy and an inspectee best-responds. The diagnosis agent is the
+inspector (leader); the accused correctable agents are inspectees (followers);
+and the inspector's first-mover \emph{commitment} to a causal-order,
+executed-refutation policy is what induces truthful attribution as the
+inspectees' best response. Table~\ref{tab:game_mapping} maps the inspection-game
+elements to the pipeline and contrasts them with the single-judge baseline.
+
+\begin{table}[pos=htbp]
+\centering
+\small
+\caption{Mapping of Stackelberg inspection-game elements to the
+diagnosis--repair stage. Right column: what the single-judge baseline provides
+instead.}
+\label{tab:game_mapping}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+Inspection-game element & Concretization in our mechanism & Single-judge baseline \\
+\midrule
+Inspector / leader (moves first, commits) & DiagnosisAgent commits an inspection policy $\sigma$: probe order + executed refutation & One LLM call picks a suspect \\
+Inspectees / followers (best-respond) & Accused agents $a_1,a_2,a_3$: comply-and-repair or deflect-upstream & Accused agent self-checks in isolation \\
+Committed policy $\sigma$ & Causal-order probing + verify by real re-solve (no cheap talk) & Fixed heuristic prior + single confidence \\
+Conflict of interest & Innocent layer deflects to avoid wasted repair / wrongful blame & (assumed absent) \\
+Inspector payoff & Correct root-cause localization at fewest rounds/tokens & (undefined) \\
+Inspectee payoff & Avoid wrongful blame and wasted repair; fix only if truly at fault & A confidence score \\
+Induced outcome & Guilty layer complies; innocent deflection is verified & Confidence-routed re-accusation \\
+Stage-game apparatus & The LangGraph FSM (states = stage-game states) & (treated as plumbing) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Layered error dependence and the deflection incentive}
+\label{sec:layered}
+
+Let the correctable core of the pipeline be the chain
+$a_1\tri a_2\tri a_3$ (DataEngineer $\tri$ ModelExpert $\tri$ PythonDeveloper),
+i.e.\ \emph{data $\tri$ model $\tri$ code}, where $\tri$ denotes ``is a causal
+prerequisite of.'' We assume \emph{strict layered error dependence}: a defect
+introduced at layer $\ell\in\{1,2,3\}$ may manifest at any layer $j\ge \ell$,
+but a defect at layer $\ell$ cannot be the root cause of a symptom that
+requires only layers $<\ell$ to be well-formed. Consequently, the observation
+of a downstream failure (e.g.\ an infeasible solve, a wrong objective) is
+consistent with several root-cause layers, and localizing the true root cause
+$\ell^{\star}$ from the failure evidence $\Ecal$ alone is fundamentally
+ambiguous. This ambiguity is exactly what a single-judge classifier must
+resolve in one shot.
+
+\paragraph{The conflict of interest this creates.} Layered dependence does not
+merely make attribution ambiguous; it gives the accused agents \emph{misaligned
+private incentives}, which is what turns diagnosis into a game rather than a
+classification. Consider an agent at layer $\ell$ that a failure has
+implicated. Two facts hold simultaneously: (i) repair is costly --- a backward
+step re-generates the agent's output, consumes tokens, and risks injecting a
+fresh defect; and (ii) if $\ell\neq\ell^{\star}$ (the layer is innocent, merely
+downstream of the true cause), then \emph{no} local repair at $\ell$ can make
+the solve pass, because by strict layered dependence the true defect lies
+upstream. An innocent implicated agent therefore strictly prefers to
+\emph{deflect} --- to rebut the accusation and point blame upstream --- rather
+than to accept a repair that wastes effort and cannot succeed. Symmetrically,
+even a guilty layer, if it could avoid the repair cost by deflecting, would be
+tempted to do so. The accused agents are thus not neutral truth-seekers whose
+objective coincides with the diagnostician's; they are self-interested
+inspectees. A protocol that merely \emph{asks} an accused agent to
+self-verify (the baseline) cannot separate a truthful deflection from a
+self-serving one, because both are cheap talk. Resolving this requires an
+inspector that \emph{commits} to verification, which is what
+Section~\ref{sec:stage_game} constructs.
+
+\subsubsection{Players, strategies, and the inspector's commitment}
+\label{sec:stage_game}
+
+A diagnosis--repair stage game $G$ is instantiated whenever $\Delta$ routes
+from $q_{\textsc{se}}$ to $q_{\textsc{dg}}$ (the solver has failed and the
+budget is not exhausted). The game is played on the current blackboard
+$S_t\in\Scal$ and has the following structure.
+
+\paragraph{Players.} An \emph{inspector} $I$ (the leader) and a set of
+\emph{inspectees} (the followers). The inspector is the DiagnosisAgent $a_5$,
+operating as an independent examiner. The inspectees are the correctable
+agents $a_1,a_2,a_3$; in a given probe the active inspectee is the agent
+$a_{\hat{\ell}}$ at the currently probed layer $\hat{\ell}$.
+
+\paragraph{The inspector's strategy is a committed policy.} The inspector's
+strategy is an \emph{inspection policy} $\sigma=(\omega,\,\nu)$ fixed
+\emph{before} any inspectee responds and observable to all: (i) a probing
+order $\omega$ over the layers, and (ii) a verification rule $\nu$ that
+resolves every inspectee response by \emph{executed refutation} --- a real
+re-solve under the strict-success rule --- rather than by accepting the
+inspectee's word. Committing to $\nu$ is the crux: it converts the inspectee's
+reply from cheap talk into a claim that will be mechanically checked.
+
+\paragraph{The inspectee's strategy is a response to being probed.} When probed
+at layer $\ell$, the inspectee chooses a response
+$r\in\{\textsc{comply},\textsc{deflect}\}$. To \textsc{comply} is to accept
+responsibility and emit a \emph{concrete repair} $h\in\mathcal{H}_{\ell}$ --- a
+specific fix with a justification tying it to the evidence --- which the
+inspector will execute. To \textsc{deflect} is to rebut the accusation and
+assert that the root cause lies at another (upstream) layer, a claim the
+inspector will likewise test.
+
+\paragraph{Commitment order $=$ causal order.} The probing order $\omega$
+follows the causal order $a_1\tri a_2\tri a_3$: the inspector probes the
+seeded suspect layer first and, when a layer is cleared, descends to the next
+causal layer. Play within a probe is strictly sequential --- the inspector's
+policy $\sigma$ is committed and observable, then the inspectee best-responds
+--- which is what makes $G$ a Stackelberg game. Aligning the probing order
+with the causal order is the central design choice: it makes the first move
+causally meaningful (an upstream probe is settled by re-solve before the
+inspector can be blamed for descending too far) rather than a coin flip among
+observationally equivalent layers.
+
+\subsubsection{Inspectee response and verification by executed refutation}
+\label{sec:leader_follower}
+
+\paragraph{Inspectee response.} Given the evidence $\Ecal$ assembled from the
+blackboard --- stack trace, solver log, the code segment implicated by the
+traceback, the model definition, and the relevant data structures, together
+with the input--output pairs $\{(x^{(i)},y^{(i)})\}$ of the pipeline agents ---
+the inspectee at the probed layer $\hat{\ell}$ chooses its response
+\begin{equation}\label{eq:inspectee}
+(r,\,h)\;\gets\; a_{\hat{\ell}}^{-}\!\bigl(x^{(\hat{\ell})},\,y^{(\hat{\ell})},\,\Ecal\bigr),
+\qquad r\in\{\textsc{comply},\textsc{deflect}\},
+\end{equation}
+where, if $r=\textsc{comply}$, $h\in\mathcal{H}_{\hat{\ell}}$ is a concrete
+repair with a justification $\rho$, and if $r=\textsc{deflect}$, $h$ carries a
+rebuttal pointing at an upstream layer. Complying is a bet that ``the failure
+is caused by my layer, and here is precisely how I fix it''; deflecting is the
+claim ``my layer is well-formed given its inputs; the cause is upstream.''
+
+\paragraph{Verification by executed refutation.} Under its committed rule
+$\nu$, the inspector does not take the response on trust. It selects and
+\emph{executes} the cheapest decisive test of the response,
+\begin{equation}\label{eq:follower}
+\tau^{\star} \;\gets\; \arg\min_{\tau\in\mathcal{T}(r,h)}\,
+      \mathrm{cost}(\tau)\quad\text{s.t.\ $\tau$ is decisive,}
+\end{equation}
+--- a re-solve after applying $h$ when $r=\textsc{comply}$, or a targeted
+re-solve isolating the named upstream layer when $r=\textsc{deflect}$ --- and
+issues a verdict
+\begin{equation}\label{eq:verdict}
+v \;=\; \bigl(\,\beta,\;\hat{\ell}^{\star}\,\bigr)
+\;=\; I\!\bigl(r,\,h,\,\tau^{\star},\,S_t\bigr),
+\end{equation}
+where $\beta\in\{0,1\}$ records whether the probed layer is \emph{cleared}
+($\beta{=}1$: a compliance whose re-solve still fails --- a false confession
+--- or a deflection the inspector upholds) or \emph{confirmed}
+($\beta{=}0$: a compliance whose re-solve passes the strict-success rule),
+and $\hat{\ell}^{\star}$ is the inspector's updated estimate of the true
+root-cause layer. Executing the test rather than merely ``reasoning about''
+it is what supplies a \emph{grounded} signal: a re-solve either meets the
+strict-success rule or it does not, so neither a false confession nor a
+dishonest deflection survives verification.
+
+\paragraph{Routing from the verdict.} The FSM transition $\delta^{-}$ is a
+function of the executed verdict, not of a confidence score:
+\begin{itemize}
+    \item if $\beta=0$ (confirmed), the repair $\tilde{y}$ in $h$ is committed
+    and $\Delta$ resumes the pipeline \emph{downstream} of $a_{\hat{\ell}}$;
+    \item if $\beta=1$ (cleared), $\Delta$ re-enters diagnosis and the
+    inspector probes the next causal layer, until a confirmation or budget
+    exhaustion ($K$).
+\end{itemize}
+This contrasts with the baseline, which routes on a single LLM confidence and
+re-accuses without an executed refutation.
+
+\subsubsection{Payoff structure and induced truthful attribution}
+\label{sec:payoff}
+
+Because LLMs admit no stable, observable utility function, we do \emph{not}
+claim that an LLM ``feels'' a payoff. Instead we define numeric payoffs that
+the orchestrator optimizes and treat each LLM call as a \emph{black-box
+best-responder}, analyzing the resulting trajectory. The inspector's payoff
+rewards correct localization at low cost,
+\begin{equation}\label{eq:ui}
+u_{I}(\sigma) = \mathbf{1}\!\bigl[\,\hat{\ell}^{\star}=\ell^{\star}\bigr]
+                 \;-\;\lambda_{I}\,\mathrm{cost}(\sigma),
+\end{equation}
+while the inspectee at layer $\ell$, responding $r$, has the misaligned payoff
+\begin{equation}\label{eq:ue}
+u_{\ell}(r;\sigma) =
+   b\cdot\mathbf{1}\!\bigl[\,r{=}\textsc{comply}\wedge\text{re-solve passes}\bigr]
+   \;-\;c_{\mathrm{rep}}\,\mathbf{1}\!\bigl[\,r{=}\textsc{comply}\bigr]
+   \;-\;c_{\mathrm{blame}}\,\mathbf{1}\!\bigl[\,\text{held responsible}\wedge \ell\neq\ell^{\star}\bigr],
+\end{equation}
+where $b>0$ is the reward for actually resolving the failure,
+$c_{\mathrm{rep}}>0$ the cost/risk of a repair, $c_{\mathrm{blame}}>0$ the
+penalty for carrying blame that does not fix the solve, $\mathrm{cost}(\cdot)$
+is token/round cost, and $\lambda_{I}\ge 0$ trades accuracy against budget.
+Eq.~\eqref{eq:ue} makes the conflict explicit: the inspectee is rewarded only
+when it is \emph{both} at fault \emph{and} repairs, and is otherwise penalized
+for complying, so its interests diverge from the inspector's whenever
+$\ell\neq\ell^{\star}$. The ground-truth label $\ell^{\star}$ enters only the
+\emph{evaluation} of payoffs, never any agent's prompt, so the game remains
+well-defined at inference time; equilibria are properties of the
+orchestrator-defined game, while each LLM is a sampled best-responder within
+it.
+
+\paragraph{Commitment induces truthful attribution (the inspection-game
+deterrence effect).} The value of the inspector's first move is that its
+committed executed-refutation rule $\nu$ reshapes the inspectee's best
+response. Consider the two cases.
+\emph{(i) Innocent inspectee} ($\ell\neq\ell^{\star}$): by strict layered
+dependence a local repair cannot make the solve pass, so \textsc{comply}
+yields $-c_{\mathrm{rep}}$ (no reward $b$, and it will still be seen not to
+fix the solve), whereas a truthful \textsc{deflect} avoids the repair cost and
+is upheld by the inspector's targeted re-solve. Deflection strictly dominates
+--- and, crucially, only a \emph{truthful} deflection survives $\nu$, since a
+dishonest one is refuted by re-solve. \emph{(ii) Guilty inspectee}
+($\ell=\ell^{\star}$): deflecting cannot succeed, because every upstream probe
+the inspector runs under causal order passes verification and the probe
+returns to $\ell^{\star}$ having only consumed rounds; complying and repairing
+yields $b-c_{\mathrm{rep}}$. Whenever $b>c_{\mathrm{rep}}$ (a resolved solve is
+worth more than the repair), \textsc{comply} is the guilty layer's best
+response. Hence the committed policy makes \emph{truthful attribution} --- the
+guilty complies, the innocent deflects honestly --- the induced best-response
+profile. This is the classical inspection-game deterrence result: it is the
+inspector's \emph{commitment}, not any assumed benevolence of the agents, that
+aligns individually optimal responses with correct root-cause localization.
+Without commitment (the baseline's cheap-talk self-verification), deflection
+is free and truthful attribution is not incentive-compatible.
+
+\subsubsection{A proposition on causal-order inspection}
+\label{sec:proposition}
+
+\begin{propbox}[title={Proposition 1 (Causal-order inspection lowers mis-attribution)}]
+Under strict layered error dependence and an inspector committed to a
+causal-order, executed-refutation policy, each probe is \emph{decisive}: it
+either confirms the probed layer (a compliance whose re-solve passes) or
+clears it (a false confession refuted, or a truthful deflection upheld).
+Consequently, causal-order inspection strictly reduces the per-round set of
+viable root-cause hypotheses relative to simultaneous (single-judge) play, and
+never eliminates the true layer. Formally, let $V_{\text{sim}}$ and
+$V_{\text{ins}}$ be the sets of root-cause layers that remain consistent with
+the failure observation after one round of, respectively, simultaneous
+diagnosis and causal-order inspection; then $V_{\text{ins}}\subseteq
+V_{\text{sim}}$ with $\ell^{\star}\in V_{\text{ins}}$, and the inclusion is
+strict whenever a probed layer $\ell<\ell^{\star}$ is cleared.
+\end{propbox}
+
+\emph{Sketch.} Under simultaneous play the diagnostician selects a hypothesis
+without observing any committed, verified response, so every layer consistent
+with the downstream observation is a candidate; the viable set is the full
+observationally-equivalent upstream cone. Under committed inspection the
+inspectee at the probed layer $\ell$ must respond and the response is settled
+by executed refutation. If $\ell<\ell^{\star}$, no local repair can pass the
+re-solve (strict layered dependence), so a compliance is refuted and a
+deflection upheld --- either way $\ell$ is cleared and removed from the viable
+set. If $\ell=\ell^{\star}$, the incentive analysis of
+Section~\ref{sec:payoff} makes compliance the best response and the re-solve
+passes, so the true layer is confirmed and never wrongly eliminated. Causal
+ordering guarantees layers are cleared from the top of the upstream cone
+downward, so each cleared probe strictly shrinks $V$ while simultaneous play
+can only guess within it. A formal bound on the mis-attribution rate and its
+empirical validation --- centered on the commitment-order ablation --- are
+deferred to the experimental section. $\square$
+
+%------------------------------------------------------------------------------
+\subsection{The Diagnosis--Repair Algorithm}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:fsm_stackelberg} unifies the architecture and the repair
+game. The FSM drives the forward pass together with the incremental-knowledge
+loop; on failure it enters the inspection stage, where the inspector commits
+to a causal-order, executed-refutation policy and probes layers in causal
+order --- each probe eliciting an inspectee response and settling it by
+re-solve --- until a layer is confirmed or the budget $K$ is spent. The
+transition map $\Delta$ is exactly the five routing functions of
+Section~\ref{sec:architecture}, with the return edge out of the backward state
+set by the executed verdict $v$.
+
+\begin{algorithm}[htbp]
+\caption{FSM-Stackelberg diagnosis--repair (inspection game)}\label{alg:fsm_stackelberg}
+\begin{algorithmic}[1]
+\Require Problem $\mathcal{P}$; agents $\{a_1,a_2,a_3,a_4\}$; inspector role $a_5$; FSM $M=(\Qcal,q_0,\Delta,\Scal,K)$; causal order $a_1\tri a_2\tri a_3$
+\Ensure Result $Y\in\{\text{success},\text{failure}\}$
+\State $S\gets\textsc{Preprocess}(\mathcal{P})$;\quad $k\gets 0$;\quad $Y\gets\bot$
+\While{$Y=\bot$} \Comment{drive the FSM}
+    \State \textit{\textbf{// Forward chain: $q_{\textsc{de}}\!\to\!q_{\textsc{me}}\!\to\!\{q_{\textsc{kl}}\}\!\to\!q_{\textsc{pd}}\!\to\!q_{\textsc{se}}$}}
+    \For{$i=1$ \textbf{to} $4$}
+        \State $y^{(i)}\gets a_i^{+}(S)$;\quad update $S$;\quad advance $\Delta$
+    \EndFor
+    \If{$y^{(4)}.\textsc{status}=\textsc{Optimal}$}
+        \State $Y\gets\text{success}$
+    \ElsIf{$k\ge K$}
+        \State $Y\gets\text{failure}$
+    \Else
+        \State \textit{\textbf{// Inspection stage at $q_{\textsc{dg}}$: inspector commits $\sigma=$ (causal order, executed refutation)}}
+        \State $\hat{\ell}\gets\textsc{Prior}(y^{(4)}.\textsc{status})$ \Comment{seed probe order}
+        \Repeat
+            \State $(r,h)\gets a_{\hat{\ell}}^{-}(S)$ \Comment{inspectee best-responds: comply-repair or deflect}
+            \State $\tau^{\star}\gets\arg\min_{\tau\in\mathcal{T}(r,h)}\mathrm{cost}(\tau)$ s.t.\ decisive
+            \State $(\beta,\hat{\ell}^{\star})\gets a_{5}\textsc{.verify}(r,h,\tau^{\star},S)$ \Comment{executed refutation (re-solve)}
+            \State $k\gets k+1$
+            \If{$\beta=0$} \Comment{layer confirmed} commit $\tilde{y}\in h$;\quad resume $\Delta$ downstream \EndIf
+            \State $\hat{\ell}\gets\textsc{NextCausalLayer}(\hat{\ell})$ \Comment{layer cleared: descend causal order}
+        \Until{$\beta=0\;\lor\;k\ge K$}
+    \EndIf
+\EndWhile
+\State \Return $Y$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Relation to the baseline.} The forward chain, the
+incremental-knowledge loop, the blackboard, and the retry budget are inherited
+unchanged. The replacement is localized: the single-judge diagnosis call and
+its confidence-routed return are substituted by the committed inspection stage,
+and the return edge of $\delta^{-}$ is driven by the executed verdict $\beta$
+rather than by a confidence. This locality is deliberate --- it isolates the
+contribution (the inspection game) from the scaffolding (the FSM) and makes the
+commitment-order ablation, which randomizes the order in which layers are
+probed, the decisive experiment: if a permuted order performs as well as
+causal order, the thesis is falsified.
+
+%==============================================================================
+\section{Experiments}
+\label{sec:experiments}
+% TODO: primary metric root-cause attribution accuracy (solver-status x
+% origin-agent), SSR-vs-budget, token cost; baselines sequential, adversarial
+% (single-judge), debate, Reflexion; ablation = commitment order.
+[Placeholder] The experimental campaign evaluates root-cause attribution
+accuracy against the single-judge adversarial baseline and the sequential
+fallback, against external multi-agent debate~\citep{du2023improving} and
+Reflexion-style self-critique~\citep{shinn2023reflexion}, with the
+commitment-order ablation (causal vs.\ permuted probing order) as the decisive
+test of Proposition~1. Inspection-specific diagnostics --- the rate at which
+inspectees deflect, the fraction of deflections and confessions overturned by
+executed refutation, and the induced truthful-attribution rate as a function
+of the budget $K$ --- test whether the committed policy delivers the predicted
+deterrence effect (Section~\ref{sec:payoff}) rather than merely adding LLM
+calls.
+
+%==============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+[Placeholder] To follow the experiments.
+
+%==============================================================================
+\begin{thebibliography}{9}
+\bibitem[Wu et al.(2024)]{wu2024autogen} Q.~Wu et al. AutoGen: Enabling next-gen LLM applications via multi-agent conversation. In \emph{COLM}, 2024.
+\bibitem[Xiao et al.(2023)]{xiao2023coe} Y.~Xiao et al. Chain-of-experts: When LLMs meet complex operations research. \emph{arXiv preprint}, 2023.
+\bibitem[Du et al.(2023)]{du2023improving} Y.~Du et al. Improving factuality and reasoning in language models through multiagent debate. \emph{arXiv:2305.14325}, 2023.
+\bibitem[Shinn et al.(2023)]{shinn2023reflexion} N.~Shinn et al. Reflexion: Language agents with verbal reinforcement learning. In \emph{NeurIPS}, 2023.
+\bibitem[von Stackelberg(1952)]{stackelberg1952} H.~von~Stackelberg. \emph{The Theory of the Market Economy}. Oxford University Press, 1952.
+\bibitem[Avenhaus et al.(2002)]{avenhaus2002inspection} R.~Avenhaus, B.~von~Stengel, S.~Zamir. Inspection games. In R.~J.~Aumann and S.~Hart (eds.), \emph{Handbook of Game Theory with Economic Applications}, vol.~3, ch.~51, pp.~1947--1987. Elsevier, 2002.
+\bibitem[Maschler(1966)]{maschler1966inspection} M.~Maschler. A price leadership method for solving the inspector's non-constant-sum game. \emph{Naval Research Logistics Quarterly}, 13(1):11--33, 1966.
+\bibitem[Littman(1994)]{littman1994markov} M.~L.~Littman. Markov games as a framework for multi-agent reinforcement learning. In \emph{ICML}, 1994.
+\end{thebibliography}
+
+\end{document}
