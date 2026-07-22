@@ -37,7 +37,13 @@ class AgentState(TypedDict, total=False):
     error_agent: Optional[str]  # DiagnosisAgent 指控的责任 Agent，待 backward_step 验证
     retry_count: int
     max_retries: int
-    diagnosis_mode: str  # "adversarial" | "sequential"
+    diagnosis_mode: str  # "stackelberg" | "adversarial" | "sequential"
+    probe_order: str  # "causal" | "reverse" | "random" (Stackelberg commitment-order ablation)
+
+    # Stackelberg inspection-game state (DiagnosisAgent = inspector)
+    inspection_policy: Optional[Dict[str, Any]]  # committed σ = (ω, ν)
+    probe_queue: List[str]  # committed probing order for this failure episode
+    cleared_layers: List[str]  # layers cleared by executed refutation / upheld deflection
 
     # Backward step results
     error_resolved: Optional[bool]  # Whether backward_step resolved the error

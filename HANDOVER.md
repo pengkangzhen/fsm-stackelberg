@@ -9,7 +9,7 @@
 
 - **What this project is.** A new paper whose contribution is a **Stackelberg leader-follower diagnosis-repair mechanism defined on a state machine**, for an LLM multi-agent optimization pipeline, validated on the **Empty Container Repositioning (ECR)** problem. The two pillars are in the name: **FSM** (the LangGraph state machine = the stage-game apparatus) + **Stackelberg** (the leader-follower game).
 - **Where it came from.** Forked from `mako` @ `fa2cbc8` on **2026-06-30**; package chain renamed `mako_langchain` → `maestro` → `fsm_stackelberg`. It is an **independent codebase** — do not modify `mako` for this paper, do not sync back.
-- **Current state.** Scaffold + venv + import verification done. The workflow runs as-is (it is mako's pipeline). **The Stackelberg redesign is NOT yet implemented** — diagnosis still equals mako's single-judge `_adversarial_diagnosis`. Everything from §4 onward is the open work.
+- **Current state.** Phase 0 (mako smoke test) **skipped** — mako already validated end-to-end in the parent project. **Phase 1 PoC is in-tree:** default `--diagnosis_mode stackelberg` commits an inspection policy σ=(ω, ν) and probes layers in causal order; `--diagnosis_mode adversarial|sequential` remain as internal baselines. Open work: payoff logging (Phase 2), external baselines + order ablation runs (Phase 3), attribution experiments (Phase 4), proposition validation (Phase 5).
 
 ---
 
@@ -71,14 +71,15 @@ Entry: `data_engineer`. Termination: `END`. Retry budget `max_retries` is the FS
 
 > Note: `create_mako_graph()` / `run_mako()` retain mako-era **function names** (the rename only touched the package token). Cosmetic rename is a TODO — low priority, but do it before the codebase grows.
 
-### 3.2 The diagnosis logic you will replace
+### 3.2 The diagnosis logic
 
 - `src/fsm_stackelberg/agents/diagnosis_agent.py`
-  - `diagnosis_agent_node` (`:223`) — the FSM node; dispatches by `diagnosis_mode`.
-  - `_adversarial_diagnosis` (`:340`) — **the single-judge LLM call**. This is the heart of what changes.
-  - `get_candidate_agents` (`:182`) — the static heuristic prior over candidates.
-  - `_build_diagnosis_context` (`:466`) — assembles `error_key_analysis`, `error_location` (line-traceback parse), `agent_outputs`, `data_access_guide`. **Reuse this** — it's good signal extraction.
-- `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` — each has a `*_backward_step` node; `error_resolved` + `backward_reason` are the follower-side signals.
+  - `diagnosis_agent_node` — the FSM node; dispatches by `diagnosis_mode`.
+  - `_stackelberg_diagnosis` — **default**: inspector commits σ and selects next uncleared layer (no single-judge LLM).
+  - `_adversarial_diagnosis` — single-judge LLM baseline (kept for comparison).
+  - `get_candidate_agents` / `build_probe_order` — Prior(status) seed + committed ω.
+  - `_build_diagnosis_context` — signal extraction (still used by adversarial baseline).
+- `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` — each has a `*_backward_step` node; `error_resolved` + `backward_reason` are the inspectee signals (comply vs deflect).
 
 ### 3.3 Ground truth & data
 
@@ -89,24 +90,18 @@ Entry: `data_engineer`. Termination: `END`. Retry budget `max_retries` is the FS
 
 ## 4. The build plan
 
-### Phase 0 — Smoke test (do this first, ~30 min)
-Confirm the fork runs end-to-end before changing anything:
-```bash
-uv run python -m fsm_stackelberg.main \
-  --algorithm mako --dataset prob_ecr_shipper_consignee \
-  --prob_name instances/high_demand_5-3_5 \
-  --provider DeepSeek --model deepseek-chat \
-  --diagnosis_mode adversarial --knowledge enable --max_retries 3
-```
-Expected: a successful solve recovering ~¥14.39M (gap ≤ 0.1%). If this fails, fix env/data before touching the mechanism.
+### Phase 0 — Smoke test — SKIPPED
+Mako already validated end-to-end in the parent project; do not re-run a mako-parity smoke test here. Proceed directly with the Stackelberg upgrade.
 
-### Phase 1 — Minimal viable Stackelberg (the PoC, ~1–2 weeks)
-Replace `_adversarial_diagnosis` with a **two-phase** node, keeping the existing routing intact:
-1. **(L) Leader commit:** the upstream-of-the-suspected-layer agent emits a *fix hypothesis* + a self-justification.
-2. **(F) Follower best-response:** a verifier agent produces the *cheapest test* that would refute the hypothesis, executes it (deterministic check or a targeted re-solve), and returns `{refuted, true_root_cause_layer}`.
-3. Route from the follower's verdict (not from a single confidence score).
+### Phase 1 — Minimal viable Stackelberg (PoC) — DONE (skeleton)
+Implemented as an **inspection game** matching the manuscript (not the older HANDOVER leader=upstream sketch):
+1. **Inspector (DiagnosisAgent) commits** σ=(ω, ν): probing order ω seeded by `Prior(status)`, verification rule ν = executed refutation (re-solve via resume→solver).
+2. **Inspectee best-responds** in `*_backward_step`: comply-repair (`error_resolved=True`) or deflect (`False`).
+3. **Route from the verdict:** comply → resume downstream (re-solve is ν); deflect / refuted comply → clear layer, `NextCausalLayer`.
 
-Keep `route_after_diagnosis` / `route_after_backward` as-is initially; only swap the node internals. Measure: does attribution accuracy beat the heuristic prior on the same failing runs?
+CLI: `--diagnosis_mode stackelberg` (default), `--probe_order causal|reverse|random` (ablation hook). Baselines: `adversarial`, `sequential`.
+
+Still thin vs. the full paper claim: no numeric payoff logging yet; deflection verification is “clear + descend” rather than a separate targeted isolating re-solve.
 
 ### Phase 2 — Payoff definition (make the game real)
 Ground utility in signals already on `AgentState`:
@@ -174,7 +169,7 @@ Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg
 |---|---|
 | FSM construction | `src/fsm_stackelberg/graph/workflow.py` (`create_mako_graph` :194) |
 | Shared state | `src/fsm_stackelberg/graph/state.py` (`AgentState`) |
-| **Diagnosis (replace this)** | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`_adversarial_diagnosis` :340, `get_candidate_agents` :182) |
+| **Diagnosis (Stackelberg inspector)** | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`_stackelberg_diagnosis`, `_adversarial_diagnosis`, `build_probe_order`) |
 | Follower-side repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` (`*_backward_step`) |
 | CLI entry | `src/fsm_stackelberg/main.py` |
 | Ground truth | `src/generator/ground_truth_solver.py` |

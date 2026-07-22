@@ -244,9 +244,13 @@ def main():
     parser.add_argument("--provider", type=str, default=DEFAULT_PROVIDER, help="LLM provider")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="LLM model to use")
     parser.add_argument("--max_retries", type=int, default=3, help="Maximum backtrack retries")
-    parser.add_argument("--diagnosis_mode", type=str, default="adversarial",
-                        choices=["adversarial", "sequential"],
-                        help="Diagnosis mode: adversarial (diagnose, accuse, verify) or sequential (reverse-order self-check)")
+    parser.add_argument("--diagnosis_mode", type=str, default="stackelberg",
+                        choices=["stackelberg", "adversarial", "sequential"],
+                        help="Diagnosis mode: stackelberg (inspection game, default), "
+                             "adversarial (single-judge baseline), or sequential (reverse-order baseline)")
+    parser.add_argument("--probe_order", type=str, default="causal",
+                        choices=["causal", "reverse", "random"],
+                        help="Stackelberg commitment-order ablation: causal (default), reverse, or random")
     parser.add_argument("--knowledge", type=str, default="enable",
                         choices=["enable", "disable"],
                         help="Knowledge profile: enable (full) or disable (none)")
@@ -391,7 +395,8 @@ def main():
         return result
 
     else:  # mako
-        logger.info(f"Starting MAKO LangChain workflow (provider={args.provider}, model={args.model}, diagnosis_mode={args.diagnosis_mode})...")
+        logger.info(f"Starting FSM-Stackelberg workflow (provider={args.provider}, model={args.model}, "
+                    f"diagnosis_mode={args.diagnosis_mode}, probe_order={args.probe_order})...")
         workflow_started_at = time.time()
         try:
             final_state = run_mako(
@@ -402,6 +407,7 @@ def main():
                 model=args.model,
                 max_retries=args.max_retries,
                 diagnosis_mode=args.diagnosis_mode,
+                probe_order=args.probe_order,
                 expected_value=problem.get("expected_value"),
                 knowledge_mode=args.knowledge,
             )

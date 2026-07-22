@@ -73,8 +73,8 @@ def should_diagnose(state: AgentState) -> Literal["success", "diagnose"]:
 def route_after_diagnosis(state: AgentState) -> str:
     """Route after DiagnosisAgent based on diagnosis_mode.
 
-    Adversarial mode: Route to the accused agent's backward_step
-    Sequential mode: Start sequential backward_step chain
+    Stackelberg / adversarial: Route to the probed (accused) agent's backward_step
+    Sequential: Start sequential backward_step chain from python_developer
 
     Args:
         state: Current workflow state with error_agent field
@@ -82,7 +82,7 @@ def route_after_diagnosis(state: AgentState) -> str:
     Returns:
         Name of the next node
     """
-    diagnosis_mode = state.get("diagnosis_mode", "adversarial")
+    diagnosis_mode = state.get("diagnosis_mode", "stackelberg")
     error_agent = state.get("error_agent")
     retry_count = state.get("retry_count", 0)
     max_retries = state.get("max_retries", 3)
@@ -91,8 +91,12 @@ def route_after_diagnosis(state: AgentState) -> str:
         logger.warning(f"Max retries exceeded, ending workflow")
         return "end"
 
-    # For adversarial mode, route to the accused agent's backward_step
-    if diagnosis_mode == "adversarial":
+    if error_agent is None:
+        logger.warning("No error_agent from diagnosis, ending workflow")
+        return "end"
+
+    # Stackelberg inspection and adversarial baseline: probe/accuse one agent
+    if diagnosis_mode in ("stackelberg", "adversarial"):
         if error_agent == "data_engineer":
             return "data_engineer_backward"
         elif error_agent == "model_expert":
@@ -100,17 +104,18 @@ def route_after_diagnosis(state: AgentState) -> str:
         elif error_agent == "python_developer":
             return "python_developer_backward"
 
-    # For sequential mode, start from python_developer (reverse order)
-    # Sequential mode handles its own routing within diagnosis_agent
-    # Fall through to backward step chain
+    # Sequential mode: start from python_developer (reverse order)
     return "python_developer_backward"
 
 
 def route_after_backward(state: AgentState) -> str:
     """Route after backward_step execution.
 
-    If error_resolved, continue downstream from the corrected agent.
-    If not resolved, check retry limit and re-diagnose.
+    If error_resolved (inspectee complied), resume downstream — the subsequent
+    solver run is the executed refutation of the repair.
+    If not resolved (inspectee deflected):
+      - stackelberg / adversarial: re-enter diagnosis (next causal probe / re-accuse)
+      - sequential: try the next upstream agent in the reverse chain
 
     Args:
         state: Current workflow state with error_resolved field
@@ -120,7 +125,7 @@ def route_after_backward(state: AgentState) -> str:
     """
     error_resolved = state.get("error_resolved", False)
     error_agent = state.get("error_agent", "")
-    diagnosis_mode = state.get("diagnosis_mode", "adversarial")
+    diagnosis_mode = state.get("diagnosis_mode", "stackelberg")
     retry_count = state.get("retry_count", 0)
     max_retries = state.get("max_retries", 3)
 
@@ -142,16 +147,15 @@ def route_after_backward(state: AgentState) -> str:
         else:
             return "solver_executor"
 
-    # Error not resolved
-    if diagnosis_mode == "adversarial":
-        # Adversarial mode: re-diagnose to accuse another agent
+    # Error not resolved (deflection / rebuttal)
+    if diagnosis_mode in ("stackelberg", "adversarial"):
+        # Re-enter diagnosis: Stackelberg picks NextCausalLayer; adversarial re-accuses
         if retry_count >= max_retries:
             logger.warning("Max retries exceeded after failed backward step")
             return "end"
         return "diagnosis_agent"
 
     # Sequential mode: try next agent in chain
-    # This is handled by the sequential backward_step nodes
     if error_agent == "python_developer":
         return "model_expert_backward"
     elif error_agent == "model_expert":
@@ -321,11 +325,12 @@ def run_mako(
     provider: str = DEFAULT_PROVIDER,
     model: str = DEFAULT_MODEL,
     max_retries: int = 3,
-    diagnosis_mode: str = "adversarial",
+    diagnosis_mode: str = "stackelberg",
+    probe_order: str = "causal",
     expected_value: float = None,
     knowledge_mode: str = "enable",
 ) -> dict:
-    """Run the MAKO optimization workflow.
+    """Run the FSM-Stackelberg optimization workflow.
 
     Args:
         problem_description: Natural language problem description
@@ -334,7 +339,10 @@ def run_mako(
         provider: LLM provider (DeepSeek, OpenAI, etc.)
         model: LLM model to use
         max_retries: Maximum backtrack retries
-        diagnosis_mode: "adversarial" (LLM accusation + agent verification) or "sequential" (sequential asking)
+        diagnosis_mode: "stackelberg" (inspection game), "adversarial"
+            (single-judge baseline), or "sequential" (reverse-order baseline)
+        probe_order: Commitment-order ablation for stackelberg mode:
+            "causal" (default), "reverse", or "random"
 
     Returns:
         Final state with results
@@ -391,6 +399,10 @@ def run_mako(
         "retry_count": 0,
         "max_retries": max_retries,
         "diagnosis_mode": diagnosis_mode,
+        "probe_order": probe_order,
+        "inspection_policy": None,
+        "probe_queue": [],
+        "cleared_layers": [],
         "backtrack_history": [],
         # Metrics initialization
         "step_metrics": [],

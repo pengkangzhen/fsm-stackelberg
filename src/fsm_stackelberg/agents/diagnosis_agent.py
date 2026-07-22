@@ -1,16 +1,18 @@
 """DiagnosisAgent - LangChain implementation.
 
-Diagnoses execution failures and accuses the most likely responsible agent.
-Supports two modes:
-- adversarial: Use LLM to analyze error, accuse one agent, then let that agent verify the claim
-- sequential: Sequential backward_step chain handled by workflow routing
+Diagnoses execution failures and drives repair. Supports three modes:
+- stackelberg: Inspection game — DiagnosisAgent commits a causal-order probing
+  policy with executed refutation; accused agents are inspectees (default).
+- adversarial: Single-judge LLM accusation + accused-agent self-check (baseline).
+- sequential: Reverse-order backward_step chain handled by workflow routing (baseline).
 """
 
 import json
 import logging
+import random
 import re
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -179,6 +181,16 @@ def get_data_keys_summary(sample: Dict) -> Dict[str, Any]:
     return summary
 
 
+# Causal layering: data ▹ model ▹ code (manuscript §stackelberg)
+CAUSAL_LAYERS: Tuple[str, ...] = (
+    "data_engineer",
+    "model_expert",
+    "python_developer",
+)
+
+VERIFICATION_RULE = "executed_refutation"  # re-solve under strict-success rule
+
+
 def get_candidate_agents(gurobi_status: str = "") -> List[str]:
     """根据求解器状态确定候选 Agent（按先验可能性排序）.
 
@@ -199,6 +211,37 @@ def get_candidate_agents(gurobi_status: str = "") -> List[str]:
         return ["model_expert", "python_developer", "data_engineer"]
     # INFEASIBLE / UNBOUNDED / ERROR
     return ["model_expert", "python_developer", "data_engineer"]
+
+
+def build_probe_order(gurobi_status: str = "", probe_order: str = "causal") -> List[str]:
+    """Commit the inspector's probing order ω.
+
+    Causal order is the contribution; reverse/random exist for the
+    commitment-order ablation. Prior(status) seeds the start layer; the
+    remainder follows ω cyclically so every layer remains reachable.
+    """
+    if probe_order == "reverse":
+        omega = list(reversed(CAUSAL_LAYERS))
+    elif probe_order == "random":
+        omega = list(CAUSAL_LAYERS)
+        random.shuffle(omega)
+    else:
+        omega = list(CAUSAL_LAYERS)
+
+    seed = get_candidate_agents(gurobi_status)[0]
+    if seed in omega:
+        i = omega.index(seed)
+        return omega[i:] + omega[:i]
+    return omega
+
+
+def next_unclear_layer(probe_queue: List[str], cleared_layers: List[str]) -> Optional[str]:
+    """NextCausalLayer: first layer in the committed queue not yet cleared."""
+    cleared = set(cleared_layers or [])
+    for layer in probe_queue:
+        if layer not in cleared:
+            return layer
+    return None
 
 
 def create_diagnosis_agent(provider: str = DEFAULT_PROVIDER, model: str = DEFAULT_MODEL):
@@ -225,9 +268,10 @@ def diagnosis_agent_node(state: Dict) -> Dict:
 
     Analyzes execution errors and determines which agent is responsible.
 
-    For adversarial mode: Uses LLM to analyze error and accuse the most likely responsible agent.
-    For Sequential mode: Sets error_agent to python_developer (first in chain),
-                        and the workflow will call each agent's backward_step in order.
+    For stackelberg mode: Inspector commits σ=(ω, ν) and probes the next
+                        uncleared causal layer (no single-judge LLM call).
+    For adversarial mode: Uses LLM to accuse the most likely responsible agent.
+    For sequential mode: Sets error_agent to python_developer (first in chain).
 
     Args:
         state: The current graph state containing error_info and agent outputs
@@ -249,7 +293,7 @@ def diagnosis_agent_node(state: Dict) -> Dict:
         }
 
     # 获取诊断模式
-    diagnosis_mode = state.get("diagnosis_mode", "adversarial")
+    diagnosis_mode = state.get("diagnosis_mode", "stackelberg")
     logger.info(f"DiagnosisAgent: mode={diagnosis_mode}")
 
     # 获取错误上下文
@@ -259,16 +303,32 @@ def diagnosis_agent_node(state: Dict) -> Dict:
 
     logger.info(f"DiagnosisAgent: error_category={error_category}, gurobi_status={gurobi_status}")
 
+    # Stackelberg inspection fields (may be updated by _stackelberg_diagnosis)
+    inspection_policy = state.get("inspection_policy")
+    probe_queue = list(state.get("probe_queue") or [])
+    cleared_layers = list(state.get("cleared_layers") or [])
+
     # 根据模式选择诊断方式
     if diagnosis_mode == "sequential":
         # Sequential mode: Start from python_developer, workflow will handle the chain
-        # The workflow routes to python_developer_backward, then model_expert_backward, etc.
         error_agent = "python_developer"
-        confidence = 0.0  # Not determined by LLM
+        confidence = 0.0
         reason = "Sequential diagnosis: starting from python_developer"
         metrics = {"total_tokens": 0, "duration_s": 0.0}
+    elif diagnosis_mode == "stackelberg":
+        (
+            error_agent,
+            confidence,
+            reason,
+            metrics,
+            inspection_policy,
+            probe_queue,
+            cleared_layers,
+        ) = _stackelberg_diagnosis(
+            state, error_category, gurobi_status, error_info
+        )
     else:
-        # Adversarial mode: Use LLM to accuse the most likely error source
+        # Adversarial baseline: single-judge LLM accusation
         error_agent, confidence, reason, metrics = _adversarial_diagnosis(
             state, error_category, gurobi_status, error_info
         )
@@ -287,6 +347,9 @@ def diagnosis_agent_node(state: Dict) -> Dict:
         "error_agent": error_agent,
         "confidence": confidence,
         "reason": reason,
+        "inspection_policy": inspection_policy,
+        "probe_queue": probe_queue,
+        "cleared_layers": cleared_layers,
     })
 
     # Update metrics
@@ -334,7 +397,120 @@ def diagnosis_agent_node(state: Dict) -> Dict:
         "agent_metrics": agent_metrics,
         "total_tokens": state.get("total_tokens", 0) + metrics["total_tokens"],
         "total_duration_s": state.get("total_duration_s", 0.0) + metrics["duration_s"],
+        "inspection_policy": inspection_policy,
+        "probe_queue": probe_queue,
+        "cleared_layers": cleared_layers,
     }
+
+
+def _stackelberg_diagnosis(
+    state: Dict,
+    error_category: str,
+    gurobi_status: str,
+    error_info: str,
+) -> tuple:
+    """Stackelberg inspection: commit σ and select the next layer to probe.
+
+    The inspector (DiagnosisAgent) does not run a single-judge LLM accusation.
+    It commits an observable probing order ω (seeded by Prior(status)) and a
+    verification rule ν = executed refutation. The active inspectee responds in
+    its backward_step (comply-repair or deflect); the FSM re-solve is ν.
+
+    Returns:
+        (error_agent, confidence, reason, metrics,
+         inspection_policy, probe_queue, cleared_layers)
+    """
+    start_time = time.time()
+    metrics = {"total_tokens": 0, "duration_s": 0.0}
+
+    probe_order_mode = state.get("probe_order", "causal")
+    probe_queue = list(state.get("probe_queue") or [])
+    cleared_layers = list(state.get("cleared_layers") or [])
+    inspection_policy = state.get("inspection_policy")
+
+    # Syntax errors are localized to code generation — probe PD directly.
+    if error_category == "syntax" or (gurobi_status == "" and error_category == "syntax"):
+        logger.info("DiagnosisAgent (stackelberg): syntax error → probe python_developer")
+        if not inspection_policy:
+            inspection_policy = {
+                "omega": ["python_developer"],
+                "nu": VERIFICATION_RULE,
+                "probe_order": probe_order_mode,
+                "seed": "python_developer",
+            }
+            probe_queue = ["python_developer"]
+        metrics["duration_s"] = time.time() - start_time
+        return (
+            "python_developer",
+            1.0,
+            "Committed probe: syntax errors localize to python_developer",
+            metrics,
+            inspection_policy,
+            probe_queue,
+            cleared_layers,
+        )
+
+    # First entry into this failure episode: commit inspection policy σ.
+    if not inspection_policy or not probe_queue:
+        probe_queue = build_probe_order(gurobi_status, probe_order_mode)
+        seed = probe_queue[0] if probe_queue else "model_expert"
+        inspection_policy = {
+            "omega": list(probe_queue),
+            "nu": VERIFICATION_RULE,
+            "probe_order": probe_order_mode,
+            "seed": seed,
+            "prior_candidates": get_candidate_agents(gurobi_status),
+        }
+        cleared_layers = []
+        logger.info(
+            "DiagnosisAgent (stackelberg): committed σ omega=%s nu=%s seed=%s",
+            probe_queue,
+            VERIFICATION_RULE,
+            seed,
+        )
+    else:
+        # Re-entry: previous probe was settled. Clear the last probed layer.
+        # - comply whose re-solve still failed → false confession (cleared)
+        # - deflect → upheld pending next probe (cleared of guilt for now)
+        last_agent = state.get("error_agent")
+        if last_agent and last_agent not in cleared_layers:
+            cleared_layers.append(last_agent)
+            outcome = "deflect" if not state.get("error_resolved") else "refuted_comply"
+            logger.info(
+                "DiagnosisAgent (stackelberg): cleared layer=%s outcome=%s",
+                last_agent,
+                outcome,
+            )
+
+    error_agent = next_unclear_layer(probe_queue, cleared_layers)
+    if error_agent is None:
+        logger.warning("DiagnosisAgent (stackelberg): all layers cleared, no probe left")
+        metrics["duration_s"] = time.time() - start_time
+        return (
+            None,
+            0.0,
+            "Inspection exhausted: all causal layers cleared without confirmation",
+            metrics,
+            inspection_policy,
+            probe_queue,
+            cleared_layers,
+        )
+
+    reason = (
+        f"Inspector probe under committed σ: layer={error_agent}, "
+        f"omega={probe_queue}, cleared={cleared_layers}, nu={VERIFICATION_RULE}"
+    )
+    metrics["duration_s"] = time.time() - start_time
+    logger.info("DiagnosisAgent (stackelberg): probing %s", error_agent)
+    return (
+        error_agent,
+        1.0,
+        reason,
+        metrics,
+        inspection_policy,
+        probe_queue,
+        cleared_layers,
+    )
 
 
 def _adversarial_diagnosis(
