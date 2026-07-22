@@ -1,6 +1,6 @@
 %% fsm-stackelberg — manuscript draft (cas-sc)
 %% Status: Proposed Method section is the focus of this draft; Introduction,
-%%         Problem Definition, Experiments and Conclusion are placeholders.
+%%         Conclusion remains a placeholder; experiment \emph{results} pending.
 %% Compile: latexmk -pdf manuscript.tex  (run inside els-cas-templates/)
 
 \PassOptionsToPackage{hyperfootnotes=false}{hyperref}
@@ -127,8 +127,9 @@ causal order gives the first move causal meaning --- a probe of a layer
 upstream of the true root cause is settled by re-solve before the inspector
 descends. Section~\ref{sec:ecr_model} states the demand-uncertainty ECR
 application model; Section~\ref{sec:method} develops the method.
-Experiments and Conclusion remain placeholders pending the experimental
-campaign.
+Section~\ref{sec:experiments} fixes the experimental protocol
+(Setup through Exp-I--IV, including an Exp-I pilot); numerical results and the
+Conclusion follow the campaign.
 
 %==============================================================================
 \section{Problem Definition}
@@ -907,25 +908,154 @@ permuted order performs as well as causal order, the thesis is falsified.
 %==============================================================================
 \section{Experiments}
 \label{sec:experiments}
-% TODO: primary metric root-cause attribution accuracy (solver-status x
-% origin-agent), SSR-vs-budget, token cost; baselines sequential, adversarial
-% (single-judge), debate, Reflexion; ablation = commitment order.
-[Placeholder] The experimental campaign evaluates root-cause attribution
-accuracy against the single-judge adversarial baseline and the sequential
-fallback, against external multi-agent debate~\citep{du2023improving} and
-Reflexion-style self-critique~\citep{shinn2023reflexion}, with the
-commitment-order ablation (causal vs.\ permuted probing order) as the decisive
-test of Proposition~1. Inspection-specific diagnostics --- the rate at which
-inspectees deflect, the fraction of deflections and confessions overturned by
-executed refutation, and the induced truthful-attribution rate as a function
-of the budget $K$ --- test whether the committed policy delivers the predicted
-deterrence effect (Section~\ref{sec:payoff}) rather than merely adding LLM
-calls.
+
+The campaign tests whether a committed causal-order inspection policy improves
+\emph{verifiable} root-cause attribution under layered faults, rather than
+whether any strong LLM protocol can eventually repair a failed solve. Results
+are reported after the runs; the design below is fixed in advance.
+
+\subsection{Setup}
+\label{sec:exp_setup}
+
+\paragraph{Data.}
+All methods use the demand-uncertainty TSLP ECR model of
+Section~\ref{sec:ecr_model} on the exported dataset
+\texttt{prob\_tslp\_ecr\_demand}. We start from the smoke instance
+\texttt{smoke\_H4\_Omega5} and extend to a small family of
+horizon/scenario configurations from the same generator. The forward
+pipeline, blackboard schema, strict-success rule, and sandbox solver path are
+shared.
+
+\paragraph{Model and budget $K$.}
+Provider and model are held fixed within each comparison block and reported
+explicitly. Every method receives the same retry budget $K$
+(\texttt{max\_retries}).
+
+\paragraph{Injection protocol.}
+Ground-truth root causes $a^{\star}\in\{a_1,a_2,a_3\}$ are obtained by
+controlled injection: a defect is planted at an upstream layer (DataEngineer
+or ModelExpert) so that the surface symptom often appears downstream (e.g., a
+traceback or crash locus in generated code). This matches the motivation in
+Section~\ref{sec:stackelberg} that failure evidence records a symptom locus,
+not a certified identity of $\ell^{\star}$. The label $a^{\star}$ is used only
+for evaluation, never in agent prompts.
+
+\paragraph{Fairness.}
+At failure time every method reads the same blackboard (solver status, stack
+trace, agent input--output history). Repair uses the same agent
+\texttt{backward\_step} maps and the same re-solve verification path;
+methods differ only in how they select or order the implicated layer. No
+method receives privileged tools beyond its diagnosis policy.
+
+\subsection{Methods compared}
+\label{sec:exp_methods}
+
+\begin{itemize}
+    \item \textbf{(A) Proposed / ablation family.}
+    \texttt{diagnosis\_mode}=\texttt{stackelberg} with committed policy
+    $\sigma=(\omega,\nu)$ and $\nu$ fixed as executed refutation. The probing
+    order $\omega$ is set to \texttt{causal}, \texttt{reverse}, or
+    \texttt{random}.
+    \item \textbf{(B) Internal baselines.}
+    (i)~\texttt{adversarial}: single-judge LLM accusation plus accused-agent
+    self-check; (ii)~\texttt{sequential}: fixed reverse-order backward chain
+    without an inspection commitment.
+    \item \textbf{(C) External verification baselines.}
+    (i)~\emph{Debate}~\citep{du2023improving}: multiple diagnosis personas
+    argue for a fixed number of rounds; terminal positions are aggregated by
+    majority vote (no LLM-reported confidence weights; ties broken by the
+    status prior), then the accused layer enters the shared repair/re-solve
+    path. (ii)~\emph{Reflexion}~\citep{shinn2023reflexion}: single-judge-style
+    accusation augmented with verbal reflections after failed
+    diagnose--repair attempts, conditioned upon in later diagnosis rounds,
+    again sharing the same repair/re-solve machinery.
+\end{itemize}
+
+\subsection{Metrics}
+\label{sec:exp_metrics}
+
+The primary metric is root-cause attribution accuracy
+$\mathbf{1}\{\hat{a}=a^{\star}\}$, optionally stratified by injected origin
+agent and solver-status surface. Secondary metrics are strict-success rate at
+budget $K$ (SSR@$K$), realized probe rounds, and total tokens. For
+Exp.~\ref{sec:exp_iv} we additionally record deflect rates, the fraction of
+compliances and deflections overturned by executed refutation, and
+analysis-mode episode payoffs $(u_L,u_F)$ from Section~\ref{sec:payoff}.
+Highest SSR alone is not treated as a sufficient claim: under strong models
+many protocols may eventually repair; the scientific contrast is verifiable
+attribution under commitment.
+
+\subsection{Exp-I: Commitment-order ablation}
+\label{sec:exp_i}
+
+This experiment is the decisive test of Proposition~1. Holding $\nu$ and $K$
+fixed, we compare stackelberg inspection under
+$\omega\in\{\texttt{causal},\texttt{reverse},\texttt{random}\}$ on the
+injection grid of Section~\ref{sec:exp_setup}. Causal order is the proposed
+commitment; reverse and random retain commitment and multi-round probing but
+break alignment with data $\tri$ model $\tri$ code.
+
+\paragraph{Pilot.}
+Before the full grid we run a small upstream-fault / downstream-symptom pilot
+contrasting at least causal and random (or reverse) orders under identical
+$K$, optionally including a single full-context LLM attribution call as a
+capability reference. The pilot is interpreted as follows. If causal order
+yields a clear attribution gain over permuted orders, we proceed to the full
+ablation table. If attribution is uniformly high and causal order is
+indistinguishable from a permuted order, the empirical content of
+Proposition~1 is not supported under the present implementation or setting,
+and the campaign is revised before claiming a commitment-order effect. If
+non-committed strong attribution already saturates accuracy at lower cost, we
+narrow subsequent claims to mechanism and commitment-order contrasts rather
+than aggregate superiority. The pilot subsection may be removed once the main
+ablation table is in place.
+
+\subsection{Exp-II: Internal baselines}
+\label{sec:exp_ii}
+
+On the same injection grid and budget $K$ we compare causal-order stackelberg
+inspection to the internal baselines in (B): adversarial single-judge
+diagnosis and sequential reverse-chain repair. We report attribution accuracy
+as the primary contrast, with SSR@$K$ and token/round cost as secondary
+measures of whether any attribution gain is purchased at disproportionate
+expense.
+
+\subsection{Exp-III: External verification baselines}
+\label{sec:exp_iii}
+
+We next include the external baselines in (C), multi-agent
+debate~\citep{du2023improving} and Reflexion-style
+self-critique~\citep{shinn2023reflexion}, under the same blackboard, repair
+path, and $K$. The question is whether causal-order inspection retains an
+attribution or cost advantage once stronger multi-call LLM protocols are
+admitted, or whether apparent gains reduce to additional LLM invocations.
+Attribution is reported jointly with tokens and rounds.
+
+\subsection{Exp-IV: Inspection diagnostics}
+\label{sec:exp_iv}
+
+Finally we examine mechanism-level quantities predicted by
+Section~\ref{sec:payoff}: the rate at which inspectees deflect; the fraction
+of deflections and compliances overturned by executed refutation; and
+truthful-attribution rate as a function of the budget $K$. These diagnostics
+test whether the committed policy induces the intended deterrence pattern
+(guilty layers comply, innocent deflections are upheld only when consistent
+with re-solve) rather than merely adding probing rounds.
+
+\paragraph{Claim boundary.}
+Comparisons are scoped to layered-error natural-language optimization on the
+TSLP ECR pipeline. We do not claim gains for general LLM reasoning, nor that
+inspection is the unique protocol that can eventually repair a failed solve.
+The intended positive claim is that causal-order committed inspection improves
+(or cost-efficiently matches) verifiable root-cause attribution relative to
+unordered commitment and to non-committed verification baselines under the
+injection regime above.
 
 %==============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-[Placeholder] To follow the experiments.
+[Placeholder] To follow once Exp-I--IV report attribution, cost, and
+mechanism diagnostics.
 
 %==============================================================================
 \begin{thebibliography}{9}
