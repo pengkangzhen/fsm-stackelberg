@@ -1,0 +1,25 @@
+{
+  "problem": "tslp_ecr_demand",
+  "formulation": "two_stage_DEP",
+  "optimal_status": "Optimal",
+  "objective": 1389581.084067007,
+  "instance_meta": {
+    "problem": "tslp_ecr_demand",
+    "formulation": "two_stage_DEP_D1_D2",
+    "variable_domain": "continuous_nonnegative_TEU",
+    "uncertainty": "export_demand_eta_omega",
+    "supply": "exogenous_deterministic_xi",
+    "instance": {
+      "profile": "stochastic_hl",
+      "T": 4,
+      "sdr": 1.0,
+      "lease_mult": 1.0,
+      "seed": 42,
+      "n_nodes": 9,
+      "n_arcs": 108,
+      "tot_xi": 6149.060465116279,
+      "tot_eta_bar": 6610.24
+    },
+    "n_scenarios": 5
+  }
+}

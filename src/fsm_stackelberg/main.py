@@ -152,6 +152,8 @@ def _build_crash_state(exc: Exception, started_at: float) -> dict:
 
 def _build_experiment_result(state: dict, args, filepath: Path, expected_value=None) -> ExperimentResult:
     """Build ExperimentResult object from final state."""
+    from .game.payoff import finalize_episode_payoffs
+
     execution_result = state.get("execution_result", {})
     is_optimal = execution_result.get("diagnosis_required") is False
     knowledge_mode = getattr(args, "knowledge", "enable")
@@ -165,6 +167,17 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
     is_success = is_optimal
     if is_success and obj_value is not None and expected_value is not None and expected_value != 0:
         is_success = abs(obj_value - expected_value) / abs(expected_value) <= 0.01
+
+    # Ensure episode payoffs exist (crash paths may skip run_mako finalization)
+    episode_payoff = state.get("episode_payoff")
+    if not episode_payoff:
+        if expected_value is not None and state.get("expected_value") is None:
+            state = {**state, "expected_value": expected_value}
+        if getattr(args, "true_root_cause", None) and not state.get("true_root_cause"):
+            state = {**state, "true_root_cause": args.true_root_cause}
+        episode_payoff = finalize_episode_payoffs(state)
+
+    attributed_layer = state.get("attributed_layer") or episode_payoff.get("attributed_layer") or ""
 
     # Build step records
     steps = []
@@ -230,6 +243,12 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
         agent_metrics=agent_metrics_list,
         node_metrics=node_metrics_list,
         backtrack_history=state.get("backtrack_history", []),
+        episode_payoff=episode_payoff or {},
+        attributed_layer=attributed_layer or "",
+        true_root_cause=state.get("true_root_cause")
+        or getattr(args, "true_root_cause", None)
+        or "",
+        probe_order=getattr(args, "probe_order", "") or "",
         result_path=str(filepath),
     )
 
@@ -251,6 +270,9 @@ def main():
     parser.add_argument("--probe_order", type=str, default="causal",
                         choices=["causal", "reverse", "random"],
                         help="Stackelberg commitment-order ablation: causal (default), reverse, or random")
+    parser.add_argument("--true_root_cause", type=str, default=None,
+                        choices=["data_engineer", "model_expert", "python_developer"],
+                        help="Ground-truth failing layer for follower attribution payoff u_F")
     parser.add_argument("--knowledge", type=str, default="enable",
                         choices=["enable", "disable"],
                         help="Knowledge profile: enable (full) or disable (none)")
@@ -410,6 +432,7 @@ def main():
                 probe_order=args.probe_order,
                 expected_value=problem.get("expected_value"),
                 knowledge_mode=args.knowledge,
+                true_root_cause=args.true_root_cause,
             )
         except Exception as exc:
             logger.exception("MAKO workflow crashed; recording failure result.")
@@ -433,6 +456,14 @@ def main():
         # Print metrics
         logger.info(f"Total tokens: {final_state.get('total_tokens', 0)}")
         logger.info(f"Total duration: {final_state.get('total_duration_s', 0):.2f}s")
+        episode_payoff = final_state.get("episode_payoff") or {}
+        if episode_payoff:
+            logger.info(
+                "Episode payoff: u_L=%s u_F=%s attributed=%s",
+                episode_payoff.get("u_L"),
+                episode_payoff.get("u_F"),
+                episode_payoff.get("attributed_layer"),
+            )
 
         # Print backtrack history
         backtrack_history = final_state.get("backtrack_history", [])

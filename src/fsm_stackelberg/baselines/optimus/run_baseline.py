@@ -2,7 +2,7 @@
 
 Usage:
     poetry run python -m fsm_stackelberg.baselines.optimus.run_baseline \
-        --dataset prob_ecr_shipper_consignee \
+        --dataset prob_tslp_ecr_demand \
         --prob_name instances/small_5-3_5 \
         --provider DeepSeek --model deepseek-chat \
         --max_selections 8 \

@@ -329,6 +329,7 @@ def run_mako(
     probe_order: str = "causal",
     expected_value: float = None,
     knowledge_mode: str = "enable",
+    true_root_cause: str = None,
 ) -> dict:
     """Run the FSM-Stackelberg optimization workflow.
 
@@ -343,9 +344,11 @@ def run_mako(
             (single-judge baseline), or "sequential" (reverse-order baseline)
         probe_order: Commitment-order ablation for stackelberg mode:
             "causal" (default), "reverse", or "random"
+        true_root_cause: Optional ground-truth failing layer for u_F
+            (data_engineer | model_expert | python_developer)
 
     Returns:
-        Final state with results
+        Final state with results (includes episode_payoff)
     """
     graph = create_mako_graph()
 
@@ -422,8 +425,28 @@ def run_mako(
         "knowledge_excluded_modules": excluded_modules,
         "knowledge_loader_loaded": False,
         "expected_value": expected_value,
+        "true_root_cause": true_root_cause,
+        "attributed_layer": None,
+        "episode_payoff": None,
     }
 
     final_state = graph.invoke(initial_state)
+
+    # Phase 2: record analysis-mode episode utilities on the finished trajectory.
+    from ..game.payoff import finalize_episode_payoffs
+
+    episode_payoff = finalize_episode_payoffs(final_state)
+    final_state["attributed_layer"] = episode_payoff.get("attributed_layer")
+    final_state["episode_payoff"] = episode_payoff
+    logger.info(
+        "Episode payoff: S=%s u_L=%s u_F=%s attributed=%s true_root=%s K=%s tokens=%s",
+        episode_payoff.get("S"),
+        episode_payoff.get("u_L"),
+        episode_payoff.get("u_F"),
+        episode_payoff.get("attributed_layer"),
+        episode_payoff.get("true_root_cause"),
+        episode_payoff.get("probe_rounds"),
+        episode_payoff.get("tokens"),
+    )
 
     return final_state

@@ -55,9 +55,8 @@
   addressline={No. 1 Linghai Road}, city={Dalian}, postcode={116026}, state={Liaoning}, country={China}}
 
 \begin{abstract}
-% TODO: full abstract once experiments land. The method contribution described
-% here is the diagnosis--repair redesign; the pipeline and ECR benchmark are
-% inherited from the MAKO baseline.
+% TODO: full abstract once experiments land. Method = diagnosis--repair redesign;
+% application = demand-uncertainty TSLP ECR (Section~\ref{sec:ecr_model}).
 [Draft] We recast the error diagnosis and repair stage of an LLM multi-agent
 optimization pipeline as a Stackelberg \emph{inspection game} defined on a
 state machine. A LangGraph finite-state machine orchestrates role-specialized
@@ -76,7 +75,8 @@ executed-refutation policy induces the truthful best response --- a guilty
 layer complies and repairs, an innocent layer's deflection is verified ---
 replacing the baseline's single-judge LLM accusation. We formalize the
 mechanism, state a proposition on causal-order inspection, and instantiate it
-for Empty Container Repositioning.
+on a \emph{demand-uncertainty} sea--land Empty Container Repositioning (ECR)
+problem formulated as a two-stage stochastic linear program.
 \end{abstract}
 
 \begin{highlights}
@@ -125,24 +125,277 @@ the best response of an innocent one, so the accused can neither confess
 falsely nor deflect dishonestly for free. Aligning the probing order with the
 causal order gives the first move causal meaning --- a probe of a layer
 upstream of the true root cause is settled by re-solve before the inspector
-descends. The remainder of the draft develops the method
-(Section~\ref{sec:method}); Problem Definition, Experiments and Conclusion are
-placeholders pending the experimental campaign.
+descends. Section~\ref{sec:ecr_model} states the demand-uncertainty ECR
+application model; Section~\ref{sec:method} develops the method.
+Experiments and Conclusion remain placeholders pending the experimental
+campaign.
 
 %==============================================================================
 \section{Problem Definition}
 \label{sec:ecr_model}
-% TODO: verbatim ECR model inherited from the baseline (parameters, variables,
-% flow-balance and capacity constraints). Sketched here only so the method is
-% self-contained.
-We adopt the three-echelon Empty Container Repositioning (ECR) problem of the
-baseline: a single-commodity, multi-period network flow on a directed graph
-$G=(N,E)$ whose nodes partition into sea ports $H$, dry ports $L$, consignees
-$P$ and shippers $Q$, with arc set $\mathcal{A}\subseteq N\times N\times\Omega$
-encoding admissible movements. The deterministic ground-truth instance used
-for evaluation has a known optimum, supplying the strict-success rule
-(\textsc{Optimal} with optimality gap $\le 10^{-3}$) and the root-cause labels
-required by the diagnosis mechanism below.
+
+We validate the diagnosis--repair mechanism on a sea--land Empty Container
+Repositioning (ECR) problem under \emph{export-demand uncertainty}. The
+application model is a two-stage stochastic linear program on a weekly
+planning window (deterministic equivalent / DEP), adapted from our companion
+formulation for demand-uncertainty ECR. Unlike the MAKO baseline's
+deterministic shipper--consignee multi-commodity flow, the present benchmark
+retains only sea and dry ports, treats empty supply as exogenous, and places
+all randomness in scenario-dependent export demand. Agents in the pipeline
+must formulate and solve this DEP from a natural-language description plus
+structured instance data; the expert DEP optimum supplies the
+strict-success rule used by the diagnosis mechanism
+(Section~\ref{sec:stackelberg}).
+
+\subsection{Network and uncertainty}
+\label{sec:ecr_network}
+
+The network is a directed multigraph on node set
+$\mathcal{N}=\mathcal{H}\sqcup\mathcal{L}$, where sea ports
+$\mathcal{H}=\mathcal{H}^{\mathrm{hub}}\sqcup\mathcal{H}^{\mathrm{spoke}}$
+partition into global hubs and regional spokes, and $\mathcal{L}$ is the set
+of dry ports. Inland moves use modes $\kappa\in\mathcal{K}$ (road, rail).
+Rather than writing Big-M hinterland restrictions inside the LP, we
+\emph{compile} topology into an admissible arc set
+\begin{equation}
+\mathcal{A}
+\subseteq
+\mathcal{N}\times\mathcal{N}\times\mathcal{K},
+\label{eq:arc-set}
+\end{equation}
+built once from hinterland indicators $\lambda_{ij}$: include sea--dry arcs
+$(i,j,\kappa)$ and $(j,i,\kappa)$ iff $\lambda_{ij}=1$, and dry--dry arcs
+$(j_1,j_2,\kappa)$ iff $j_1$ and $j_2$ share a common hinterland sea port.
+Each arc $a=(i,j,\kappa)\in\mathcal{A}$ carries transit time
+$\tau_a$, unit repositioning cost $c_a^{\mathrm{repo}}$, and capacity
+$F_a^{\mathrm{cap}}$. Flow variables exist only on $\mathcal{A}$;
+inadmissible hinterland pairs simply never appear.
+
+Time is discrete by week. Empty containers held at sea or dry ports serve
+export demand. The empty supply $\xi_{n,t}$ at node $n$ in week $t$ is an
+\emph{exogenous deterministic} parameter (no laden-to-empty conversion
+dynamics). The core uncertainty is the scenario-dependent export demand
+$\eta_{n,t}^{\omega}$ for $\omega\in\Omega$ with probabilities $\pi_{\omega}$.
+Leasing is unbounded (at a premium); a heavily penalized spill variable
+ensures relatively complete recourse under storage caps.
+
+A full operational system may wrap successive windows in a rolling horizon.
+For the agentic modeling task we fix a single window
+$\mathcal{T}=\{1,\dots,H\}$ (smoke instance: $H{=}4$, $|\Omega|{=}5$) and ask
+the pipeline to build the extensive-form DEP of the two-stage program below.
+All decisions are continuous nonnegative TEUs; at weekly scale the integrality
+gap is negligible.
+
+\subsection{Notation}
+\label{sec:ecr_notation}
+
+\noindent\textbf{Sets.}
+$\mathcal{H}^{\mathrm{hub}}$, $\mathcal{H}^{\mathrm{spoke}}$, $\mathcal{L}$;
+$\mathcal{N}^{\mathrm{inv}}=\mathcal{H}\cup\mathcal{L}$;
+modes $\mathcal{K}$; admissible arcs $\mathcal{A}$ as in~\eqref{eq:arc-set};
+scenarios $\Omega$; window $\mathcal{T}$.
+For each node $n\in\mathcal{N}$ define the forward and backward stars
+\begin{equation}
+\mathcal{A}_n^{+}
+=\{(n,j,\kappa)\in\mathcal{A}\},
+\qquad
+\mathcal{A}_n^{-}
+=\{(i,n,\kappa)\in\mathcal{A}\}.
+\label{eq:star-sets}
+\end{equation}
+Flow variables are indexed on arcs $(i,j,\kappa)\in\mathcal{A}$;
+we write $x_{ij\kappa,t}^{\omega}$ interchangeably with $x_{a,t}^{\omega}$ for
+$a=(i,j,\kappa)$.
+
+\noindent\textbf{Deterministic parameters.}
+Exogenous supply $\xi_{n,t}$; spoke top-up $E_{i,t}$; initial inventory
+$I_{n,0}$; committed inland arrivals $\bar{Q}_{n,t}^{\mathrm{arr}}$ (zero on the
+first-window smoke instance); hub vessel calls $V_{i,t}\in\{0,1\}$ and
+per-call bounds $B_i^{\mathrm{in}}$, $B_i^{\mathrm{out}}$; effective external
+export floor
+$\tilde{D}_{i,t}^{\mathrm{ext}}=\min\{D_{i,t}^{\mathrm{ext}},B_i^{\mathrm{out}}\}$;
+per-arc $(\tau_{ij\kappa},c_{ij\kappa}^{\mathrm{repo}},F_{ij\kappa}^{\mathrm{cap}})$
+for $(i,j,\kappa)\in\mathcal{A}$; storage caps $U_n^{\mathrm{cap}}$; sea costs
+$c^{\mathrm{sea,in}}$, $c^{\mathrm{sea,out}}$; repositioning / holding / leasing /
+spill costs $c_{ij\kappa}^{\mathrm{repo}}$, $c_n^{\mathrm{hold}}$,
+$c_n^{\mathrm{lease}}$, $c^{\mathrm{spill}}$, with
+$c^{\mathrm{spill}}\gg\max\{c_n^{\mathrm{lease}},c_n^{\mathrm{hold}},
+c_{ij\kappa}^{\mathrm{repo}}\}$.
+
+\noindent\textbf{Random parameters.}
+Demand $\eta_{n,t}^{\omega}$ and probabilities $\pi_{\omega}$
+($\sum_{\omega}\pi_{\omega}=1$). Scenarios are drawn by truncated-normal
+additive shocks about nominal means $\bar{\eta}_{n,t}$.
+
+\noindent\textbf{First-stage decisions (here-and-now).}
+$y_{i,t}^{\mathrm{in}},\,y_{i,t}^{\mathrm{out}}\in\mathbb{R}_+$ for
+$i\in\mathcal{H}^{\mathrm{hub}}$, $t\in\mathcal{T}$: hub sea arrivals
+(arrival-week accounting) and departures, chosen \emph{before} demand is
+revealed.
+
+\noindent\textbf{Second-stage decisions (wait-and-see).}
+For each $\omega\in\Omega$: arc flows $x_{ij\kappa,t}^{\omega}$
+($(i,j,\kappa)\in\mathcal{A}$), inventories $I_{n,t}^{\omega}$, leases
+$r_{n,t}^{\omega}$, and spill $s_{n,t}^{\omega}$, all in $\mathbb{R}_+$.
+
+\subsection{Two-stage formulation [D1]--[D2]}
+\label{sec:ecr_formulation}
+
+The inland submodel is a \emph{node--arc} network formulation on the
+admissible digraph $(\mathcal{N},\mathcal{A})$: topology is encoded by the
+stars~\eqref{eq:star-sets}, and conservation at each node is written with
+incidence sums over $\mathcal{A}_n^{\pm}$.
+
+\paragraph{Stage~1 master problem [D1].}
+\begin{align}
+\min_{\boldsymbol{y}}\;
+& \sum_{t\in\mathcal{T}}\sum_{i\in\mathcal{H}^{\mathrm{hub}}}
+\bigl(c^{\mathrm{sea,in}} y_{i,t}^{\mathrm{in}}
++ c^{\mathrm{sea,out}} y_{i,t}^{\mathrm{out}}\bigr)
++ \sum_{\omega\in\Omega}\pi_{\omega}\,\Theta^{\mathrm{D}}(\boldsymbol{y},\omega)
+\label{eq:d1-obj} \\
+\text{s.t.}\;
+& y_{i,t}^{\mathrm{in}} \le B_i^{\mathrm{in}} V_{i,t},
+\quad \forall i\in\mathcal{H}^{\mathrm{hub}},\; t\in\mathcal{T},
+\label{eq:d1-capin} \\
+& y_{i,t}^{\mathrm{out}} \le B_i^{\mathrm{out}} V_{i,t},
+\quad \forall i\in\mathcal{H}^{\mathrm{hub}},\; t\in\mathcal{T},
+\label{eq:d1-capout} \\
+& y_{i,t}^{\mathrm{out}} \ge \tilde{D}_{i,t}^{\mathrm{ext}} V_{i,t},
+\quad \forall i\in\mathcal{H}^{\mathrm{hub}},\; t\in\mathcal{T},
+\label{eq:d1-export} \\
+& y_{i,t}^{\mathrm{in}},\; y_{i,t}^{\mathrm{out}} \ge 0.
+\label{eq:d1-nn}
+\end{align}
+
+\paragraph{Stage~2 recourse [D2].}
+Given $\boldsymbol{y}$ and realized $\eta^{\omega}$, write the node--arc
+inflow and outflow through the stars~\eqref{eq:star-sets} as
+\begin{equation}
+\begin{aligned}
+\mathrm{In}_{n,t}^{\omega}
+&=\sum_{(i,n,\kappa)\in\mathcal{A}_n^{-}}
+  x_{in\kappa,\,t-\tau_{in\kappa}}^{\omega},
+\\
+\mathrm{Out}_{n,t}^{\omega}
+&=\sum_{(n,j,\kappa)\in\mathcal{A}_n^{+}}
+  x_{nj\kappa,t}^{\omega},
+\end{aligned}
+\label{eq:d2-inout}
+\end{equation}
+with the convention $x_{ij\kappa,s}^{\omega}:=0$ if $s\notin\mathcal{T}$
+(lagged arrivals outside the window enter via $\bar{Q}_{n,t}^{\mathrm{arr}}$).
+The recourse problem is
+\begin{equation}
+\Theta^{\mathrm{D}}(\boldsymbol{y},\omega)
+=\min_{\boldsymbol{x},\boldsymbol{I},\boldsymbol{r},\boldsymbol{s}}
+\Bigl(
+C^{\mathrm{repo}}(\omega)
++C^{\mathrm{hold}}(\omega)
++C^{\mathrm{lease}}(\omega)
++C^{\mathrm{spill}}(\omega)
+\Bigr),
+\label{eq:d2-obj}
+\end{equation}
+where the four activity cost blocks (repositioning / holding / leasing / spill)
+are
+\begin{align}
+C^{\mathrm{repo}}(\omega)
+&=\sum_{t\in\mathcal{T}}
+  \sum_{(i,j,\kappa)\in\mathcal{A}}
+  c_{ij\kappa}^{\mathrm{repo}}\,x_{ij\kappa,t}^{\omega},
+\label{eq:d2-cost-repo}\\
+C^{\mathrm{hold}}(\omega)
+&=\sum_{t\in\mathcal{T}}
+  \sum_{n\in\mathcal{N}^{\mathrm{inv}}}
+  c_n^{\mathrm{hold}}\,I_{n,t}^{\omega},
+\label{eq:d2-cost-hold}\\
+C^{\mathrm{lease}}(\omega)
+&=\sum_{t\in\mathcal{T}}
+  \sum_{n\in\mathcal{N}^{\mathrm{inv}}}
+  c_n^{\mathrm{lease}}\,r_{n,t}^{\omega},
+\label{eq:d2-cost-lease}\\
+C^{\mathrm{spill}}(\omega)
+&=\sum_{t\in\mathcal{T}}
+  \sum_{n\in\mathcal{N}^{\mathrm{inv}}}
+  c^{\mathrm{spill}}\,s_{n,t}^{\omega}.
+\label{eq:d2-cost-spill}
+\end{align}
+subject to
+\begin{equation}
+\begin{aligned}
+I_{i,t}^{\omega}
+&=I_{i,t-1}^{\omega}+\xi_{i,t}+r_{i,t}^{\omega}
+ +y_{i,t}^{\mathrm{in}}-y_{i,t}^{\mathrm{out}}
+ +\bar{Q}_{i,t}^{\mathrm{arr}}
+\\
+&\quad{}
+ +\mathrm{In}_{i,t}^{\omega}-\mathrm{Out}_{i,t}^{\omega}
+ -\eta_{i,t}^{\omega}-s_{i,t}^{\omega},
+\\
+&\hspace{1.2em}
+\forall i\in\mathcal{H}^{\mathrm{hub}},\; t\in\mathcal{T},
+\end{aligned}
+\label{eq:d2-hub}
+\end{equation}
+\begin{equation}
+\begin{aligned}
+I_{i,t}^{\omega}
+&=I_{i,t-1}^{\omega}+\xi_{i,t}+r_{i,t}^{\omega}+E_{i,t}
+ +\bar{Q}_{i,t}^{\mathrm{arr}}
+\\
+&\quad{}
+ +\mathrm{In}_{i,t}^{\omega}-\mathrm{Out}_{i,t}^{\omega}
+ -\eta_{i,t}^{\omega}-s_{i,t}^{\omega},
+\\
+&\hspace{1.2em}
+\forall i\in\mathcal{H}^{\mathrm{spoke}},\; t\in\mathcal{T},
+\end{aligned}
+\label{eq:d2-spoke}
+\end{equation}
+\begin{equation}
+\begin{aligned}
+I_{j,t}^{\omega}
+&=I_{j,t-1}^{\omega}+\xi_{j,t}+r_{j,t}^{\omega}
+ +\bar{Q}_{j,t}^{\mathrm{arr}}
+\\
+&\quad{}
+ +\mathrm{In}_{j,t}^{\omega}-\mathrm{Out}_{j,t}^{\omega}
+ -\eta_{j,t}^{\omega}-s_{j,t}^{\omega},
+\\
+&\hspace{1.2em}
+\forall j\in\mathcal{L},\; t\in\mathcal{T},
+\end{aligned}
+\label{eq:d2-dry}
+\end{equation}
+\begin{align}
+0&\le x_{ij\kappa,t}^{\omega}\le F_{ij\kappa}^{\mathrm{cap}},
+&&\forall(i,j,\kappa)\in\mathcal{A},\;t\in\mathcal{T},
+\label{eq:d2-flowcap}\\
+0&\le I_{n,t}^{\omega}\le U_n^{\mathrm{cap}},
+&&\forall n\in\mathcal{N}^{\mathrm{inv}},\;t\in\mathcal{T},
+\label{eq:d2-invcap}\\
+&r_{n,t}^{\omega},\;s_{n,t}^{\omega}\ge 0,
+&&\forall n\in\mathcal{N}^{\mathrm{inv}},\;t\in\mathcal{T},
+\label{eq:d2-nn}
+\end{align}
+with $I_{n,0}$ fixed as the window initial inventory.
+Equations~\eqref{eq:d2-hub}--\eqref{eq:d2-dry} are node--arc balances;
+the star sums~\eqref{eq:d2-inout} enforce hinterland feasibility through
+$\mathcal{A}_n^{\pm}\subseteq\mathcal{A}$.
+The remaining inequalities are arc capacities~\eqref{eq:d2-flowcap} and yard
+caps~\eqref{eq:d2-invcap}. Lease variables are unbounded above; spill \(s\)
+with large \(c^{\mathrm{spill}}\) provides relatively complete recourse.
+
+The agentic task is to emit a Gurobi implementation of the extensive-form DEP
+equivalent to~\eqref{eq:d1-obj}--\eqref{eq:d2-nn}. An expert DEP solve on the
+frozen smoke instance yields a known optimum $z^{\star}$ (approximately
+$1.390\times 10^{6}$ for $H{=}4$, $|\Omega|{=}5$, seed~$42$). A pipeline run
+is counted as a strict success iff the solver reports
+\textsc{Optimal} and the relative gap to $z^{\star}$ does not exceed $10^{-2}$
+(one percent; the experimental default). Injected root-cause labels for
+attribution experiments are defined on the same layered pipeline
+(data $\tri$ model $\tri$ code) and are independent of the OR model above.
 
 %==============================================================================
 \section{Proposed Method}
@@ -151,13 +404,11 @@ required by the diagnosis mechanism below.
 This section develops the proposed framework bottom-up. We define the agents
 and their interfaces (Section~\ref{sec:agents}), compose them into a
 state-machine architecture (Section~\ref{sec:architecture}), and specify their
-communication through a shared blackboard (Section~\ref{sec:comm}). We then
-describe the incremental knowledge enhancement that grounds formulation
-decisions (Section~\ref{sec:ikd}). The final two subsections present the core
-contribution: a Stackelberg \emph{inspection game} for diagnosis--repair
-defined \emph{on} the state machine (Section~\ref{sec:stackelberg}) and its
-algorithmic realization (Section~\ref{sec:algorithm}). Throughout, the
-framework targets
+communication through a shared blackboard (Section~\ref{sec:comm}). The final
+two subsections present the core contribution: a Stackelberg
+\emph{inspection game} for diagnosis--repair defined \emph{on} the state
+machine (Section~\ref{sec:stackelberg}) and its algorithmic realization
+(Section~\ref{sec:algorithm}). Throughout, the framework targets
 \emph{layered-error} natural-language optimization --- OR pipelines with a
 data $\to$ model $\to$ code dependency in which errors propagate strictly
 downstream and contaminate downstream signals; we do not claim gains for
@@ -230,7 +481,7 @@ the lone terminal is $\textsc{End}$. Figure~\ref{fig:fsm} depicts $M$.
 Forward chain $q_{\textsc{de}}\!\to\!q_{\textsc{me}}\!\to\!\{q_{\textsc{kl}}\}\!\to\!q_{\textsc{pd}}\!\to\!q_{\textsc{se}}$;\\
 diagnosis--repair cycle $q_{\textsc{se}}\!\to\!q_{\textsc{dg}}\!\to\!q^{-}\!\to\!(\text{resume}\,/\,\text{re-diagnose}\,/\,\textsc{End})$.\\
 \emph{Artwork to be supplied.}}
-\caption{The extended finite-state machine $M=(\Qcal,q_0,\Delta,\Scal,K)$. Solid arrows: the forward chain with the incremental-knowledge loop (Section~\ref{sec:ikd}). Dashed arrows: the diagnosis--repair cycle, whose return edge is determined by the Stackelberg verdict (Section~\ref{sec:stackelberg}).}
+\caption{The extended finite-state machine $M=(\Qcal,q_0,\Delta,\Scal,K)$. Solid arrows: the forward chain (including an optional ModelExpert knowledge-load branch). Dashed arrows: the diagnosis--repair cycle, whose return edge is determined by the Stackelberg verdict (Section~\ref{sec:stackelberg}).}
 \label{fig:fsm}
 \end{figure}
 
@@ -240,11 +491,9 @@ $\Scal\to\Qcal$:
 \begin{itemize}
     \item $\delta_{\textsc{me}}$: after ModelExpert, branch to
     \textsc{KnowledgeLoader} iff it requests not-yet-loaded modules, else to
-    PythonDeveloper --- this edge realizes the incremental-knowledge loop of
-    Section~\ref{sec:ikd};
-    \item $\delta_{\textsc{kl}}$: after KnowledgeLoader, return to ModelExpert
-    iff new knowledge was added (a refinement loop), else proceed to
     PythonDeveloper;
+    \item $\delta_{\textsc{kl}}$: after KnowledgeLoader, return to ModelExpert
+    iff new knowledge was added, else proceed to PythonDeveloper;
     \item $\delta_{\textsc{se}}$: after SolverExecutor, terminate on success
     or budget exhaustion, otherwise route to DiagnosisAgent;
     \item $\delta_{\textsc{dg}}$: after DiagnosisAgent, route to the backward
@@ -309,38 +558,6 @@ Section~\ref{sec:stackelberg} is defined, and its completeness is what makes
 blame attributable rather than heuristic.
 
 %------------------------------------------------------------------------------
-\subsection{Incremental Knowledge Enhancement}
-\label{sec:ikd}
-
-Mathematical modeling ($a_2$) is the most domain-specialized stage and the
-stage most prone to formulation errors, so \texttt{ModelExpert} is equipped
-with a domain knowledge base $\mathcal{B}_2$ of OR templates and solver APIs.
-Naive one-shot injection of all of $\mathcal{B}_2$ overloads the context
-window and dilutes attention; moreover, optimization modeling has rigid
-logical dependencies --- a constraint cannot be formulated before its
-variables are defined --- that semantic-similarity retrieval cannot respect.
-We therefore adopt an \emph{incremental knowledge disclosure} (IKD) strategy:
-knowledge is loaded progressively, aligned with the modeling state.
-
-Formally, instead of conditioning $a_2$ on $\mathcal{B}_2$ at once, we
-decompose the modeling trajectory and, at each step, apply a disclosure
-policy
-\begin{equation}\label{eq:ikd}
-\mathcal{B}_t=\pi(S_t,\,\mathcal{B}_2),
-\end{equation}
-which selects the subset $\mathcal{B}_t\subset\mathcal{B}_2$ relevant to the
-current modeling state $S_t$ (e.g.\ ``variables defined, objective pending'').
-In the FSM this is realized by the $\delta_{\textsc{me}}/\delta_{\textsc{kl}}$
-loop: whenever \texttt{ModelExpert} requests a not-yet-loaded module, $\Delta$
-routes to \textsc{KnowledgeLoader}, the module is written into $\Scal$, and
-control returns to \texttt{ModelExpert} for a refinement pass; once no new
-module is requested, $\Delta$ proceeds to \texttt{PythonDeveloper}. IKD thereby
-reduces the conditional search space at each step and mitigates formulation
-hallucination --- a prerequisite for clean attribution, since a knowledge-gap
-failure must not be confused with the modeling and code errors the
-diagnosis--repair game is designed to localize.
-
-%------------------------------------------------------------------------------
 \subsection{The Stackelberg Diagnosis--Repair Game as an Inspection Game}
 \label{sec:stackelberg}
 
@@ -360,7 +577,14 @@ We argue that the conflicting-interest structure is nonetheless already
 present and is being ignored. Under the causal layering of
 Section~\ref{sec:layered}, an upstream defect surfaces as a downstream
 symptom, so the agent an observation implicates is frequently \emph{not} the
-one at fault. A correctly self-interested accused agent should therefore
+one at fault. In particular, one cannot read the root-cause layer off the
+\texttt{SolverExecutor}'s failure surface alone: a Python traceback or
+crash locus typically marks where the pipeline \emph{broke}, most often in
+generated code, rather than where the defect was \emph{introduced}. Treating
+stack traces and solver logs as a direct pointer to the guilty agent is
+therefore systematically biased toward the downstream code layer --- precisely
+the single-judge failure mode that an inspection commitment is designed to
+avoid. A correctly self-interested accused agent should therefore
 \emph{deflect} blame it does not deserve and decline a repair that cannot fix
 an upstream cause --- exactly the incentive of an inspectee facing an
 inspector. We accordingly cast diagnosis--repair as a Stackelberg
@@ -406,11 +630,15 @@ prerequisite of.'' We assume \emph{strict layered error dependence}: a defect
 introduced at layer $\ell\in\{1,2,3\}$ may manifest at any layer $j\ge \ell$,
 but a defect at layer $\ell$ cannot be the root cause of a symptom that
 requires only layers $<\ell$ to be well-formed. Consequently, the observation
-of a downstream failure (e.g.\ an infeasible solve, a wrong objective) is
-consistent with several root-cause layers, and localizing the true root cause
-$\ell^{\star}$ from the failure evidence $\Ecal$ alone is fundamentally
-ambiguous. This ambiguity is exactly what a single-judge classifier must
-resolve in one shot.
+of a downstream failure (e.g.\ an infeasible solve, a wrong objective, or a
+traceback into solver-facing code) is consistent with several root-cause
+layers, and localizing the true root cause $\ell^{\star}$ from the failure
+evidence $\Ecal$ alone is fundamentally ambiguous: $\Ecal$ records the
+\emph{symptom locus} (often $a_3$), not a certified identity of
+$\ell^{\star}$. This ambiguity is exactly what a single-judge classifier must
+resolve in one shot. Trusting the stack as a root-cause oracle is therefore
+insufficient: the failure surface motivates an \emph{inspection} protocol
+rather than a one-shot classification of the traceback locus.
 
 \paragraph{The conflict of interest this creates.} Layered dependence does not
 merely make attribution ambiguous; it gives the accused agents \emph{misaligned
@@ -626,14 +854,13 @@ deferred to the experimental section. $\square$
 \label{sec:algorithm}
 
 Algorithm~\ref{alg:fsm_stackelberg} unifies the architecture and the repair
-game. The FSM drives the forward pass together with the incremental-knowledge
-loop; on failure it enters the inspection stage, where the inspector commits
-to a causal-order, executed-refutation policy and probes layers in causal
-order --- each probe eliciting an inspectee response and settling it by
-re-solve --- until a layer is confirmed or the budget $K$ is spent. The
-transition map $\Delta$ is exactly the five routing functions of
-Section~\ref{sec:architecture}, with the return edge out of the backward state
-set by the executed verdict $v$.
+game. The FSM drives the forward pass; on failure it enters the inspection
+stage, where the inspector commits to a causal-order, executed-refutation
+policy and probes layers in causal order --- each probe eliciting an
+inspectee response and settling it by re-solve --- until a layer is confirmed
+or the budget $K$ is spent. The transition map $\Delta$ is exactly the five
+routing functions of Section~\ref{sec:architecture}, with the return edge out
+of the backward state set by the executed verdict $v$.
 
 \begin{algorithm}[htbp]
 \caption{FSM-Stackelberg diagnosis--repair (inspection game)}\label{alg:fsm_stackelberg}
@@ -667,16 +894,15 @@ set by the executed verdict $v$.
 \end{algorithmic}
 \end{algorithm}
 
-\paragraph{Relation to the baseline.} The forward chain, the
-incremental-knowledge loop, the blackboard, and the retry budget are inherited
-unchanged. The replacement is localized: the single-judge diagnosis call and
-its confidence-routed return are substituted by the committed inspection stage,
-and the return edge of $\delta^{-}$ is driven by the executed verdict $\beta$
-rather than by a confidence. This locality is deliberate --- it isolates the
-contribution (the inspection game) from the scaffolding (the FSM) and makes the
-commitment-order ablation, which randomizes the order in which layers are
-probed, the decisive experiment: if a permuted order performs as well as
-causal order, the thesis is falsified.
+\paragraph{Relation to the baseline.} The forward chain, the blackboard, and
+the retry budget are inherited unchanged. The replacement is localized: the
+single-judge diagnosis call and its confidence-routed return are substituted
+by the committed inspection stage, and the return edge of $\delta^{-}$ is
+driven by the executed verdict $\beta$ rather than by a confidence. This
+locality is deliberate --- it isolates the contribution (the inspection game)
+from the scaffolding (the FSM) and makes the commitment-order ablation, which
+randomizes the order in which layers are probed, the decisive experiment: if a
+permuted order performs as well as causal order, the thesis is falsified.
 
 %==============================================================================
 \section{Experiments}

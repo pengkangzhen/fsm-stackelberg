@@ -64,7 +64,7 @@ def load_optimal_objectives(instances_dir: Path) -> dict[str, float]:
 def backfill_summary_data(
     data: dict[str, Any],
     optimal_objectives: dict[str, float],
-    dataset: str = "prob_ecr_shipper_consignee",
+    dataset: str = "prob_tslp_ecr_demand",
 ) -> BackfillStats:
     runs = data.get("runs", [])
     stats = BackfillStats(total_runs=len(runs))
@@ -129,7 +129,7 @@ def create_backup(summary_path: Path) -> Path:
 def backfill_summary_file(
     summary_path: Path,
     instances_dir: Path,
-    dataset: str = "prob_ecr_shipper_consignee",
+    dataset: str = "prob_tslp_ecr_demand",
     create_backup_file: bool = True,
 ) -> tuple[BackfillStats, Path | None]:
     data = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -145,10 +145,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary", default="results/experiment_summary.json", help="Path to experiment_summary.json")
     parser.add_argument(
         "--instances-dir",
-        default="dataset/prob_ecr_shipper_consignee/instances",
+        default="dataset/prob_tslp_ecr_demand/instances",
         help="Directory containing instance optimal.json files",
     )
-    parser.add_argument("--dataset", default="prob_ecr_shipper_consignee", help="Dataset name to backfill")
+    parser.add_argument("--dataset", default="prob_tslp_ecr_demand", help="Dataset name to backfill")
     parser.add_argument("--no-backup", action="store_true", help="Do not create a backup file before overwriting")
     return parser
 

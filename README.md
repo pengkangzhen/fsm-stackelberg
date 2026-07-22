@@ -1,24 +1,35 @@
 # fsm-stackelberg
 
-**A state-machine Stackelberg game for diagnosis-repair in agentic natural-language optimization (ECR).**
+**A state-machine Stackelberg game for diagnosis-repair in agentic natural-language optimization**,
+validated on **demand-uncertainty sea–land ECR** (two-stage SP / DEP from [`tslp-ecr-demand`](../tslp-ecr-demand)).
 
-`fsm-stackelberg` is the research codebase for a paper that re-architects the **error diagnosis & repair** stage of an LLM multi-agent optimization pipeline. The agent workflow (Data Engineer → Model Expert → Python Developer → Solver Executor) is orchestrated as a **LangGraph state machine (FSM)**; when the solver fails, repair is driven by a **Stackelberg leader-follower game** whose *commitment order* mirrors the pipeline's causal dependency order (data ⊳ model ⊳ code), rather than by a single-judge LLM accusation. The FSM is the stage-game apparatus on which the Stackelberg game is defined.
+The agent workflow (Data Engineer → Model Expert → Python Developer → Solver Executor) is a
+**LangGraph FSM**. On solver failure, repair is driven by a **Stackelberg inspection game** whose
+commitment order follows data ⊳ model ⊳ code — not a single-judge LLM accusation.
 
-- **Status**: scaffold forked from `mako`; workflow imports verified; the Stackelberg redesign is **not yet implemented** (diagnosis still equals mako's `_adversarial_diagnosis`).
-- **Start here**: [`HANDOVER.md`](./HANDOVER.md).
+- **Application model:** TSLP [D1]–[D2] (exogenous \(\xi\), random \(\eta^\omega\)). Mako-era
+  shipper–consignee instances have been **removed**.
+- **Start here:** [`HANDOVER.md`](./HANDOVER.md). Dataset notes: [`dataset/prob_tslp_ecr_demand/README.md`](./dataset/prob_tslp_ecr_demand/README.md).
 
 ## Quick start
 
 ```bash
 uv sync
 cp /path/to/mako/.env .env          # API keys + Gurobi license env vars
+
+# (Re)export the smoke TSLP instance if needed
+uv run python -m generator.cli \
+  --output dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5 \
+  --T 4 --scenarios 5 --seed 42
+
 uv run python -m fsm_stackelberg.main \
-  --algorithm mako --dataset prob_ecr_shipper_consignee \
-  --prob_name instances/high_demand_5-3_5 \
+  --algorithm mako --dataset prob_tslp_ecr_demand \
+  --prob_name smoke_H4_Omega5 \
   --provider DeepSeek --model deepseek-chat \
-  --diagnosis_mode adversarial --knowledge enable --max_retries 3
+  --diagnosis_mode stackelberg --knowledge enable --max_retries 3
 ```
 
 ## Provenance
 
-Forked from [`mako`](../mako) @ `fa2cbc8` (2026-06-30). Independent project — changes here must not be pushed back to `mako`.
+Forked from [`mako`](../mako) @ `fa2cbc8` (2026-06-30) for the agent workflow; application model
+from [`tslp-ecr-demand`](../tslp-ecr-demand). Independent project — do not push changes back to mako.

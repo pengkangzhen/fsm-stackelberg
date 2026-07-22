@@ -140,7 +140,7 @@ def _load_sample(dataset_root: Path, prob_name: str | None) -> dict[str, Any] | 
 def backfill_summary_validity_data(
     data: dict[str, Any],
     dataset_root: Path,
-    dataset: str = "prob_ecr_shipper_consignee",
+    dataset: str = "prob_tslp_ecr_demand",
 ) -> ValidityBackfillStats:
     stats = ValidityBackfillStats(total_runs=len(data.get("runs", [])))
 
@@ -232,7 +232,7 @@ def create_backup(summary_path: Path) -> Path:
 def backfill_summary_validity_file(
     summary_path: Path,
     dataset_root: Path,
-    dataset: str = "prob_ecr_shipper_consignee",
+    dataset: str = "prob_tslp_ecr_demand",
     create_backup_file: bool = True,
 ) -> tuple[ValidityBackfillStats, Path | None]:
     data = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -245,8 +245,8 @@ def backfill_summary_validity_file(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Backfill semantic validity in experiment_summary.json")
     parser.add_argument("--summary", default="results/experiment_summary.json", help="Path to experiment_summary.json")
-    parser.add_argument("--dataset-root", default="dataset/prob_ecr_shipper_consignee", help="Dataset root directory")
-    parser.add_argument("--dataset", default="prob_ecr_shipper_consignee", help="Dataset name to backfill")
+    parser.add_argument("--dataset-root", default="dataset/prob_tslp_ecr_demand", help="Dataset root directory")
+    parser.add_argument("--dataset", default="prob_tslp_ecr_demand", help="Dataset name to backfill")
     parser.add_argument("--no-backup", action="store_true", help="Do not create a backup file before overwriting")
     return parser
 

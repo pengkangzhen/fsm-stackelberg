@@ -7,9 +7,9 @@
 
 ## 0. TL;DR
 
-- **What this project is.** A new paper whose contribution is a **Stackelberg leader-follower diagnosis-repair mechanism defined on a state machine**, for an LLM multi-agent optimization pipeline, validated on the **Empty Container Repositioning (ECR)** problem. The two pillars are in the name: **FSM** (the LangGraph state machine = the stage-game apparatus) + **Stackelberg** (the leader-follower game).
-- **Where it came from.** Forked from `mako` @ `fa2cbc8` on **2026-06-30**; package chain renamed `mako_langchain` → `maestro` → `fsm_stackelberg`. It is an **independent codebase** — do not modify `mako` for this paper, do not sync back.
-- **Current state.** Phase 0 (mako smoke test) **skipped** — mako already validated end-to-end in the parent project. **Phase 1 PoC is in-tree:** default `--diagnosis_mode stackelberg` commits an inspection policy σ=(ω, ν) and probes layers in causal order; `--diagnosis_mode adversarial|sequential` remain as internal baselines. Open work: payoff logging (Phase 2), external baselines + order ablation runs (Phase 3), attribution experiments (Phase 4), proposition validation (Phase 5).
+- **What this project is.** A new paper whose contribution is a **Stackelberg leader-follower diagnosis-repair mechanism defined on a state machine**, for an LLM multi-agent optimization pipeline, validated on **demand-uncertainty sea–land ECR** formulated as a **two-stage stochastic LP** ([D1]–[D2] DEP) from `tslp-ecr-demand`. The two pillars are in the name: **FSM** (LangGraph stage-game apparatus) + **Stackelberg** (leader-follower inspection game).
+- **Where it came from.** Workflow forked from `mako` @ `fa2cbc8` (2026-06-30); package renamed `mako_langchain` → `maestro` → `fsm_stackelberg`. Application model from sibling `tslp-ecr-demand` + `ecr-shared-data`. **Independent codebase** — do not modify `mako` / do not sync back. Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
+- **Current state.** Phase 0 skipped. Phase 1 Stackelberg PoC + Phase 2 analysis-mode payoffs in-tree. **Default dataset:** `prob_tslp_ecr_demand` / `smoke_H4_Omega5`. Open work: external baselines + order ablation (Phase 3), attribution experiments (Phase 4), proposition validation (Phase 5).
 
 ---
 
@@ -83,8 +83,9 @@ Entry: `data_engineer`. Termination: `END`. Retry budget `max_retries` is the FS
 
 ### 3.3 Ground truth & data
 
-- `src/generator/ground_truth_solver.py` — provides `expected_value` for the strict-success rule (`OPTIMAL and gap_percent <= 1e-3`). This is **fsm-stackelberg's own copy** — free to modify, though you likely won't need to (single-commodity ECR).
-- Instance: `dataset/prob_ecr_shipper_consignee/instances/high_demand_5-3_5` (16 nodes, 173 arcs, 5 periods, optimum **¥14,386,797**). The dir literally named `small_5-3_5` is unusable — always run on `high_demand_5-3_5`.
+- `src/generator/` — export TSLP window instances (`serialize.py`, `cli.py`) and DEP ground truth (`ground_truth_solver.py` → `tslp_ecr_demand.dep.solve_dep`).
+- Dataset: `dataset/prob_tslp_ecr_demand/` (description + `instances/smoke_H4_Omega5`). Built from `ecr-shared-data` profile `stochastic_hl` via `tslp-ecr-demand`.
+- **Do not** revive mako `prob_ecr_shipper_consignee` / shipper–consignee MCNF instances in this repo.
 
 ---
 
@@ -103,11 +104,23 @@ CLI: `--diagnosis_mode stackelberg` (default), `--probe_order causal|reverse|ran
 
 Still thin vs. the full paper claim: no numeric payoff logging yet; deflection verification is “clear + descend” rather than a separate targeted isolating re-solve.
 
-### Phase 2 — Payoff definition (make the game real)
-Ground utility in signals already on `AgentState`:
-- Follower payoff = whether the chosen test localizes the *true* root-cause layer (ground truth available — see §5).
-- Leader payoff = solver passes after the committed fix, minus a token/round cost.
-No LLM "feels" a utility — you either (a) define a numeric payoff the orchestrator optimizes, or (b) treat each LLM call as a black-box best-responder and analyze the resulting trajectory. Be explicit about which.
+### Phase 2 — Payoff definition (make the game real) — DONE (analysis-mode)
+Numeric episode utilities live in `src/fsm_stackelberg/game/payoff.py` and are
+written onto `AgentState.episode_payoff` at the end of `run_mako` (also exported
+in `experiment_result.json` / summary):
+
+\[
+u_F = \mathbf{1}\{\hat a = a^\*\} - \lambda_K K - \lambda_C (C/C_0),\quad
+u_L = S - \mu_K K - \mu_C (C/C_0)
+\]
+
+- \(S\): strict success (`diagnosis_required=False` + expected-value gap ≤ 1%).
+- \(\hat a\): attributed layer (confirmed comply + passing re-solve); else `None`.
+- \(a^\*\): optional `--true_root_cause` / `state.true_root_cause` (Phase 4 injection).
+  Without \(a^\*\), `u_F` is left `null` while `u_L` still records.
+- \(K\): `retry_count`; \(C\): `total_tokens`; defaults \(\lambda=\mu=(0.05,0.1)\), \(C_0=10^4\).
+- **Modeling choice:** analysis-mode — LLMs are black-box best-responders; payoffs
+  evaluate trajectories (not optimized inside the LLM loop).
 
 ### Phase 3 — Baselines (fair comparison is mandatory)
 The Stackelberg mechanism must beat:
@@ -146,9 +159,9 @@ Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg
 
 | Decision | Default | Notes |
 |---|---|---|
+| ECR application model | **TSLP demand-uncertainty DEP** | From sibling `tslp-ecr-demand`; not mako MCNF |
 | Package function rename (`create_mako_graph` / `run_mako` → ?) | defer | cosmetic; do once codebase stabilizes |
 | Prune `src/fsm_stackelberg/baselines/` + `experiments/` | defer | mako-paper artifacts; safe to remove for a lean core (nothing in core imports them) |
-| ECR model: single- vs multi-commodity | **single** (default) | multi-commodity lives in `mako/paper-imhfc/`; port only if the paper needs it |
 | Target venue | undecided | Stackelberg+FSM rigor → EJOR / Computers & OR; mechanism novelty → AAAI-Agent; application → EAAI |
 | Paper system name | independent of repo name | repo = `fsm-stackelberg`; the paper may brand the system differently (or keep descriptive) |
 
@@ -170,8 +183,10 @@ Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg
 | FSM construction | `src/fsm_stackelberg/graph/workflow.py` (`create_mako_graph` :194) |
 | Shared state | `src/fsm_stackelberg/graph/state.py` (`AgentState`) |
 | **Diagnosis (Stackelberg inspector)** | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`_stackelberg_diagnosis`, `_adversarial_diagnosis`, `build_probe_order`) |
+| Episode payoffs \(u_L,u_F\) | `src/fsm_stackelberg/game/payoff.py` (`finalize_episode_payoffs`) |
+| TSLP export / GT DEP | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
 | Follower-side repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` (`*_backward_step`) |
 | CLI entry | `src/fsm_stackelberg/main.py` |
-| Ground truth | `src/generator/ground_truth_solver.py` |
-| Working instance | `dataset/prob_ecr_shipper_consignee/instances/high_demand_5-3_5` |
-| Knowledge modules | `src/fsm_stackelberg/knowledge/` |
+| Working instance | `dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5` |
+| Knowledge modules | `src/fsm_stackelberg/knowledge/domains/tslp/` |
+| Sibling model repo | `../tslp-ecr-demand` (+ `../ecr-shared-data`) |

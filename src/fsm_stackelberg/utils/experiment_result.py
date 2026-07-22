@@ -78,6 +78,12 @@ class ExperimentResult:
     # --- Backtrack history ---
     backtrack_history: List[Dict] = field(default_factory=list)
 
+    # --- Stackelberg episode payoffs (analysis-mode) ---
+    episode_payoff: Dict = field(default_factory=dict)
+    attributed_layer: str = ""
+    true_root_cause: str = ""
+    probe_order: str = ""
+
     # --- Solver structural fingerprint (§5.5 formulation stability) ---
     gurobi_structure: Dict = field(default_factory=dict)
 
@@ -102,6 +108,8 @@ class ExperimentResult:
             f"--model {self.model}",
             f"--knowledge {self.knowledge_mode}",
         ]
+        if self.probe_order:
+            cmd_parts.append(f"--probe_order {self.probe_order}")
         return " \\\n  ".join(cmd_parts)
 
     def _build_run_record(self) -> Dict:
@@ -138,6 +146,8 @@ class ExperimentResult:
                 "knowledge_enabled": self.knowledge_enabled,
                 "knowledge_mode": self.knowledge_mode,
                 "knowledge_excluded_modules": self.knowledge_excluded_modules,
+                "probe_order": self.probe_order,
+                "true_root_cause": self.true_root_cause or None,
             },
             "command": command,
             "results": {
@@ -156,6 +166,8 @@ class ExperimentResult:
                 "gurobi_status": self.gurobi_status,
                 "gurobi_structure": self.gurobi_structure,
                 "result_path": self.result_path,
+                "attributed_layer": self.attributed_layer or None,
+                "episode_payoff": self.episode_payoff or None,
             },
             "error_summary": error_summary,
             "backtrack_history": self.backtrack_history,

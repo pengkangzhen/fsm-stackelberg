@@ -1,0 +1,31 @@
+{
+  "status": "Optimal",
+  "objective": 1389581.084067007,
+  "solver": "pulp_CBC_DEP",
+  "total_spill": 0.0,
+  "cost_breakdown": {
+    "sea": 120000.0,
+    "land": 592416.5892259069,
+    "hold": 677164.4948411001,
+    "lease": 0.0,
+    "spill": 0.0
+  },
+  "first_stage": {
+    "y_in": {},
+    "y_out": {
+      "dalian_1": 50.0,
+      "dalian_2": 50.0,
+      "dalian_3": 50.0,
+      "dalian_4": 50.0
+    }
+  },
+  "num_variables": 2708,
+  "num_constraints": 2532,
+  "meta": {
+    "T": 4,
+    "n_scenarios": 5,
+    "seed": 42,
+    "sdr": 1.0,
+    "source": "tslp-ecr-demand"
+  }
+}

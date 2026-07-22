@@ -59,13 +59,15 @@ class AgentState(TypedDict, total=False):
     knowledge_loader_loaded: Optional[bool]  # Whether the last loader step added new knowledge
 
     # Ground truth
-    expected_value: Optional[float]   # Ground truth objective for gap validation
+    expected_value: Optional[float]  # Ground truth objective for gap validation
+    true_root_cause: Optional[str]  # Injected layer label for attribution payoff (Phase 4)
+
+    # Episode payoffs (analysis-mode Stackelberg utilities; set at run end)
+    attributed_layer: Optional[str]  # Mechanism's root-cause claim â
+    episode_payoff: Optional[Dict[str, Any]]  # {u_L, u_F, S, costs, ...}
 
     # Backtrack history
     backtrack_history: list
-
-    # Ground truth validation
-    expected_value: Optional[float]     # Ground truth objective for gap validation
 
     # Metrics tracking
     step_metrics: List[Dict]       # Per-node step metrics (tokens, duration)
