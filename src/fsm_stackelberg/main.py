@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def _knowledge_enabled(mode: str) -> bool:
-    return mode == "enable"
+    return (mode or "").strip().lower() not in {"disable", "off", "none", "0", "false"}
 
 
 def _setup_filepath(args) -> Path:
@@ -273,9 +273,10 @@ def main():
     parser.add_argument("--true_root_cause", type=str, default=None,
                         choices=["data_engineer", "model_expert", "python_developer"],
                         help="Ground-truth failing layer for follower attribution payoff u_F")
-    parser.add_argument("--knowledge", type=str, default="enable",
-                        choices=["enable", "disable"],
-                        help="Knowledge profile: enable (full) or disable (none)")
+    parser.add_argument("--knowledge", type=str, default="progressive",
+                        choices=["progressive", "enable", "disable"],
+                        help="Knowledge injection: progressive (catalog→request→load; default), "
+                             "enable (alias of progressive), or disable")
 
     args = parser.parse_args()
 

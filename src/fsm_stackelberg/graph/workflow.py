@@ -15,13 +15,10 @@ from ..agents.model_expert import model_expert_node, model_expert_backward_step
 from ..agents.python_developer import python_developer_node, python_developer_backward_step
 from ..agents.solver_executor import solver_executor_node
 from ..agents.diagnosis_agent import diagnosis_agent_node
-from ..knowledge.knowledge_loader import KnowledgeLoader
+from ..plugins import build_feature_bundle
+from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
 logger = logging.getLogger(__name__)
-
-
-def _excluded_modules_for_mode(knowledge_mode: str) -> list[str]:
-    return []
 
 
 def _has_pending_knowledge_requests(state: AgentState) -> bool:
@@ -30,11 +27,12 @@ def _has_pending_knowledge_requests(state: AgentState) -> bool:
     if not model_expert_output or not model_expert_output.knowledge_requests:
         return False
 
-    loaded_modules = set(state.get("loaded_knowledge_modules", []))
-    excluded_modules = set(state.get("knowledge_excluded_modules", []))
-    return any(
-        name not in loaded_modules and name not in excluded_modules
-        for name in model_expert_output.knowledge_requests
+    return bool(
+        ProgressiveKnowledgeInjection.pending_requests(
+            list(model_expert_output.knowledge_requests),
+            state.get("loaded_knowledge_modules", []),
+            state.get("knowledge_excluded_modules", []),
+        )
     )
 
 
@@ -328,7 +326,7 @@ def run_mako(
     diagnosis_mode: str = "stackelberg",
     probe_order: str = "causal",
     expected_value: float = None,
-    knowledge_mode: str = "enable",
+    knowledge_mode: str = "progressive",
     true_root_cause: str = None,
 ) -> dict:
     """Run the FSM-Stackelberg optimization workflow.
@@ -344,6 +342,9 @@ def run_mako(
             (single-judge baseline), or "sequential" (reverse-order baseline)
         probe_order: Commitment-order ablation for stackelberg mode:
             "causal" (default), "reverse", or "random"
+        expected_value: Optional ground-truth objective for gap checks
+        knowledge_mode: "progressive" / "enable" (catalog-first on-demand
+            injection) or "disable"
         true_root_cause: Optional ground-truth failing layer for u_F
             (data_engineer | model_expert | python_developer)
 
@@ -361,35 +362,13 @@ def run_mako(
         len(data_access_guide),
     )
 
-    # Initialize knowledge loader and pre-load relevant knowledge
-    excluded_modules = _excluded_modules_for_mode(knowledge_mode)
-    if knowledge_mode == "disable":
-        knowledge_loader = None
-        recommended_modules = []
-        knowledge_catalog = ""
-        loaded_knowledge = None
-        logger.info("Knowledge injection disabled")
-    else:
-        knowledge_loader = KnowledgeLoader()
-        recommended_modules = knowledge_loader.recommend_modules(
-            problem_description,
-            excluded_modules=excluded_modules,
-        )
-        knowledge_catalog = knowledge_loader.get_knowledge_catalog_only(
-            excluded_modules=excluded_modules,
-        )
-
-        # Pre-load recommended modules (Option A: simpler, more reliable)
-        if recommended_modules:
-            loaded_knowledge = knowledge_loader.get_knowledge_by_names(
-                recommended_modules,
-                excluded_modules=excluded_modules,
-            )
-            logger.info(f"Pre-loaded knowledge modules: {recommended_modules}")
-        else:
-            loaded_knowledge = None
-        if excluded_modules:
-            logger.info("Knowledge ablation excluded modules: %s", excluded_modules)
+    # Optional features (progressive knowledge + diagnosis mode) — pluggable
+    features = build_feature_bundle(
+        knowledge_mode=knowledge_mode,
+        diagnosis_mode=diagnosis_mode,
+        probe_order=probe_order,
+    )
+    feature_state = features.bootstrap_state()
 
     initial_state: AgentState = {
         "problem_description": problem_description,
@@ -401,11 +380,6 @@ def run_mako(
         "data_access_guide": data_access_guide,
         "retry_count": 0,
         "max_retries": max_retries,
-        "diagnosis_mode": diagnosis_mode,
-        "probe_order": probe_order,
-        "inspection_policy": None,
-        "probe_queue": [],
-        "cleared_layers": [],
         "backtrack_history": [],
         # Metrics initialization
         "step_metrics": [],
@@ -416,18 +390,11 @@ def run_mako(
         # Output history tracking
         "current_round": 1,
         "output_history": [],
-        # Knowledge loading
-        "knowledge_loader": knowledge_loader,
-        "knowledge_catalog": knowledge_catalog,
-        "knowledge_round": 0,
-        "loaded_knowledge": loaded_knowledge,
-        "loaded_knowledge_modules": recommended_modules,
-        "knowledge_excluded_modules": excluded_modules,
-        "knowledge_loader_loaded": False,
         "expected_value": expected_value,
         "true_root_cause": true_root_cause,
         "attributed_layer": None,
         "episode_payoff": None,
+        **feature_state,
     }
 
     final_state = graph.invoke(initial_state)

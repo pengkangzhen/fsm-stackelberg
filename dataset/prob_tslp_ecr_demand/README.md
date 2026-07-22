@@ -11,13 +11,17 @@ This replaces the mako-era deterministic shipper–consignee MCNF instances
 
 ```
 prob_tslp_ecr_demand/
-├── description.txt          # NL problem statement for agents
+├── description.txt          # Slim NL task (business + stages + objective categories)
 └── instances/
     └── smoke_H4_Omega5/     # default smoke window (H=T=4, |Ω|=5, seed=42)
         ├── sample.json
         ├── optimal.json     # expert DEP objective (PuLP/CBC)
         └── metadata.json
 ```
+
+Formulation details and JSON field maps live in progressive knowledge modules
+under `src/fsm_stackelberg/knowledge/domains/tslp/` (e.g. `tslp-data-access`,
+`tslp-stage1-sea`, `tslp-stage2-inland`) — not in `description.txt`.
 
 ## Regenerate / export
 
@@ -40,5 +44,8 @@ uv run python -m fsm_stackelberg.main \
   --prob_name smoke_H4_Omega5 \
   --provider DeepSeek --model deepseek-chat \
   --diagnosis_mode stackelberg \
-  --knowledge enable --max_retries 3
+  --knowledge progressive --max_retries 3
 ```
+
+Knowledge is **progressive** (catalog → ModelExpert requests → full text), not
+a one-shot dump and not RAG. Pass `--knowledge disable` only for ablations.

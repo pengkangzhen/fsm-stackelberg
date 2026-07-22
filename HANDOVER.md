@@ -1,157 +1,245 @@
 # HANDOVER — fsm-stackelberg (State-Machine Stackelberg Diagnosis-Repair)
 
 > For the next AI assistant picking this up. Read fully before editing.
-> Companion: [`CLAUDE.md`](./CLAUDE.md) (project rules), [`README.md`](./README.md) (quick start).
+> Companion: [`README.md`](./README.md) (quick start), manuscript
+> [`els-cas-templates/manuscript.tex`](./els-cas-templates/manuscript.tex).
 
 ---
 
 ## 0. TL;DR
 
-- **What this project is.** A new paper whose contribution is a **Stackelberg leader-follower diagnosis-repair mechanism defined on a state machine**, for an LLM multi-agent optimization pipeline, validated on **demand-uncertainty sea–land ECR** formulated as a **two-stage stochastic LP** ([D1]–[D2] DEP) from `tslp-ecr-demand`. The two pillars are in the name: **FSM** (LangGraph stage-game apparatus) + **Stackelberg** (leader-follower inspection game).
-- **Where it came from.** Workflow forked from `mako` @ `fa2cbc8` (2026-06-30); package renamed `mako_langchain` → `maestro` → `fsm_stackelberg`. Application model from sibling `tslp-ecr-demand` + `ecr-shared-data`. **Independent codebase** — do not modify `mako` / do not sync back. Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
-- **Current state.** Phase 0 skipped. Phase 1 Stackelberg PoC + Phase 2 analysis-mode payoffs in-tree. **Default dataset:** `prob_tslp_ecr_demand` / `smoke_H4_Omega5`. Open work: external baselines + order ablation (Phase 3), attribution experiments (Phase 4), proposition validation (Phase 5).
+- **What this project is.** A paper whose contribution is a **Stackelberg
+  inspection game for diagnosis–repair defined on a state machine**, for an
+  LLM multi-agent optimization pipeline, validated on **demand-uncertainty
+  sea–land ECR** as a **two-stage stochastic LP** ([D1]–[D2] DEP) from
+  `tslp-ecr-demand`. Pillars: **FSM** (LangGraph stage-game apparatus) +
+  **Stackelberg** (inspector commits \(\sigma=(\omega,\nu)\); inspectees
+  comply/deflect).
+- **Where it came from.** Workflow forked from `mako` @ `fa2cbc8`
+  (2026-06-30); package `mako_langchain` → `maestro` → `fsm_stackelberg`.
+  Application model from sibling `tslp-ecr-demand` + `ecr-shared-data`.
+  **Independent codebase** — do not modify `mako` / do not sync back.
+  Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
+- **Repo.** `git@github.com:pengkangzhen/fsm-stackelberg.git`, branch `main`.
+- **Current state (2026-07-22).**
+  - Phase 0 skipped; Phase 1 Stackelberg PoC **done**; Phase 2 analysis-mode
+    payoffs **done** (`src/fsm_stackelberg/game/payoff.py`).
+  - **Progressive knowledge injection** (catalog → request → full text; not
+    RAG, not dump-all) is the default via
+    `src/fsm_stackelberg/knowledge/progressive.py`, wired through
+    `plugins.FeatureBundle`. Heuristic full-text preload has been **removed**.
+  - Default dataset: `prob_tslp_ecr_demand` / `smoke_H4_Omega5`.
+  - Manuscript method §inspection game drafted; Experiments protocol
+    **written** (Setup → Methods → Metrics → Exp-I–IV), results empty.
+  - **Next concrete work (ordered):**
+    1. **Smoke E2E on TSLP** — restore a working LLM key, then run
+       `smoke_H4_Omega5` with `--knowledge progressive` and confirm ME can
+       request/load modules and the solve/diagnosis loop completes.
+    2. Exp-I pilot (kill criteria) — fault injection +
+       `stackelberg × {causal, reverse, random}` vs `adversarial`.
+    3. Exp-II; implement Debate + Reflexion; Exp-III/IV.
 
 ---
 
 ## 1. Why a new paper (the research gap)
 
-MAKO's current "adversarial" diagnosis (in `src/fsm_stackelberg/agents/diagnosis_agent.py`) is, in reality:
+MAKO's current "adversarial" diagnosis (in
+`src/fsm_stackelberg/agents/diagnosis_agent.py`) is, in reality:
 
-1. `get_candidate_agents(gurobi_status)` → a **static heuristic prior** (CRASH → PythonDeveloper first; OPTIMAL-but-wrong-obj → ModelExpert first; …).
+1. `get_candidate_agents(gurobi_status)` → a **static heuristic prior**
+   (CRASH → PythonDeveloper first; OPTIMAL-but-wrong-obj → ModelExpert first; …).
 2. **One** LLM call → `{suspected_agent, confidence, reason}`.
-3. The accused agent's `*_backward_step` self-verifies/repairs; `error_resolved` decides "continue downstream" vs "re-accuse".
+3. The accused agent's `*_backward_step` self-verifies/repairs;
+   `error_resolved` decides "continue downstream" vs "re-accuse".
 
-There is **no** payoff/utility structure, no equilibrium concept, no leader-follower commitment, no strategic interaction between agents. It is a single-judge classifier with a retry loop.
+There is **no** payoff/utility structure, no equilibrium concept, no
+leader–follower commitment, no strategic interaction between agents. It is a
+**single-judge** classifier with a retry loop.
 
-**This is the gap fsm-stackelberg fills:** elevate diagnosis-repair from a single-judge heuristic to a mechanism with genuine game-theoretic structure, where the gain is **measurable** (root-cause attribution accuracy, SSR-vs-budget, token cost) and **defensible** (a proposition, not just an empirical bump).
+**This is the gap fsm-stackelberg fills:** elevate diagnosis–repair from a
+single-judge heuristic to a mechanism with genuine game-theoretic structure,
+where the gain is **measurable** (root-cause attribution accuracy, SSR-vs-budget,
+token cost) and **defensible** (a proposition + commitment-order ablation).
 
-> ⚠️ The same gap that makes this *publishable* also creates the trap: a reviewer will ask *"is your Stackelberg a real game, or a payoff gloss on a single-judge LLM?"* Everything in §4–§5 exists to make it real.
+> ⚠️ Reviewer trap: *"is your Stackelberg a real game, or a payoff gloss on a
+> single-judge LLM?"* Ablation + executed refutation exist to answer that.
+>
+> ⚠️ Strong-LLM trap: debate / full-context accusation may also attribute well.
+> Do **not** rest the paper on "others cannot diagnose." Rest it on
+> **causal-order commitment** improving **verifiable** attribution (and/or
+> cost). If `causal ≈ random`, the thesis is dead — find out in Exp-I pilot.
+
+**Motivation already in the manuscript:** under layered errors, stack traces /
+solver surfaces mark the **symptom locus** (often code), not the certified
+root-cause layer — so one cannot treat the traceback as an oracle.
 
 ---
 
-## 2. The thesis (the actual contribution)
+## 2. The thesis (match the manuscript — inspection game)
 
-**Commitment order = pipeline causal order.** The modeling pipeline has a natural layered dependency: **data ⊳ model ⊳ code** (errors propagate downstream and contaminate downstream signals). This is precisely a Stackelberg stage:
+**Inspector = DiagnosisAgent (leader).** Commits first and observably to
+\(\sigma=(\omega,\nu)\): probing order \(\omega\) (default = causal
+data ⊳ model ⊳ code, seeded by `Prior(status)`) and verification rule \(\nu\) =
+**executed refutation** (real re-solve under strict success), not cheap talk.
 
-| Game element | Concretization |
+**Inspectees = DE / ME / PD (followers).** When probed, choose
+**comply** (repair) or **deflect**. Interests diverge under layered faults:
+innocent downstream layers prefer deflect; guilty layers should comply when
+deflection cannot survive \(\nu\).
+
+| Game element | Concretization (current paper) |
 |---|---|
-| **Leader** (moves first, commits a strategy) | The upstream agent commits a hypothesis — e.g., ModelExpert commits a formulation fix |
-| **Follower** (best-responds) | The diagnosis/verification agent searches the **cheapest refuting test** against the committed hypothesis |
-| **Leader utility** | Passes the solver under the follower's strongest attack, at lowest cost |
-| **Follower utility** | True root-cause localization accuracy / locks the error layer with fewest tokens |
-| **Stage-game apparatus** | The LangGraph **state machine** — each node is a stage, transitions are functions of the strategy profile + shared `AgentState` |
+| Leader / inspector | `DiagnosisAgent` commits \(\sigma=(\omega,\nu)\) |
+| Followers / inspectees | Accused `data_engineer` / `model_expert` / `python_developer` |
+| Leader strategy | Committed \(\omega\) + executed re-solve \(\nu\) |
+| Follower strategy | `comply` \| `deflect` in `*_backward_step` |
+| Payoffs | Analysis-mode \(u_L,u_F\) in `game/payoff.py` (evaluate trajectories; LLMs are black-box best-responders) |
+| Stage-game apparatus | LangGraph FSM; \(\delta_{\mathrm{dg}}\) / \(\delta^{-}\) depend on the verdict |
 
-**Why the FSM is a real pillar, not wallpaper.** The state machine is not just "we happen to use LangGraph." It is the **stage-game structure** the Stackelberg game is defined on: states = stage-game states, transitions = strategy-dependent. Treating it as a **Stackelberg Markov game** is what lets the commitment order carry *causal* meaning, and what supports a proposition (e.g., *"under layered error dependence, causal-order commitment strictly lowers the mis-attribution lower bound vs. simultaneous play"*). If you do not formalize the FSM, drop "FSM" from the contribution claim — otherwise a reviewer will say "the state machine is just LangGraph."
+> Older drafts (and an outdated row in early HANDOVER) cast the **upstream
+> agent** as leader. **That is wrong for the current paper.** Do not revive it.
 
-**Why this is non-trivial (not "debate with extra steps"):** unlike general LLM debate where any agent can refute any agent, OR/code modeling errors are **layered**. The Stackelberg commitment order maps to that causal layering, so the leader's first-mover commitment has a *causal* meaning. That proposition — even semi-formal + empirically validated — is what separates a real methods paper from a relabel.
+**Why not "just debate":** debate is multi-call attribution without a committed
+causal probing policy or inspection payoffs. External baselines (Debate,
+Reflexion) test whether gains collapse to "calling the LLM more times."
 
-**Stronger variant (the rigorous target):** lift the whole FSM to a **Stackelberg Markov game** (states = stage-game states, transitions depend on the strategy profile). Heavier to deliver; this is the version that justifies the "FSM" in the name and is expected at an OR-theory venue.
+**Prop. 1 (manuscript):** under strict layered error dependence, causal-order
+executed-refutation inspection reduces the viable root-cause set relative to
+simultaneous / single-judge play without dropping the true layer. Empirical
+spine = **commitment-order ablation**.
 
 ---
 
-## 3. Current architecture (inherited from mako, unchanged)
+## 3. Current architecture
 
 ### 3.1 The state machine (`src/fsm_stackelberg/graph/workflow.py`)
 
-A LangGraph `StateGraph` — i.e., an Extended Finite State Machine:
+LangGraph `StateGraph` (extended FSM):
 
-- **States (nodes):** `data_engineer`, `model_expert`, `knowledge_loader`, `python_developer`, `solver_executor`, `diagnosis_agent`, plus three backward variants `data_engineer_backward`, `model_expert_backward`, `python_developer_backward`.
-- **Shared blackboard:** `AgentState` (`src/fsm_stackelberg/graph/state.py`) — a 74-line TypedDict mixing control state (`retry_count`, `error_agent`, `error_resolved`, `diagnosis_mode`, `current_round`) with data payload (agent outputs, metrics, knowledge).
-- **Transitions** = pure functions of state → next-node name:
+- **Nodes:** `data_engineer`, `model_expert`, `knowledge_loader`,
+  `python_developer`, `solver_executor`, `diagnosis_agent`, plus
+  `*_backward` for DE/ME/PD.
+- **Blackboard:** `AgentState` — control (`retry_count`, `error_agent`,
+  `error_resolved`, `diagnosis_mode`, `probe_order`, `inspection_policy`,
+  `probe_queue`, `cleared_layers`, …) + payload + `episode_payoff` /
+  `true_root_cause` / `attributed_layer`.
+- **Routers:** `should_diagnose`, `route_after_diagnosis`,
+  `route_after_backward`, knowledge-load branches. Budget \(K\) =
+  `max_retries`.
 
-| Router | File:line | Decides from | Branches |
-|---|---|---|---|
-| `route_after_model_expert` | `workflow.py:166` | `knowledge_requests` | knowledge_loader / python_developer |
-| `route_after_knowledge_loader` | `workflow.py:181` | `knowledge_loader_loaded` | model_expert (loop) / python_developer |
-| `should_diagnose` | `workflow.py:45` | `diagnosis_required`, `retry_count` | END / diagnosis_agent |
-| `route_after_diagnosis` | `workflow.py:73` | `error_agent`, `diagnosis_mode` | one of `*_backward` / END |
-| `route_after_backward` | `workflow.py:109` | `error_resolved`, `error_agent` | downstream resume / re-diagnose / END |
+> Cosmetic debt: `create_mako_graph()` / `run_mako()` still use mako-era names.
 
-Entry: `data_engineer`. Termination: `END`. Retry budget `max_retries` is the FSM's transition budget.
+### 3.2 Diagnosis logic
 
-> Note: `create_mako_graph()` / `run_mako()` retain mako-era **function names** (the rename only touched the package token). Cosmetic rename is a TODO — low priority, but do it before the codebase grows.
+- `diagnosis_agent.py` + `game/inspection.py` (re-exports probe helpers)
+  - `_stackelberg_diagnosis` — **default**: commit \(\sigma\), probe next
+    uncleared layer (**no** single-judge LLM).
+  - `_adversarial_diagnosis` — single-judge baseline.
+  - `get_candidate_agents` / `build_probe_order` — Prior(status) +
+    `causal|reverse|random`.
+- Inspectee signals: `error_resolved` + `backward_reason` (comply vs deflect).
+- **Not yet implemented:** `debate`, `reflexion` diagnosis modes (Exp-III).
 
-### 3.2 The diagnosis logic
+### 3.2b Progressive knowledge (scaffolding, not the paper claim)
 
-- `src/fsm_stackelberg/agents/diagnosis_agent.py`
-  - `diagnosis_agent_node` — the FSM node; dispatches by `diagnosis_mode`.
-  - `_stackelberg_diagnosis` — **default**: inspector commits σ and selects next uncleared layer (no single-judge LLM).
-  - `_adversarial_diagnosis` — single-judge LLM baseline (kept for comparison).
-  - `get_candidate_agents` / `build_probe_order` — Prior(status) seed + committed ω.
-  - `_build_diagnosis_context` — signal extraction (still used by adversarial baseline).
-- `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` — each has a `*_backward_step` node; `error_resolved` + `backward_reason` are the inspectee signals (comply vs deflect).
+- `knowledge/progressive.py` — catalog-first on-demand injection.
+- `plugins/features.py` — `FeatureBundle` composes knowledge + diagnosis mode
+  without coupling their internals into the graph routers.
+- Flow: ME sees **catalog only** → `knowledge_requests` →
+  `knowledge_loader` node injects **full text** of named modules → ME again
+  (≤ `knowledge_max_rounds`). CLI: `--knowledge progressive|enable|disable`
+  (`enable` ≡ progressive).
+- Domain modules under `knowledge/domains/tslp/` remain required for correct
+  TSLP modeling; they are **not** marketed as the research contribution.
 
 ### 3.3 Ground truth & data
 
-- `src/generator/` — export TSLP window instances (`serialize.py`, `cli.py`) and DEP ground truth (`ground_truth_solver.py` → `tslp_ecr_demand.dep.solve_dep`).
-- Dataset: `dataset/prob_tslp_ecr_demand/` (description + `instances/smoke_H4_Omega5`). Built from `ecr-shared-data` profile `stochastic_hl` via `tslp-ecr-demand`.
-- **Do not** revive mako `prob_ecr_shipper_consignee` / shipper–consignee MCNF instances in this repo.
+- `src/generator/` — TSLP export (`serialize.py`, `cli.py`) + DEP GT
+  (`ground_truth_solver.py` → `tslp_ecr_demand.dep.solve_dep`).
+- Dataset: `dataset/prob_tslp_ecr_demand/` (+ `smoke_H4_Omega5`).
+- Knowledge: `src/fsm_stackelberg/knowledge/domains/tslp/`.
+- **Do not** revive `prob_ecr_shipper_consignee`.
 
 ---
 
-## 4. The build plan
+## 4. Build plan ↔ manuscript experiments
 
 ### Phase 0 — Smoke test — SKIPPED
-Mako already validated end-to-end in the parent project; do not re-run a mako-parity smoke test here. Proceed directly with the Stackelberg upgrade.
 
-### Phase 1 — Minimal viable Stackelberg (PoC) — DONE (skeleton)
-Implemented as an **inspection game** matching the manuscript (not the older HANDOVER leader=upstream sketch):
-1. **Inspector (DiagnosisAgent) commits** σ=(ω, ν): probing order ω seeded by `Prior(status)`, verification rule ν = executed refutation (re-solve via resume→solver).
-2. **Inspectee best-responds** in `*_backward_step`: comply-repair (`error_resolved=True`) or deflect (`False`).
-3. **Route from the verdict:** comply → resume downstream (re-solve is ν); deflect / refuted comply → clear layer, `NextCausalLayer`.
+### Phase 1 — Stackelberg PoC — DONE
 
-CLI: `--diagnosis_mode stackelberg` (default), `--probe_order causal|reverse|random` (ablation hook). Baselines: `adversarial`, `sequential`.
+Inspector commits \(\sigma\); inspectee comply/deflect; route on verdict.
+CLI: `--diagnosis_mode stackelberg|adversarial|sequential`,
+`--probe_order causal|reverse|random`.
 
-Still thin vs. the full paper claim: no numeric payoff logging yet; deflection verification is “clear + descend” rather than a separate targeted isolating re-solve.
+Known thin spot vs full paper: deflect path is largely “clear + descend,” not
+a separate targeted isolating re-solve for every deflection claim.
 
-### Phase 2 — Payoff definition (make the game real) — DONE (analysis-mode)
-Numeric episode utilities live in `src/fsm_stackelberg/game/payoff.py` and are
-written onto `AgentState.episode_payoff` at the end of `run_mako` (also exported
-in `experiment_result.json` / summary):
+### Phase 2 — Payoffs — DONE (analysis-mode)
+
+`src/fsm_stackelberg/game/payoff.py` → `AgentState.episode_payoff` at end of
+`run_mako` / experiment JSON:
 
 \[
 u_F = \mathbf{1}\{\hat a = a^\*\} - \lambda_K K - \lambda_C (C/C_0),\quad
 u_L = S - \mu_K K - \mu_C (C/C_0)
 \]
 
-- \(S\): strict success (`diagnosis_required=False` + expected-value gap ≤ 1%).
-- \(\hat a\): attributed layer (confirmed comply + passing re-solve); else `None`.
-- \(a^\*\): optional `--true_root_cause` / `state.true_root_cause` (Phase 4 injection).
-  Without \(a^\*\), `u_F` is left `null` while `u_L` still records.
-- \(K\): `retry_count`; \(C\): `total_tokens`; defaults \(\lambda=\mu=(0.05,0.1)\), \(C_0=10^4\).
-- **Modeling choice:** analysis-mode — LLMs are black-box best-responders; payoffs
-  evaluate trajectories (not optimized inside the LLM loop).
+Without \(a^\*\) (`--true_root_cause`), `u_F` is `null`. Tests:
+`tests/test_payoff.py`.
 
-### Phase 3 — Baselines (fair comparison is mandatory)
-The Stackelberg mechanism must beat:
-- **Internal:** mako's `sequential` mode and the current `adversarial` (single-judge) mode — both already in-tree.
-- **External (build fresh):** multi-agent **debate** (cf. Du et al. 2023) and **Reflexion**-style self-critique. These are the direct competitors; CoE/OptiMUS (in `src/fsm_stackelberg/baselines/`) are a *different* family (multi-agent collaboration, not verification) — useful as context, not as the head-to-head.
-- **Ablation (the key differentiator):** **commitment order** — random/permuted leader-follower order vs causal order. This isolates the contribution from "just calling the LLM more times."
+### Phase 3 / manuscript Exp-I–III — OPEN (next)
 
-### Phase 4 — Experiments
-Primary metric: **root-cause attribution accuracy** (does the mechanism correctly localize the failing layer?). Infrastructure for this exists in mako as `scripts/experiment_phase4/analyze_2d_attribution.py` (solver-status × origin-agent) — **port it into fsm-stackelberg**; it provides the ground-truth labels.
-Secondary: SSR-vs-K curve, token cost, convergence rounds, per-error-category breakdown.
+Manuscript protocol (`§Experiments`):
 
-### Phase 5 — At least one proposition
-Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg commitment dominates simultaneous play on mis-attribution rate. Prove a bound or validate empirically with tight CIs.
+| Block | Content |
+|---|---|
+| **Setup** | TSLP data, fixed model, budget \(K\), upstream injection / downstream symptom, fairness (same blackboard + repair path) |
+| **Methods** | (A) stackelberg × {causal, reverse, random}; (B) adversarial, sequential; (C) Debate + Reflexion |
+| **Metrics** | Primary: attribution \(\mathbf{1}\{\hat a=a^\*\}\); secondary: SSR@\(K\), tokens/rounds; diagnostics in Exp-IV |
+| **Exp-I** | Commitment-order ablation (+ **pilot / kill criteria** — written; may delete later) |
+| **Exp-II** | Internal baselines |
+| **Exp-III** | Debate (majority vote, **no LLM confidence weights**) + Reflexion |
+| **Exp-IV** | Deflect / overturn rates, attribution vs \(K\) |
+
+**Immediate next task:** (1) restore a working LLM key and complete
+smoke E2E on `smoke_H4_Omega5`; (2) then Exp-I pilot injection + runner.
+
+Debate design note (agreed): debaters output `{suspected_agent, argument}`
+only; aggregate by majority vote; tie-break via status prior — **do not**
+trust LLM-reported confidence.
+
+### Phase 4 — Attribution grid — OPEN
+
+Primary metric already fixed in manuscript. Port / rebuild injection +
+analysis (mako had `scripts/experiment_phase4/analyze_2d_attribution.py` —
+adapt to TSLP + fsm-stackelberg).
+
+### Phase 5 — Proposition — PARTIAL
+
+Prop. 1 is in the manuscript; formal bound optional; **empirical validation =
+Exp-I**. Do not claim the prop is validated until ablation lands.
 
 ---
 
-## 5. Claim boundaries (write these into the paper)
+## 5. Claim boundaries
 
-- fsm-stackelberg targets **layered/structured-error NLO** (OR modeling with a data→model→code dependency). Do **not** claim gains for general LLM reasoning — that invites unwinnable comparisons.
-- The Stackelberg framing is **domain-grounded**, not a universal agent paradigm.
-- The "FSM" pillar is a contribution **only if** formalized as a Stackelberg Markov/stage game (§2). Otherwise claim only the Stackelberg mechanism.
-- Human-in-the-loop framing is inherited; the planner remains specifier + final arbiter.
+- Target **layered-error NLO** (data → model → code), not general LLM reasoning.
+- Stackelberg is **domain-grounded** inspection, not a universal agent paradigm.
+- FSM counts as a contribution only as stage-game apparatus for the inspection
+  game; otherwise drop "FSM" from the claim.
+- Prefer **"verifiable attribution under causal-order commitment"** over
+  **"only we can diagnose"** (strong models will falsify the latter).
 
 ---
 
-## 6. Threats to validity (keep in mind throughout)
+## 6. Threats to validity
 
-1. **LLMs have no stable utility function.** Either make the payoff a real number the orchestrator optimizes, or treat LLMs as black-box best-responders. An OR venue will challenge any "equilibrium" claim built on vibes.
-2. **Commitment-order ablation is the experiment.** If random-order performs as well as causal-order, the thesis is dead — find out early.
-3. **Verification cost.** Stackelberg needs a follower best-response each round = extra LLM calls. Show accuracy gain justifies cost.
-4. **"FSM = just LangGraph" critique.** The state machine is novel only via the game defined on it; preempt this in the paper.
+1. **LLMs have no stable utility** — analysis-mode payoffs only; no vibe equilibria.
+2. **Commitment-order ablation is the experiment** — `causal ≈ random` kills the thesis; run Exp-I pilot early.
+3. **Strong LLM / Debate ceiling** — may match attribution; then defend cost, verifiability, and ablation — or narrow the claim.
+4. **Verification cost** — show accuracy (or auditability) justifies extra calls.
+5. **"FSM = just LangGraph"** — preempt via game-on-FSM formalization in the paper.
 
 ---
 
@@ -159,20 +247,21 @@ Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg
 
 | Decision | Default | Notes |
 |---|---|---|
-| ECR application model | **TSLP demand-uncertainty DEP** | From sibling `tslp-ecr-demand`; not mako MCNF |
-| Package function rename (`create_mako_graph` / `run_mako` → ?) | defer | cosmetic; do once codebase stabilizes |
-| Prune `src/fsm_stackelberg/baselines/` + `experiments/` | defer | mako-paper artifacts; safe to remove for a lean core (nothing in core imports them) |
-| Target venue | undecided | Stackelberg+FSM rigor → EJOR / Computers & OR; mechanism novelty → AAAI-Agent; application → EAAI |
-| Paper system name | independent of repo name | repo = `fsm-stackelberg`; the paper may brand the system differently (or keep descriptive) |
+| ECR application model | **TSLP demand-uncertainty DEP** | Not mako MCNF |
+| Package rename (`create_mako_graph` / `run_mako`) | defer | cosmetic |
+| Prune CoE/OptiMUS under `baselines/` | defer | different family; not Exp-III head-to-head |
+| Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
+| Paper system name | undecided | may differ from repo name |
+| Exp-I pilot subsection in tex | keep for now | user OK to delete after main tables |
 
 ---
 
 ## 8. Environment checklist
 
-- [ ] `uv sync` (done — venv at `.venv/`)
-- [ ] Copy `.env` from `mako` (API keys for the providers you use; `python-dotenv` loads it). Key names match whatever `mako/.env` uses.
-- [ ] Gurobi license active (same as mako; `gurobipy>=12.0.2`).
-- [ ] `git init` + initial commit when ready (the scaffold is not yet a git repo).
+- [x] `uv sync` (venv at `.venv/`)
+- [ ] `.env` with API keys (`python-dotenv`; copy from `mako` as needed)
+- [ ] Gurobi license active (`gurobipy>=12.0.2`)
+- [x] GitHub remote in use (`origin` → `pengkangzhen/fsm-stackelberg`)
 
 ---
 
@@ -180,13 +269,17 @@ Even semi-formal: e.g., under layered error dependence, causal-order Stackelberg
 
 | Purpose | Path |
 |---|---|
-| FSM construction | `src/fsm_stackelberg/graph/workflow.py` (`create_mako_graph` :194) |
-| Shared state | `src/fsm_stackelberg/graph/state.py` (`AgentState`) |
-| **Diagnosis (Stackelberg inspector)** | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`_stackelberg_diagnosis`, `_adversarial_diagnosis`, `build_probe_order`) |
-| Episode payoffs \(u_L,u_F\) | `src/fsm_stackelberg/game/payoff.py` (`finalize_episode_payoffs`) |
-| TSLP export / GT DEP | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
-| Follower-side repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` (`*_backward_step`) |
-| CLI entry | `src/fsm_stackelberg/main.py` |
-| Working instance | `dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5` |
-| Knowledge modules | `src/fsm_stackelberg/knowledge/domains/tslp/` |
-| Sibling model repo | `../tslp-ecr-demand` (+ `../ecr-shared-data`) |
+| Manuscript | `els-cas-templates/manuscript.tex` (§stackelberg, §experiments) |
+| FSM | `src/fsm_stackelberg/graph/workflow.py` |
+| State | `src/fsm_stackelberg/graph/state.py` |
+| Stackelberg inspector | `src/fsm_stackelberg/agents/diagnosis_agent.py` |
+| Progressive knowledge | `src/fsm_stackelberg/knowledge/progressive.py` |
+| Feature plug-ins | `src/fsm_stackelberg/plugins/features.py` |
+| Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
+| Episode payoffs | `src/fsm_stackelberg/game/payoff.py` |
+| TSLP export / GT | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
+| Inspectee repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` |
+| CLI | `src/fsm_stackelberg/main.py` |
+| Smoke instance | `dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5` |
+| TSLP knowledge | `src/fsm_stackelberg/knowledge/domains/tslp/` |
+| Sibling repos | `../tslp-ecr-demand`, `../ecr-shared-data` |

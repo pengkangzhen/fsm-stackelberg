@@ -49,14 +49,16 @@ class AgentState(TypedDict, total=False):
     error_resolved: Optional[bool]  # Whether backward_step resolved the error
     backward_reason: Optional[str]  # Agent's explanation from backward_step
 
-    # Knowledge loading for ModelExpert
+    # Knowledge loading (progressive injection; see knowledge/progressive.py)
     knowledge_loader: Optional[Any]  # KnowledgeLoader instance
-    knowledge_catalog: Optional[str]  # Knowledge catalog table
-    knowledge_round: int             # Counter for knowledge request rounds
-    loaded_knowledge: Optional[str]  # Content of loaded modules
-    loaded_knowledge_modules: List[str]  # Names of knowledge modules already injected
-    knowledge_excluded_modules: List[str]  # Knowledge modules intentionally excluded by ablation
-    knowledge_loader_loaded: Optional[bool]  # Whether the last loader step added new knowledge
+    knowledge_catalog: Optional[str]  # name + description table only
+    knowledge_round: int             # Counter for successful load rounds
+    knowledge_max_rounds: int        # Cap on progressive refinements
+    knowledge_injection_mode: str    # "progressive" | "disable"
+    loaded_knowledge: Optional[str]  # Full text of requested modules only
+    loaded_knowledge_modules: List[str]  # Names already injected
+    knowledge_excluded_modules: List[str]  # Ablation exclusions
+    knowledge_loader_loaded: Optional[bool]  # Whether last loader step added modules
 
     # Ground truth
     expected_value: Optional[float]  # Ground truth objective for gap validation

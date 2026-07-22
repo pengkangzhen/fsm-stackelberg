@@ -242,6 +242,12 @@ class KnowledgeLoader:
             "陆港": ["tslp-network-nodes"],
             "spoke": ["tslp-network-nodes"],
             "海港": ["tslp-network-nodes"],
+            "sample.json": ["tslp-data-access"],
+            "data file": ["tslp-data-access"],
+            "数据": ["tslp-data-access"],
+            "gurobi": ["tslp-data-access", "tslp-two-stage-structure"],
+            "sets": ["tslp-data-access"],
+            "parameters": ["tslp-data-access"],
         }
         
         # 从问题描述中提取关键词

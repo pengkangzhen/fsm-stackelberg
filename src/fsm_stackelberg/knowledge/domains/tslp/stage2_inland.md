@@ -5,7 +5,7 @@ description: Scenario inland balance for hubs, spokes, dry ports; arcs, inventor
 
 # Stage-2 inland recourse [D2]
 
-Per scenario \(\omega\), minimize land + hold + lease + spill costs.
+Per scenario \(\omega\), minimize inland repositioning (`repo`) + hold + lease + spill costs.
 
 **Inventory balance (schematic):**
 

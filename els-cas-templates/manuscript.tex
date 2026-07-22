@@ -507,6 +507,14 @@ The retry budget $K$ (\texttt{max\_retries}) bounds the number of
 diagnosis--repair cycles, i.e., it is the FSM's transition budget over the
 diagnostic sub-graph.
 
+\paragraph{Domain knowledge is progressive scaffolding, not the contribution.}
+ModelExpert does not receive a dump of every domain file, nor a RAG retriever.
+It first sees a \emph{catalog} (module name + short description); it may then
+request modules by name; \textsc{KnowledgeLoader} injects only those full
+texts and returns control for refinement. This on-demand path is required for
+correct TSLP modeling but is orthogonal to the Stackelberg inspection game:
+both features plug into the same FSM without owning each other's logic.
+
 \paragraph{The FSM is the stage-game apparatus, not scaffolding.} The state
 machine is the structural substrate of the contribution because it is the
 object on which the repair game is defined. Its states are stage-game states,

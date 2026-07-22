@@ -3,18 +3,21 @@
 
 ---
 
-## Domain Knowledge Modules
+## Domain Knowledge Modules (progressive injection)
 
-Available knowledge modules:
+Available modules are listed in the **catalog** below (name + short description
+only). This is **not** RAG and modules are **not** dumped in full up front.
 
 {knowledge_catalog}
 
 {loaded_knowledge_section}
 
 **Instructions:**
-- If domain knowledge would improve your model, add `"knowledge_requests": ["module_name", ...]` to your output JSON.
-- If not needed, set `"knowledge_requests": []`.
-- The system will load requested modules and invoke you again for refinement.
+- If domain knowledge would improve your model, add
+  `"knowledge_requests": ["module_name", ...]` using exact catalog names.
+- If not needed (or all required modules are already in "Loaded Domain
+  Knowledge"), set `"knowledge_requests": []`.
+- The system loads only requested modules' full text and invokes you again.
 
 ---
 

@@ -1,19 +1,26 @@
-A liner operator must reposition empty containers under **export-demand uncertainty** on a sea–land network with hub seaports, spoke seaports, and dry ports (no shipper/consignee nodes). Empty supply \(\xi_{n,t}\) is an **exogenous deterministic** parameter. Randomness is confined to scenario-dependent export demand \(\eta_{n,t}^\omega\).
+A liner operator must reposition empty containers under **export-demand
+uncertainty** on a sea–land network of hub seaports, spoke seaports, and dry
+ports. There are **no** shipper or consignee street nodes. Empty supply is an
+**exogenous deterministic** parameter; randomness appears only in
+scenario-dependent export demand.
 
-Formulate and solve a **single planning-window two-stage stochastic linear program** [D1]–[D2] (deterministic equivalent / DEP). All decision variables are continuous nonnegative TEUs.
+**Task.** For one planning window, formulate and solve a **two-stage
+stochastic linear program** as a single extensive-form deterministic
+equivalent (DEP). All decision variables are continuous nonnegative TEUs.
 
-**First stage [D1] (here-and-now).** Before demand scenarios are revealed, choose hub sea repositioning arrivals/departures \(y_{i,t}^{\mathrm{in}}\) and \(y_{i,t}^{\mathrm{out}}\) for each hub \(i\) and period \(t\) in the window. Minimize sea cost plus the expected second-stage cost. Capacity and minimum export commitments couple \(y\) to vessel calls \(V_{i,t}\) and per-call bounds \(B^{\mathrm{in/out}}\), \(D^{\mathrm{ext,eff}}\).
+- **Stage 1 (here-and-now):** before demand scenarios are revealed, choose hub
+  sea repositioning arrivals and departures. These decisions are
+  non-anticipative and couple to vessel calls and per-call capacity / export
+  floors (details in domain knowledge).
+- **Stage 2 (wait-and-see):** for each demand scenario, optimize inland
+  repositioning on allowed road/rail arcs (with transit times), inventories,
+  leases, and spill. Spill is heavily penalized so that a good plan preferably
+  meets demand without dumping inventory.
 
-**Second stage [D2] (wait-and-see).** For each scenario \(\omega\) with probability \(\pi_\omega\), after \(\eta^\omega\) is revealed, optimize inland repositioning flows \(x_{ij\kappa,t}^\omega\) on allowed arcs (road/rail with transit times \(\tau\)), inventories \(I_{n,t}^\omega\), leases \(r_{n,t}^\omega\), and spill \(s_{n,t}^\omega\). Inventory balance at hubs includes \(+y^{\mathrm{in}}-y^{\mathrm{out}}\); spokes include exogenous top-up \(E_{n,t}\); dry ports are inland only. Respect storage caps \(U_n\) and arc caps \(F_{ij\kappa}\). Spill is heavily penalized so that a feasible plan preferably meets demand without dumping inventory.
+**Objective (categories).** Minimize sea repositioning cost plus the expected
+second-stage cost (inland repositioning + holding + leasing + spill). Exact
+symbols, constraints, and inventory balances are provided as optional domain
+knowledge modules—request them by name from the catalog when needed.
 
-**Objective.** Minimize
-\[
-\sum_{t}\sum_{i\in\mathrm{hubs}}\bigl(c^{\mathrm{sea,in}} y_{i,t}^{\mathrm{in}}+c^{\mathrm{sea,out}} y_{i,t}^{\mathrm{out}}\bigr)
-+\sum_{\omega}\pi_\omega\sum_{t}\Bigl(
-\sum_{(i,j,\kappa)} c_{ij\kappa}^{\mathrm{land}} x_{ij\kappa,t}^\omega
-+\sum_n c_n^{\mathrm{hold}} I_{n,t}^\omega
-+\sum_n c_n^{\mathrm{lease}} r_{n,t}^\omega
-+\sum_n c^{\mathrm{spill}} s_{n,t}^\omega\Bigr).
-\]
-
-Use the numeric sets and parameters in the provided data file (nodes, arcs, \(\xi\), scenario \(\eta^\omega\), costs, capacities). Implement the extensive-form DEP in Gurobi and report the optimal objective value.
+**Data and output.** Use the numeric sets and parameters in the provided data
+file. Implement the DEP in Gurobi and report the optimal objective value.

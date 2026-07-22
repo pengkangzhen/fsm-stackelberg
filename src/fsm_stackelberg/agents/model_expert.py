@@ -23,6 +23,7 @@ from ..prompts import (
 from ..utils.llm_config import get_llm
 from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
+from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
 logger = logging.getLogger(__name__)
 
@@ -86,23 +87,14 @@ def model_expert_node(state: Dict) -> Dict:
     else:
         de_output_str = "No data engineer output available."
 
-    # Knowledge catalog and pre-loaded knowledge
-    knowledge_catalog = state.get("knowledge_catalog", "No additional knowledge modules available.")
-    loaded_knowledge = state.get("loaded_knowledge")
-
-    # Format loaded knowledge section
-    if loaded_knowledge:
-        loaded_knowledge_section = f"""---
-
-## Pre-loaded Domain Knowledge
-
-**IMPORTANT**: The following domain knowledge has been pre-loaded for this problem. **You MUST apply these rules when defining constraints and variables.**
-
-{loaded_knowledge}
-
----"""
-    else:
-        loaded_knowledge_section = ""
+    # Progressive knowledge: catalog always; full text only after requests
+    knowledge_catalog = state.get(
+        "knowledge_catalog",
+        "No additional knowledge modules available.",
+    )
+    loaded_knowledge_section = ProgressiveKnowledgeInjection.format_loaded_section(
+        state.get("loaded_knowledge")
+    )
 
     # Create the chain
     chain = create_model_expert(

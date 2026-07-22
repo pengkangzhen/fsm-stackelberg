@@ -26,8 +26,12 @@ uv run python -m fsm_stackelberg.main \
   --algorithm mako --dataset prob_tslp_ecr_demand \
   --prob_name smoke_H4_Omega5 \
   --provider DeepSeek --model deepseek-chat \
-  --diagnosis_mode stackelberg --knowledge enable --max_retries 3
+  --diagnosis_mode stackelberg --knowledge progressive --max_retries 3
 ```
+
+`--knowledge progressive` (default; `enable` is an alias) is **catalog-first
+on-demand** injection — not dump-all, not RAG. Use `--knowledge disable` only
+for ablations.
 
 ## Provenance
 
