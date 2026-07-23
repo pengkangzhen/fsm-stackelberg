@@ -18,6 +18,17 @@ from fsm_stackelberg.utils.utils import dataset_loader, save_workflow_result_wit
 from fsm_stackelberg.utils.llm_config import DEFAULT_PROVIDER, DEFAULT_MODEL
 from fsm_stackelberg.utils.experiment_result import ExperimentResult
 from fsm_stackelberg.utils.workflow_failure import WorkflowNodeError
+from fsm_stackelberg.utils.run_log import (
+    build_run_manifest,
+    clear_run_logger,
+    get_git_commit,
+    init_run_logger,
+    new_run_id,
+    resolve_api_base,
+    save_run_manifest,
+    synthesize_events_from_steps,
+    utc_now_iso,
+)
 from fsm_stackelberg.logger import config_logger
 
 # Configure logging
@@ -181,14 +192,22 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
 
     # Build step records
     steps = []
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
     for sm in state.get("step_metrics", []):
+        pt = int(sm.get("prompt_tokens", 0) or 0)
+        ct = int(sm.get("completion_tokens", 0) or 0)
+        total_prompt_tokens += pt
+        total_completion_tokens += ct
         steps.append({
             "node": sm.get("node"),
             "step_type": sm.get("step_type"),
             "duration_s": sm.get("duration_s"),
-            "prompt_tokens": sm.get("prompt_tokens", 0),
-            "completion_tokens": sm.get("completion_tokens", 0),
+            "prompt_tokens": pt,
+            "completion_tokens": ct,
             "total_tokens": sm.get("total_tokens", 0),
+            "event_id": sm.get("event_id"),
+            "artifact_refs": sm.get("artifact_refs"),
         })
 
     # Convert agent_metrics dict to list format expected by ExperimentResult
@@ -226,6 +245,8 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
         agent_configs=[],
         steps=steps,
         total_duration_s=state.get("total_duration_s", 0.0),
+        total_prompt_tokens=total_prompt_tokens,
+        total_completion_tokens=total_completion_tokens,
         total_tokens=state.get("total_tokens", 0),
         num_forward_steps=len([s for s in steps if s.get("step_type") == "forward"]),
         num_backward_steps=len([s for s in steps if s.get("step_type") == "backward"]),
@@ -248,7 +269,15 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
         true_root_cause=state.get("true_root_cause")
         or getattr(args, "true_root_cause", None)
         or "",
-        probe_order=getattr(args, "probe_order", "") or "",
+        probe_order=getattr(args, "probe_order", "") or state.get("probe_order") or "",
+        probe_seed=getattr(args, "probe_seed", None)
+        if getattr(args, "probe_seed", None) is not None
+        else state.get("probe_seed"),
+        inject_id=state.get("fault_plant_id")
+        or state.get("inject_id")
+        or getattr(args, "inject_id", None)
+        or "",
+        temperature=float(getattr(args, "temperature", 0.0) or state.get("temperature") or 0.0),
         result_path=str(filepath),
     )
 
@@ -277,6 +306,30 @@ def main():
                         choices=["progressive", "enable", "disable"],
                         help="Knowledge injection: progressive (catalog→request→load; default), "
                              "enable (alias of progressive), or disable")
+    parser.add_argument(
+        "--log_prompts",
+        action="store_true",
+        help="Dump full LLM prompts under results/.../prompts/ (off by default)",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="LLM temperature (default 0; recorded in run_manifest)",
+    )
+    parser.add_argument(
+        "--probe_seed",
+        type=int,
+        default=None,
+        help="RNG seed for --probe_order random (reproducible shuffle)",
+    )
+    parser.add_argument(
+        "--inject",
+        dest="inject_id",
+        type=str,
+        default=None,
+        help="Optional fault-plant id (logged in run_manifest when injection is used)",
+    )
 
     args = parser.parse_args()
 
@@ -289,6 +342,19 @@ def main():
 
     # Configure logging to file
     config_logger(filepath)
+
+    run_id = new_run_id()
+    run_started_at = utc_now_iso()
+    run_logger = init_run_logger(
+        filepath,
+        run_id=run_id,
+        provider=args.provider,
+        model=args.model,
+        temperature=float(args.temperature),
+        log_prompts=bool(args.log_prompts),
+        api_base=resolve_api_base(args.provider),
+    )
+    logger.info("Run logging: run_id=%s events=%s", run_id, run_logger.events_path)
 
     # Load problem
     logger.info(f"Loading problem from dataset: {args.dataset}, prob_name: {args.prob_name}")
@@ -353,6 +419,27 @@ def main():
         )
         exp.save_json(str(filepath))
         exp.append_summary_json("results/experiment_summary.json")
+        synthesize_events_from_steps(
+            filepath,
+            exp.steps,
+            run_id=run_id,
+            provider=args.provider,
+            model=args.model,
+        )
+        save_run_manifest(
+            filepath,
+            build_run_manifest(
+                exp=exp,
+                state={},
+                run_id=run_id,
+                started_at=run_started_at,
+                ended_at=utc_now_iso(),
+                temperature=float(args.temperature),
+                api_base=resolve_api_base(args.provider),
+                git_commit=get_git_commit(),
+            ),
+        )
+        clear_run_logger()
 
         return result
 
@@ -414,6 +501,27 @@ def main():
         )
         exp.save_json(str(filepath))
         exp.append_summary_json("results/experiment_summary.json")
+        synthesize_events_from_steps(
+            filepath,
+            exp.steps,
+            run_id=run_id,
+            provider=args.provider,
+            model=args.model,
+        )
+        save_run_manifest(
+            filepath,
+            build_run_manifest(
+                exp=exp,
+                state={},
+                run_id=run_id,
+                started_at=run_started_at,
+                ended_at=utc_now_iso(),
+                temperature=float(args.temperature),
+                api_base=resolve_api_base(args.provider),
+                git_commit=get_git_commit(),
+            ),
+        )
+        clear_run_logger()
 
         return result
 
@@ -434,6 +542,12 @@ def main():
                 expected_value=problem.get("expected_value"),
                 knowledge_mode=args.knowledge,
                 true_root_cause=args.true_root_cause,
+                result_dir=str(filepath),
+                run_id=run_id,
+                log_prompts=bool(args.log_prompts),
+                temperature=float(args.temperature),
+                probe_seed=args.probe_seed,
+                inject_id=args.inject_id,
             )
         except Exception as exc:
             logger.exception("MAKO workflow crashed; recording failure result.")
@@ -487,7 +601,31 @@ def main():
         exp.save_json(str(filepath))
         exp.append_summary_json("results/experiment_summary.json")
 
+        synthesize_events_from_steps(
+            filepath,
+            exp.steps,
+            run_id=run_id,
+            provider=args.provider,
+            model=args.model,
+        )
+        manifest = build_run_manifest(
+            exp=exp,
+            state=final_state,
+            run_id=run_id,
+            started_at=run_started_at,
+            ended_at=utc_now_iso(),
+            temperature=float(args.temperature),
+            api_base=resolve_api_base(args.provider),
+            probe_seed=args.probe_seed,
+            inject_id=args.inject_id,
+            knowledge_max_rounds=final_state.get("knowledge_max_rounds"),
+            git_commit=get_git_commit(),
+        )
+        save_run_manifest(filepath, manifest)
+        clear_run_logger()
+
         logger.info(f"Results saved to: {filepath}")
+        logger.info("Structured logs: run_manifest.json, events.jsonl, artifacts/")
 
         return final_state
 

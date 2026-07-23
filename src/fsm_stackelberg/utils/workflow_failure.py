@@ -7,6 +7,8 @@ import json
 import time
 import traceback
 
+from .run_log import record_step_event
+
 
 class WorkflowNodeError(RuntimeError):
     """Exception carrying a partial workflow state snapshot."""
@@ -28,16 +30,17 @@ def build_failure_state(
     """Merge an agent exception into the accumulated workflow state."""
     duration = time.time() - started_at
 
-    step_metrics = list(state.get("step_metrics", []))
-    step_metrics.append(
-        {
-            "node": agent_name,
-            "step_type": "forward",
-            "duration_s": round(duration, 3),
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "total_tokens": total_tokens,
-        }
+    step_metrics = record_step_event(
+        state,
+        node=agent_name,
+        step_type="forward",
+        duration_s=duration,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        ok=False,
+        error_type=type(exc).__name__,
+        error_message=str(exc),
     )
 
     node_metrics = copy.deepcopy(state.get("node_metrics", {}))

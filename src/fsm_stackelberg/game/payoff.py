@@ -15,7 +15,7 @@ token spend. Coefficients are design parameters, not claimed LLM utilities.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -82,6 +82,55 @@ def infer_attributed_layer(state: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def infer_commitment_diagnostics(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Commitment-order diagnostics for Exp-I kill criteria.
+
+    ``first_probe_hit`` asks whether the committed ω probed a* first — the
+    ablation signal — independent of whether a downstream cascade later
+    "stole" last-comply credit.
+    """
+    policy = state.get("inspection_policy") or {}
+    omega: List[str] = list(policy.get("omega") or state.get("probe_queue") or [])
+    true_root = state.get("true_root_cause")
+
+    first_probe = omega[0] if omega else None
+    history = state.get("backtrack_history") or []
+    if history:
+        for event in history:
+            agent = event.get("error_agent") if isinstance(event, dict) else None
+            if agent:
+                first_probe = agent
+                break
+
+    true_root_rank: Optional[int] = None
+    if true_root and omega and true_root in omega:
+        true_root_rank = omega.index(true_root)
+
+    first_probe_hit: Optional[bool] = None
+    if true_root is not None and first_probe is not None:
+        first_probe_hit = first_probe == true_root
+
+    plant_complied = False
+    if true_root:
+        for event in history:
+            if not isinstance(event, dict):
+                continue
+            if event.get("error_agent") == true_root and event.get("error_resolved"):
+                plant_complied = True
+                break
+        if state.get("error_agent") == true_root and state.get("error_resolved"):
+            plant_complied = True
+
+    return {
+        "committed_omega": omega,
+        "first_probe_layer": first_probe,
+        "first_probe_hit": first_probe_hit,
+        "true_root_rank_in_omega": true_root_rank,
+        "plant_layer_complied": plant_complied if true_root else None,
+        "kill_hit": first_probe_hit,
+    }
+
+
 def compute_episode_payoffs(
     *,
     success: bool,
@@ -90,6 +139,7 @@ def compute_episode_payoffs(
     probe_rounds: int,
     tokens: int,
     config: PayoffConfig = DEFAULT_PAYOFF_CONFIG,
+    commitment: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Compute numeric u_L / u_F for one diagnosis-repair episode."""
     K = max(0, int(probe_rounds))
@@ -111,7 +161,7 @@ def compute_episode_payoffs(
         A = 1.0 if attribution_hit else 0.0
         u_F = A - cost_k_f - cost_c_f
 
-    return {
+    out: Dict[str, Any] = {
         "S": S,
         "attributed_layer": attributed_layer,
         "true_root_cause": true_root_cause,
@@ -130,6 +180,9 @@ def compute_episode_payoffs(
         "config": asdict(config),
         "mode": "analysis",  # black-box best-responders; payoff is evaluative
     }
+    if commitment:
+        out.update(commitment)
+    return out
 
 
 def finalize_episode_payoffs(
@@ -140,6 +193,7 @@ def finalize_episode_payoffs(
     """Derive payoffs from a finished AgentState and return the payoff dict."""
     success = is_strict_success(state, gap_tol=config.gap_tol)
     attributed = infer_attributed_layer(state)
+    commitment = infer_commitment_diagnostics(state)
     return compute_episode_payoffs(
         success=success,
         attributed_layer=attributed,
@@ -147,4 +201,5 @@ def finalize_episode_payoffs(
         probe_rounds=int(state.get("retry_count") or 0),
         tokens=int(state.get("total_tokens") or 0),
         config=config,
+        commitment=commitment,
     )

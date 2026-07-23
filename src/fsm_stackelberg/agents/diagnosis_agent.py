@@ -25,6 +25,7 @@ from ..prompts import (
     get_diagnosis_prompt,
 )
 from ..utils.llm_config import get_llm, DEFAULT_PROVIDER, DEFAULT_MODEL
+from ..utils.run_log import record_step_event
 
 logger = logging.getLogger(__name__)
 
@@ -352,14 +353,47 @@ def diagnosis_agent_node(state: Dict) -> Dict:
         "cleared_layers": cleared_layers,
     })
 
+    artifact_payload = {
+        "retry_count": retry_count + 1,
+        "diagnosis_mode": diagnosis_mode,
+        "probed_agent": error_agent,
+        "suspected_agent": error_agent,
+        "confidence": confidence,
+        "reason": reason,
+        "committed_omega": (inspection_policy or {}).get("omega") or probe_queue,
+        "inspection_policy": inspection_policy,
+        "probe_queue": probe_queue,
+        "cleared_layers": cleared_layers,
+        "error_category": error_category,
+        "gurobi_status": gurobi_status,
+    }
+
     # Update metrics
-    step_metrics = state.get("step_metrics", [])
-    step_metrics.append({
-        "node": "diagnosis_agent",
-        "step_type": "backward",
-        "duration_s": round(metrics["duration_s"], 3),
-        "total_tokens": metrics["total_tokens"],
-    })
+    last_outcome = None
+    if state.get("error_agent"):
+        last_outcome = "deflect" if not state.get("error_resolved") else "refuted_comply"
+    step_metrics = record_step_event(
+        state,
+        node="diagnosis_agent",
+        step_type="diagnosis",
+        duration_s=metrics["duration_s"],
+        prompt_tokens=metrics.get("prompt_tokens", 0),
+        completion_tokens=metrics.get("completion_tokens", 0),
+        total_tokens=metrics["total_tokens"],
+        artifact=artifact_payload,
+        artifact_name=f"diagnosis_r{retry_count + 1}",
+        extra={
+            "diagnosis_mode": diagnosis_mode,
+            "probed_agent": error_agent,
+            "committed_omega": (inspection_policy or {}).get("omega") or probe_queue,
+            "cleared_layers": list(cleared_layers),
+            "verdict": reason[:300] if reason else None,
+            "last_probe_outcome": last_outcome,
+            "error_category": error_category,
+            "gurobi_status": gurobi_status,
+            "confidence": confidence,
+        },
+    )
 
     node_metrics = state.get("node_metrics", {})
     if "diagnosis_agent" not in node_metrics:

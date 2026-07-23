@@ -83,6 +83,9 @@ class ExperimentResult:
     attributed_layer: str = ""
     true_root_cause: str = ""
     probe_order: str = ""
+    probe_seed: Optional[int] = None
+    inject_id: str = ""
+    temperature: float = 0.0
 
     # --- Solver structural fingerprint (§5.5 formulation stability) ---
     gurobi_structure: Dict = field(default_factory=dict)
@@ -110,6 +113,12 @@ class ExperimentResult:
         ]
         if self.probe_order:
             cmd_parts.append(f"--probe_order {self.probe_order}")
+        if self.true_root_cause:
+            cmd_parts.append(f"--true_root_cause {self.true_root_cause}")
+        if self.inject_id:
+            cmd_parts.append(f"--inject {self.inject_id}")
+        if self.probe_seed is not None:
+            cmd_parts.append(f"--probe_seed {self.probe_seed}")
         return " \\\n  ".join(cmd_parts)
 
     def _build_run_record(self) -> Dict:
@@ -147,7 +156,10 @@ class ExperimentResult:
                 "knowledge_mode": self.knowledge_mode,
                 "knowledge_excluded_modules": self.knowledge_excluded_modules,
                 "probe_order": self.probe_order,
+                "probe_seed": self.probe_seed,
                 "true_root_cause": self.true_root_cause or None,
+                "inject_id": self.inject_id or None,
+                "temperature": self.temperature,
             },
             "command": command,
             "results": {
