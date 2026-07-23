@@ -8,6 +8,7 @@ import time
 from typing import Dict
 
 from ..knowledge.progressive import DEFAULT_MAX_KNOWLEDGE_ROUNDS, ProgressiveKnowledgeInjection
+from ..utils.run_log import record_step_event
 
 logger = logging.getLogger(__name__)
 
@@ -121,13 +122,27 @@ def knowledge_loader_node(state: Dict) -> Dict:
 
 def _with_loader_metrics(state: Dict, start_time: float, payload: Dict) -> Dict:
     duration = time.time() - start_time
-    step_metrics = state.get("step_metrics", [])
-    step_metrics.append({
-        "node": "knowledge_loader",
-        "step_type": "guardrail",
-        "duration_s": round(duration, 3),
-        "total_tokens": 0,
-    })
+    requested = []
+    me_out = state.get("model_expert_output")
+    if me_out is not None and getattr(me_out, "knowledge_requests", None):
+        requested = list(me_out.knowledge_requests)
+    loaded_after = list(
+        payload.get("loaded_knowledge_modules", state.get("loaded_knowledge_modules") or [])
+    )
+    step_metrics = record_step_event(
+        state,
+        node="knowledge_loader",
+        step_type="knowledge",
+        duration_s=duration,
+        total_tokens=0,
+        extra={
+            "requested_modules": requested,
+            "loaded_modules": loaded_after,
+            "catalog_only": not bool(payload.get("knowledge_loader_loaded")),
+            "knowledge_loader_loaded": bool(payload.get("knowledge_loader_loaded")),
+            "knowledge_round": payload.get("knowledge_round", state.get("knowledge_round")),
+        },
+    )
     node_metrics = state.get("node_metrics", {})
     if "knowledge_loader" not in node_metrics:
         node_metrics["knowledge_loader"] = {

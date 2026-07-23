@@ -23,6 +23,7 @@ from ..prompts import (
 from ..utils.llm_config import get_llm
 from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
+from ..utils.run_log import record_step_event, save_backward_artifact
 from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
 logger = logging.getLogger(__name__)
@@ -145,15 +146,22 @@ def model_expert_node(state: Dict) -> Dict:
         logger.info(f"ModelExpert: Requesting knowledge modules: {result.knowledge_requests}")
 
     # Update metrics
-    step_metrics = state.get("step_metrics", [])
-    step_metrics.append({
-        "node": "model_expert",
-        "step_type": "forward",
-        "duration_s": round(duration, 3),
-        "prompt_tokens": cb.prompt_tokens,
-        "completion_tokens": cb.completion_tokens,
-        "total_tokens": cb.total_tokens,
-    })
+    step_metrics = record_step_event(
+        state,
+        node="model_expert",
+        step_type="forward",
+        duration_s=duration,
+        prompt_tokens=cb.prompt_tokens,
+        completion_tokens=cb.completion_tokens,
+        total_tokens=cb.total_tokens,
+        prompt_text=task,
+        artifact=result,
+        artifact_name=f"model_expert_forward_r{state.get('current_round', 1)}",
+        extra={
+            "requested_modules": list(result.knowledge_requests or []),
+            "loaded_modules": list(state.get("loaded_knowledge_modules") or []),
+        },
+    )
 
     node_metrics = state.get("node_metrics", {})
     if "model_expert" not in node_metrics:
@@ -259,16 +267,32 @@ def model_expert_backward_step(state: Dict) -> Dict:
     duration = time.time() - start_time
     logger.info(f"ModelExpert backward_step: is_caused_by_you={result.is_caused_by_you}, tokens={cb.total_tokens}")
 
-    # Update metrics
-    step_metrics = state.get("step_metrics", [])
-    step_metrics.append({
-        "node": "model_expert",
-        "step_type": "backward",
-        "duration_s": round(duration, 3),
-        "prompt_tokens": cb.prompt_tokens,
-        "completion_tokens": cb.completion_tokens,
-        "total_tokens": cb.total_tokens,
-    })
+    error_resolved_preview = bool(result.is_caused_by_you and result.refined_result)
+    action = "comply" if error_resolved_preview else "deflect"
+    step_metrics = record_step_event(
+        state,
+        node="model_expert",
+        step_type="backward",
+        duration_s=duration,
+        prompt_tokens=cb.prompt_tokens,
+        completion_tokens=cb.completion_tokens,
+        total_tokens=cb.total_tokens,
+        prompt_text=task,
+        extra={
+            "is_caused_by_you": result.is_caused_by_you,
+            "error_resolved": error_resolved_preview,
+            "action": action,
+            "backward_reason": (result.reason or "")[:500],
+        },
+    )
+    save_backward_artifact(
+        state,
+        agent="model_expert",
+        is_caused_by_you=bool(result.is_caused_by_you),
+        error_resolved=error_resolved_preview,
+        reason=result.reason or "",
+        refined_present=bool(result.refined_result),
+    )
 
     node_metrics = state.get("node_metrics", {})
     if "model_expert" not in node_metrics:

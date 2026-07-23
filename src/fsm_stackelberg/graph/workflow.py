@@ -328,6 +328,12 @@ def run_mako(
     expected_value: float = None,
     knowledge_mode: str = "progressive",
     true_root_cause: str = None,
+    result_dir: str = None,
+    run_id: str = None,
+    log_prompts: bool = False,
+    temperature: float = 0.0,
+    probe_seed: int = None,
+    inject_id: str = None,
 ) -> dict:
     """Run the FSM-Stackelberg optimization workflow.
 
@@ -347,6 +353,12 @@ def run_mako(
             injection) or "disable"
         true_root_cause: Optional ground-truth failing layer for u_F
             (data_engineer | model_expert | python_developer)
+        result_dir: Optional results directory for events.jsonl / artifacts
+        run_id: Optional run identifier shared with run_manifest.json
+        log_prompts: When True, dump full prompts under ``prompts/``
+        temperature: LLM temperature (logged for reproducibility)
+        probe_seed: Optional RNG seed for probe_order=random
+        inject_id: Optional fault-plant id (logged when injection is used)
 
     Returns:
         Final state with results (includes episode_payoff)
@@ -376,6 +388,10 @@ def run_mako(
         "schema": schema or sample,
         "provider": provider,
         "model": model,
+        "temperature": temperature,
+        "result_dir": result_dir,
+        "run_id": run_id,
+        "log_prompts": bool(log_prompts),
         "preprocessed_data": preprocessed_data,
         "data_access_guide": data_access_guide,
         "retry_count": 0,
@@ -392,6 +408,10 @@ def run_mako(
         "output_history": [],
         "expected_value": expected_value,
         "true_root_cause": true_root_cause,
+        "probe_seed": probe_seed,
+        "inject_id": inject_id,
+        "fault_injected": False,
+        "fault_plant_id": None,
         "attributed_layer": None,
         "episode_payoff": None,
         **feature_state,

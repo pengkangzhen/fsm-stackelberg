@@ -276,10 +276,11 @@ Exp-I**. Do not claim the prop is validated until ablation lands.
 | Progressive knowledge | `src/fsm_stackelberg/knowledge/progressive.py` |
 | Feature plug-ins | `src/fsm_stackelberg/plugins/features.py` |
 | Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
-| Episode payoffs | `src/fsm_stackelberg/game/payoff.py` |
+| Episode payoffs + commitment diagnostics | `src/fsm_stackelberg/game/payoff.py` |
+| Run logs (`run_manifest.json` / `events.jsonl` / `artifacts/`) | `src/fsm_stackelberg/utils/run_log.py` |
 | TSLP export / GT | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
 | Inspectee repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` |
-| CLI | `src/fsm_stackelberg/main.py` |
+| CLI | `src/fsm_stackelberg/main.py` (`--log_prompts`, `--temperature`, `--probe_seed`, `--inject`) |
 | Smoke instance | `dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5` |
 | TSLP knowledge | `src/fsm_stackelberg/knowledge/domains/tslp/` |
 | Sibling repos | `../tslp-ecr-demand`, `../ecr-shared-data` |

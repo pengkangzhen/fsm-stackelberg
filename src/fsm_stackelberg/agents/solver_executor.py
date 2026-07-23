@@ -27,6 +27,7 @@ import ast
 import gurobipy
 
 from ..utils.utils import record_agent_output
+from ..utils.run_log import record_step_event
 
 logger = logging.getLogger(__name__)
 
@@ -313,12 +314,24 @@ def solver_executor_node(state: Dict) -> Dict:
         Updated state with execution_result and error context
     """
     logger.info("SolverExecutor: Starting execution...")
+    start_time = time.time()
 
     python_code = state.get("python_code")
     data_engineer_output = state.get("data_engineer_output")
     sample = state.get("sample")
 
     if not python_code:
+        duration = time.time() - start_time
+        step_metrics = record_step_event(
+            state,
+            node="solver_executor",
+            step_type="solver",
+            duration_s=duration,
+            ok=False,
+            error_type="MissingCode",
+            error_message="No Python code provided",
+            extra={"gurobi_status": "", "diagnosis_required": True},
+        )
         return {
             "execution_result": {
                 "execution_successful": False,
@@ -333,11 +346,24 @@ def solver_executor_node(state: Dict) -> Dict:
             "model_expert_output": state.get("model_expert_output"),
             "python_code": python_code,
             "retry_count": state.get("retry_count", 0),
+            "step_metrics": step_metrics,
+            "total_duration_s": state.get("total_duration_s", 0.0) + duration,
         }
 
     # Use preprocessed data from workflow state (produced by auto_preprocessor in run_mako)
     data = state.get("preprocessed_data")
     if data is None:
+        duration = time.time() - start_time
+        step_metrics = record_step_event(
+            state,
+            node="solver_executor",
+            step_type="solver",
+            duration_s=duration,
+            ok=False,
+            error_type="MissingData",
+            error_message="preprocessed_data missing from state",
+            extra={"gurobi_status": "", "diagnosis_required": True},
+        )
         return {
             "execution_result": {
                 "execution_successful": False,
@@ -352,6 +378,8 @@ def solver_executor_node(state: Dict) -> Dict:
             "model_expert_output": state.get("model_expert_output"),
             "python_code": python_code,
             "retry_count": state.get("retry_count", 0),
+            "step_metrics": step_metrics,
+            "total_duration_s": state.get("total_duration_s", 0.0) + duration,
         }
 
     # Execute code
@@ -399,6 +427,45 @@ def solver_executor_node(state: Dict) -> Dict:
     logger.info(f"SolverExecutor: Execution {'successful' if exec_report['execution_successful'] else 'failed'}")
     logger.info(f"SolverExecutor: error_category={exec_report.get('error_category')}, gurobi_status={exec_report.get('gurobi_status')}")
 
+    duration = time.time() - start_time
+    result_summary = exec_report.get("result") or {}
+    obj = result_summary.get("objective_value") if isinstance(result_summary, dict) else None
+    structure = exec_report.get("gurobi_structure") or {}
+    err_details = exec_report.get("error_details") or {}
+    step_metrics = record_step_event(
+        state,
+        node="solver_executor",
+        step_type="solver",
+        duration_s=duration,
+        ok=not bool(exec_report.get("diagnosis_required")),
+        error_type=err_details.get("error_type") if exec_report.get("diagnosis_required") else None,
+        error_message=err_details.get("error_message") if exec_report.get("diagnosis_required") else None,
+        artifact={
+            "gurobi_status": exec_report.get("gurobi_status"),
+            "objective_value": obj,
+            "diagnosis_required": exec_report.get("diagnosis_required"),
+            "error_category": exec_report.get("error_category"),
+            "gurobi_structure": structure,
+        },
+        artifact_name=f"solver_r{state.get('current_round', 1)}",
+        extra={
+            "gurobi_status": exec_report.get("gurobi_status") or "",
+            "obj": obj,
+            "structure": structure,
+            "diagnosis_required": exec_report.get("diagnosis_required"),
+            "error_category": exec_report.get("error_category"),
+        },
+    )
+    node_metrics = state.get("node_metrics", {})
+    if "solver_executor" not in node_metrics:
+        node_metrics["solver_executor"] = {
+            "total_duration_s": 0.0,
+            "total_tokens": 0,
+            "num_calls": 0,
+        }
+    node_metrics["solver_executor"]["total_duration_s"] += duration
+    node_metrics["solver_executor"]["num_calls"] += 1
+
     # Record output to history
     current_round = state.get("current_round", 1)
     output_history = record_agent_output(
@@ -434,4 +501,7 @@ def solver_executor_node(state: Dict) -> Dict:
         "output_history": output_history,
         "retry_count": state.get("retry_count", 0),
         "current_round": current_round,
+        "step_metrics": step_metrics,
+        "node_metrics": node_metrics,
+        "total_duration_s": state.get("total_duration_s", 0.0) + duration,
     }

@@ -18,6 +18,12 @@ class AgentState(TypedDict, total=False):
     sample: Dict[str, Any]
     provider: str  # LLM provider (DeepSeek, OpenAI, etc.)
     model: str  # LLM model to use
+    temperature: float  # LLM temperature (default 0; logged for reproducibility)
+
+    # Run logging (result_dir drives events.jsonl / artifacts)
+    result_dir: Optional[str]
+    run_id: Optional[str]
+    log_prompts: bool  # when True, dump full prompts under prompts/
 
     # Deterministic preprocessing (set before any LLM agent runs)
     preprocessed_data: Optional[Dict[str, Any]]  # Auto-preprocessed data dict for sandbox
@@ -63,6 +69,12 @@ class AgentState(TypedDict, total=False):
     # Ground truth
     expected_value: Optional[float]  # Ground truth objective for gap validation
     true_root_cause: Optional[str]  # Injected layer label for attribution payoff (Phase 4)
+
+    # Fault injection / probe reproducibility (optional; filled when CLI provides them)
+    inject_id: Optional[str]
+    fault_injected: bool
+    fault_plant_id: Optional[str]
+    probe_seed: Optional[int]
 
     # Episode payoffs (analysis-mode Stackelberg utilities; set at run end)
     attributed_layer: Optional[str]  # Mechanism's root-cause claim â
