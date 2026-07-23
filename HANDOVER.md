@@ -38,6 +38,22 @@
     **Machine-readable authority = manifest + events**, not `workflow.log`
     (human mirror only). Summarize / Exp-I scripts should read those files.
   - Default dataset: `prob_tslp_ecr_demand` / `smoke_H4_Omega5`.
+  - **Smoke E2E on TSLP done** (2026-07-22): `smoke_H4_Omega5` with
+    `--knowledge progressive`, provider **Qwen** / `qwen3.7-plus` (MiMo 402
+    insufficient balance; DeepSeek 401 invalid key). ME catalog→request→load
+    worked (round1: stage1/stage2/structure; round2: data-access); Stackelberg
+    probe loop ran; final `OPTIMAL`, gap≈0 vs GT (`obj≈1.389581e6`). Artifacts:
+    `results/mako/Qwen_qwen3.7-plus/prob_tslp_ecr_demand_k3/smoke_H4_Omega5/`,
+    log `logs/smoke_H4_Omega5_qwen_20260722_192901.log`.
+  - **Exp-I pilot ran** (2026-07-22 evening): injection + 4-way grid on
+    `me_drop_stage2_balance` / `a*=model_expert`. Summary:
+    `results/exp_i_pilot/summary.md`. **Kill verdict: `kill_or_revise`** —
+    no valid causal≻random signal. Issues: (i) plant too weak / PD can
+    re-derive balances → causal attributed `python_developer` after SSR;
+    reverse first-pass SSR with K=0 (no diagnosis); (ii) random + adversarial
+    aborted on DashScope DNS (`Temporary failure in name resolution`).
+    Infra added: `src/fsm_stackelberg/injection/`, `--inject`,
+    `scripts/run_exp_i_pilot.sh`.
   - Manuscript method §inspection game drafted; Experiments protocol
     **written** (Setup → Methods → Metrics → Exp-I–IV), results empty.
   - **Next concrete work (ordered):**
@@ -213,8 +229,9 @@ Manuscript protocol (`§Experiments`):
 | **Exp-III** | Debate (majority vote, **no LLM confidence weights**) + Reflexion |
 | **Exp-IV** | Deflect / overturn rates, attribution vs \(K\) |
 
-**Immediate next task:** (1) restore a working LLM key and complete
-smoke E2E on `smoke_H4_Omega5`; (2) then Exp-I pilot injection + runner.
+**Immediate next task:** revise Exp-I plant (current
+`me_drop_stage2_balance` too weak / network-contaminated) and re-run the
+pilot kill-criteria grid before full Exp-I.
 
 Debate design note (agreed): debaters output `{suspected_agent, argument}`
 only; aggregate by majority vote; tie-break via status prior — **do not**
@@ -270,7 +287,8 @@ Exp-I**. Do not claim the prop is validated until ablation lands.
 ## 8. Environment checklist
 
 - [x] `uv sync` (venv at `.venv/`)
-- [ ] `.env` with API keys (`python-dotenv`; copy from `mako` as needed)
+- [x] `.env` with API keys (`python-dotenv`; Qwen works; MiMo balance /
+      DeepSeek key still broken as of 2026-07-22)
 - [ ] Gurobi license active (`gurobipy>=12.0.2`)
 - [x] GitHub remote in use (`origin` → `pengkangzhen/fsm-stackelberg`)
 

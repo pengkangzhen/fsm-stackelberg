@@ -214,21 +214,30 @@ def get_candidate_agents(gurobi_status: str = "") -> List[str]:
     return ["model_expert", "python_developer", "data_engineer"]
 
 
-def build_probe_order(gurobi_status: str = "", probe_order: str = "causal") -> List[str]:
+def build_probe_order(
+    gurobi_status: str = "",
+    probe_order: str = "causal",
+    *,
+    probe_seed: int | None = None,
+) -> List[str]:
     """Commit the inspector's probing order ω.
 
-    Causal order is the contribution; reverse/random exist for the
-    commitment-order ablation. Prior(status) seeds the start layer; the
-    remainder follows ω cyclically so every layer remains reachable.
+    - causal: data ⊳ model ⊳ code, rotated so Prior(status) is first (contribution).
+    - reverse: pure code ⊳ model ⊳ data (no Prior rotation — ablation must differ).
+    - random: full shuffle of the three layers (no Prior rotation). Optional
+      ``probe_seed`` makes the shuffle reproducible across runs.
     """
     if probe_order == "reverse":
-        omega = list(reversed(CAUSAL_LAYERS))
-    elif probe_order == "random":
-        omega = list(CAUSAL_LAYERS)
-        random.shuffle(omega)
-    else:
-        omega = list(CAUSAL_LAYERS)
+        return list(reversed(CAUSAL_LAYERS))
 
+    if probe_order == "random":
+        omega = list(CAUSAL_LAYERS)
+        rng = random.Random(probe_seed) if probe_seed is not None else random.Random()
+        rng.shuffle(omega)
+        return omega
+
+    # causal (default): Prior(status) seeds the start; remainder follows causal cycle.
+    omega = list(CAUSAL_LAYERS)
     seed = get_candidate_agents(gurobi_status)[0]
     if seed in omega:
         i = omega.index(seed)
@@ -486,21 +495,32 @@ def _stackelberg_diagnosis(
 
     # First entry into this failure episode: commit inspection policy σ.
     if not inspection_policy or not probe_queue:
-        probe_queue = build_probe_order(gurobi_status, probe_order_mode)
+        probe_seed = state.get("probe_seed")
+        probe_queue = build_probe_order(
+            gurobi_status,
+            probe_order_mode,
+            probe_seed=probe_seed,
+        )
         seed = probe_queue[0] if probe_queue else "model_expert"
         inspection_policy = {
             "omega": list(probe_queue),
             "nu": VERIFICATION_RULE,
             "probe_order": probe_order_mode,
             "seed": seed,
+            "probe_seed": probe_seed,
             "prior_candidates": get_candidate_agents(gurobi_status),
+            "prior_rotated": probe_order_mode == "causal",
         }
         cleared_layers = []
         logger.info(
-            "DiagnosisAgent (stackelberg): committed σ omega=%s nu=%s seed=%s",
+            "DiagnosisAgent (stackelberg): committed σ omega=%s nu=%s seed=%s "
+            "probe_order=%s probe_seed=%s prior_rotated=%s",
             probe_queue,
             VERIFICATION_RULE,
             seed,
+            probe_order_mode,
+            probe_seed,
+            probe_order_mode == "causal",
         )
     else:
         # Re-entry: previous probe was settled. Clear the last probed layer.

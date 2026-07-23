@@ -302,6 +302,20 @@ def main():
     parser.add_argument("--true_root_cause", type=str, default=None,
                         choices=["data_engineer", "model_expert", "python_developer"],
                         help="Ground-truth failing layer for follower attribution payoff u_F")
+    parser.add_argument(
+        "--inject",
+        type=str,
+        default=None,
+        dest="inject_id",
+        help="Fault-plant id (Exp-I). Applied once on ME→PD; seeds true_root_cause if unset. "
+             "Known: me_drop_stage2_balance, me_force_zero_sea",
+    )
+    parser.add_argument(
+        "--probe_seed",
+        type=int,
+        default=None,
+        help="RNG seed for --probe_order random (reproducible shuffle; ignored otherwise)",
+    )
     parser.add_argument("--knowledge", type=str, default="progressive",
                         choices=["progressive", "enable", "disable"],
                         help="Knowledge injection: progressive (catalog→request→load; default), "
@@ -332,6 +346,12 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if getattr(args, "inject_id", None):
+        from fsm_stackelberg.injection import get_plant
+        plant = get_plant(args.inject_id)
+        if not args.true_root_cause:
+            args.true_root_cause = plant.true_root_cause
 
     # Setup output directory
     filepath = _setup_filepath(args)
@@ -527,7 +547,8 @@ def main():
 
     else:  # mako
         logger.info(f"Starting FSM-Stackelberg workflow (provider={args.provider}, model={args.model}, "
-                    f"diagnosis_mode={args.diagnosis_mode}, probe_order={args.probe_order})...")
+                    f"diagnosis_mode={args.diagnosis_mode}, probe_order={args.probe_order}, "
+                    f"inject={getattr(args, 'inject_id', None)})...")
         workflow_started_at = time.time()
         try:
             final_state = run_mako(
