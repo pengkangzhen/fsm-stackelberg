@@ -20,23 +20,34 @@
   Application model from sibling `tslp-ecr-demand` + `ecr-shared-data`.
   **Independent codebase** — do not modify `mako` / do not sync back.
   Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
-- **Repo.** `git@github.com:pengkangzhen/fsm-stackelberg.git`, branch `main`.
-- **Current state (2026-07-22).**
+- **Repo.** `git@github.com:pengkangzhen/fsm-stackelberg.git`, branch `main`
+  (includes merge `869752b` structured run logging).
+- **Current state (2026-07-23).**
   - Phase 0 skipped; Phase 1 Stackelberg PoC **done**; Phase 2 analysis-mode
-    payoffs **done** (`src/fsm_stackelberg/game/payoff.py`).
+    payoffs **done** (`src/fsm_stackelberg/game/payoff.py`), including
+    commitment diagnostics (`committed_omega`, `first_probe_hit` / `kill_hit`,
+    `attribution_hit`) for Exp-I.
   - **Progressive knowledge injection** (catalog → request → full text; not
     RAG, not dump-all) is the default via
     `src/fsm_stackelberg/knowledge/progressive.py`, wired through
     `plugins.FeatureBundle`. Heuristic full-text preload has been **removed**.
+  - **Structured run logging done** (`src/fsm_stackelberg/utils/run_log.py`):
+    each run writes `run_manifest.json` (config + terminal metrics),
+    `events.jsonl` (per-node tokens/duration/diagnosis/comply–deflect), and
+    `artifacts/` (diagnosis / backward / inject). Optional `--log_prompts`.
+    **Machine-readable authority = manifest + events**, not `workflow.log`
+    (human mirror only). Summarize / Exp-I scripts should read those files.
   - Default dataset: `prob_tslp_ecr_demand` / `smoke_H4_Omega5`.
   - Manuscript method §inspection game drafted; Experiments protocol
     **written** (Setup → Methods → Metrics → Exp-I–IV), results empty.
   - **Next concrete work (ordered):**
     1. **Smoke E2E on TSLP** — restore a working LLM key, then run
        `smoke_H4_Omega5` with `--knowledge progressive` and confirm ME can
-       request/load modules and the solve/diagnosis loop completes.
+       request/load modules and the solve/diagnosis loop completes
+       (also verify `run_manifest.json` / `events.jsonl` land under `results/`).
     2. Exp-I pilot (kill criteria) — fault injection +
-       `stackelberg × {causal, reverse, random}` vs `adversarial`.
+       `stackelberg × {causal, reverse, random}` vs `adversarial`
+       (aggregate `first_probe_hit` from manifests).
     3. Exp-II; implement Debate + Reflexion; Exp-III/IV.
 
 ---
