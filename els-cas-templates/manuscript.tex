@@ -45,10 +45,10 @@
 
 \begin{document}
 
-\shorttitle{FSM-Stackelberg Diagnosis--Repair for Agentic NLO}
+\shorttitle{Stackelberg Diagnosis--Repair for LLM-Based ECR}
 \shortauthors{Peng et al.}
 
-\title[mode=title]{A State-Machine Stackelberg Game for Diagnosis--Repair in Natural-Language Optimization}
+\title[mode=title]{A Stackelberg Inspection Game for Diagnosis--Repair in LLM-Based Empty Container Repositioning Optimization}
 
 \author[dlmu]{Kangzhen Peng}\ead{pengkangzhen@dlmu.edu.cn}
 \affiliation[dlmu]{organization={College of Transportation Engineering, Dalian Maritime University},
@@ -58,8 +58,8 @@
 % TODO: full abstract once experiments land. Method = diagnosis--repair redesign;
 % application = demand-uncertainty TSLP ECR (Section~\ref{sec:ecr_model}).
 [Draft] We recast the error diagnosis and repair stage of an LLM multi-agent
-optimization pipeline as a Stackelberg \emph{inspection game} defined on a
-state machine. A LangGraph finite-state machine orchestrates role-specialized
+pipeline for Empty Container Repositioning (ECR) optimization as a Stackelberg
+\emph{inspection game} defined on a state machine. A LangGraph finite-state machine orchestrates role-specialized
 agents (Data Engineer $\to$ Model Expert $\to$ Python Developer $\to$ Solver)
 and serves as the stage-game apparatus. When a solve fails, the diagnosis
 agent acts as an \emph{inspector} (the Stackelberg leader) that commits, first
@@ -75,8 +75,8 @@ executed-refutation policy induces the truthful best response --- a guilty
 layer complies and repairs, an innocent layer's deflection is verified ---
 replacing the baseline's single-judge LLM accusation. We formalize the
 mechanism, state a proposition on causal-order inspection, and instantiate it
-on a \emph{demand-uncertainty} sea--land Empty Container Repositioning (ECR)
-problem formulated as a two-stage stochastic linear program.
+on a \emph{demand-uncertainty} sea--land ECR problem formulated as a two-stage
+stochastic linear program.
 \end{abstract}
 
 \begin{highlights}
@@ -100,40 +100,213 @@ problem formulated as a two-stage stochastic linear program.
 %==============================================================================
 \section{Introduction}
 \label{sec:intro}
-% TODO: full introduction.
-This paper addresses the reliability of LLM multi-agent pipelines that
-automatically formulate and solve operations-research (OR) optimization
-problems from natural language. We inherit a working pipeline --- the MAKO
-framework~\citep{wu2024autogen} --- and focus on its weakest link: when the
-solver fails, attributing the failure to the correct pipeline stage and
-repairing it. We propose a state-machine Stackelberg game for this
-diagnosis--repair stage.
 
-\paragraph{Thesis.} Attributing a failed solve is not a neutral classification
-task but a game with conflicting interests, and the pipeline's causal layering
-(\emph{data $\tri$ model $\tri$ code}) makes it precisely a Stackelberg
-\emph{inspection game}. Because an upstream defect manifests as a downstream
-symptom, an accused downstream agent is often innocent, and it has a genuine
-private incentive to deflect blame upstream and avoid the cost of a repair
-that could not fix the true cause anyway. The diagnosis agent is therefore an
-\emph{inspector} that moves first and commits --- observably --- to an
-inspection policy: probe the layers in causal order and verify every response
-by \emph{executed refutation} (a real re-solve), not by an unverifiable
-confidence score. This commitment is what gives the mechanism teeth: it makes
-truthful compliance the best response of a guilty layer and verified deflection
-the best response of an innocent one, so the accused can neither confess
-falsely nor deflect dishonestly for free. Aligning the probing order with the
-causal order gives the first move causal meaning --- a probe of a layer
-upstream of the true root cause is settled by re-solve before the inspector
-descends. Section~\ref{sec:ecr_model} states the demand-uncertainty ECR
-application model; Section~\ref{sec:method} develops the method.
-Section~\ref{sec:experiments} fixes the experimental protocol
-(Setup through Exp-I--IV, including an Exp-I pilot); numerical results and the
-Conclusion follow the campaign.
+Empty Container Repositioning (ECR) is a standing cost center in global
+liner shipping. Trade imbalance leaves empty equipment stranded at import
+hubs while export regions face shortages; planners must move empties across
+sea and inland networks under capacity, transit-time, and inventory
+limits~\citep{poiani2024ecr,wang2025ecrslot}. Under demand uncertainty the
+problem is naturally a multi-stage (often two-stage) stochastic program:
+first-stage repositioning commitments are made before scenario-dependent
+export demand realizes, and recourse actions (e.g.\ leasing or spill) absorb
+residual imbalance~\citep{poiani2024ecr,cai2025ecrjoint}. Building a
+correct model therefore requires scarce domain expertise: admissible
+sea--dry topologies, mode-specific costs, scenario trees or deterministic
+equivalents, and recourse design that remains relatively complete. Small
+misspecifications in data, mathematics, or solver code routinely yield
+infeasible, suboptimal, or operationally meaningless plans.
+
+Traditional practice addresses ECR with expert-built mixed-integer or
+stochastic programs, meta-heuristics, and, more recently, multi-agent
+reinforcement learning for joint repositioning and fleet
+decisions~\citep{poiani2024ecr,cai2025ecrjoint}. These methods can be
+strong once a model exists, but they share a structural bottleneck: every
+new network, planning window, or uncertainty description must be
+\emph{hand-modeled} by OR specialists. Reformulation is slow; knowledge is
+hard to transfer across carriers; and the gap between how operations are
+described in language and how they appear in an LP remains human-mediated.
+Learning-based controllers alleviate online decision load but still
+presume a correctly engineered state, action, and reward interface. In
+short, the limiting resource is often not the solver, but the modeling
+labor that feeds it.
+
+Large language models (LLMs) change that interface. They parse
+operational narratives and structured tables, propose mathematical
+formulations, emit executable solver code, and iterate against tool
+feedback~\citep{xiao2023coe,ahmaditeshnizi2024optimus}. These abilities
+align with ECR pain points: the input is already a mixture of natural
+language and instance data; the desired output is a compilable,
+solvable model whose quality can be checked by an industrial MIP solver
+and, when available, by a known optimum $z^{\star}$. Multi-agent
+scaffolds (role-specialized data, modeling, and coding agents coordinated
+by a shared state) further match the layered work of OR practice, from
+data preparation through formulation to
+implementation~\citep{wu2024autogen,xiao2023coe,ahmaditeshnizi2024optimus}.
+Recent
+maritime applications already use LLM agents for stowage-related planning
+and sketch agent-based transportation modeling~\citep{liu2025llmtransport},
+indicating that the same automation path is opening for container
+logistics.
+
+Automation, however, relocates rather than removes the reliability
+problem. In a natural-language optimization (NLO) pipeline, defects
+propagate along \emph{data $\tri$ model $\tri$ code}: an upstream modeling
+error often surfaces as a downstream crash or wrong objective, so stack
+traces mark the symptom locus rather than the certified root cause. Without
+domain knowledge the pipeline cannot formulate ECR correctly in the first
+place; with knowledge, failed solves still demand
+\emph{attribution and repair}. Existing agentic OR systems rely mainly on
+single-judge accusation, sequential backward repair, multi-agent
+debate, or verbal reflection~\citep{du2023improving,shinn2023reflexion,liang2024mad}.
+These protocols increase deliberation but treat diagnosis as (multi-call)
+classification with cheap-talk self-checks. They do not commit an observable
+inspection policy, do not verify accused replies by executed re-solve as a
+discipline, and do not account for the private incentive of an innocent
+downstream layer to deflect blame.
+
+\paragraph{Thesis.}
+We argue that diagnosis--repair under layered ECR modeling errors is a
+Stackelberg \emph{inspection game}~\citep{avenhaus2002inspection,maschler1966inspection}.
+A diagnosis agent acts as inspector (leader) and commits, first and
+observably, to a policy $\sigma=(\omega,\nu)$: a probing order $\omega$
+aligned with causal dependence, and a verification rule $\nu$ of
+\emph{executed refutation} (a real re-solve under a strict-success test
+against $z^{\star}$). Accused data, model, and code agents are inspectees
+(followers) that choose to comply-and-repair or to deflect. Commitment
+gives the mechanism teeth: a guilty layer's best response is to repair; an
+innocent layer's deflection is upheld only if re-solve confirms it. We
+instantiate the game on a LangGraph state machine as stage-game apparatus
+and validate it on a demand-uncertainty sea--land ECR two-stage DEP
+(Section~\ref{sec:ecr_model}).
+
+\paragraph{Contributions.}
+(i)~We cast diagnosis--repair in an LLM multi-agent NLO pipeline as a
+Stackelberg inspection game on a finite-state machine.
+(ii)~We specify an inspector commitment to causal-order probing with
+executed refutation, inducing verifiable attribution rather than
+confidence-routed accusation.
+(iii)~We state a proposition that causal-order inspection strictly reduces
+the viable root-cause set relative to single-judge play without dropping
+the true layer, and test it with commitment-order ablations and baselines
+on demand-uncertainty ECR.
+(iv)~We separate progressive domain-knowledge injection (necessary for ECR
+solvability) from the game-theoretic diagnosis claim (necessary for
+auditable repair).
+
+Section~\ref{sec:related} reviews ECR research and the shift to agentic
+NLO. Section~\ref{sec:ecr_model} gives the ECR problem description and
+mathematical formulation.
+Section~\ref{sec:method} develops the inspection mechanism.
+Section~\ref{sec:experiments} states the experimental protocol; results and
+the Conclusion follow the campaign.
 
 %==============================================================================
-\section{Problem Definition}
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Empty container repositioning}
+\label{sec:related_ecr}
+ECR has long been studied as a network optimization problem driven by
+directional trade imbalance. Classical and contemporary OR formulations
+use deterministic or stochastic mathematical programs for repositioning,
+inventory, slot allocation, and related fleet decisions, often solved by
+exact methods or meta-heuristics~\citep{wang2025ecrslot,cai2025ecrjoint}.
+Under uncertainty and operational black-box constraints, configurable
+partially observable models and two-stage learning procedures have been
+proposed for joint repositioning and fleet
+deployment~\citep{poiani2024ecr}. These lines establish ECR as a hard,
+domain-rich benchmark with verifiable optima once a model is fixed. They
+do not automate the passage from an operational description to that model.
+Emerging LLM-agent work in maritime and transportation systems (e.g.\
+text-to-stowage pipelines and conceptual LLM-agent transportation
+frameworks)~\citep{liu2025llmtransport} suggests that natural-language
+interfaces are becoming plausible for container logistics, but reliability
+of the modeling--coding--solving chain remains open. We therefore use
+demand-uncertainty ECR as a \emph{validation bed} with an expert DEP
+optimum $z^{\star}$, not as a claim of a new ECR theory.
+
+\subsection{From expert modeling to agentic natural-language optimization}
+\label{sec:related_nlo}
+The broader OR+LLM literature is shifting how optimization problems are
+produced and checked. Chain-of-Experts orchestrates role-specialized agents
+with forward construction and backward reflection for complex OR
+tasks~\citep{xiao2023coe}; OptiMUS modularizes formulation, coding, and
+evaluation against solver feedback at
+scale~\citep{ahmaditeshnizi2024optimus,ahmaditeshnizi2024optimus03};
+related expert-guided reasoning pipelines further target automated
+optimization modeling~\citep{yang2025orthought}. Relative to classical
+``expert writes the math, solver optimizes,'' this body of work exhibits
+three coupled shifts. First, the \emph{object of study} moves from solving
+a given mathematical program to turning unstructured descriptions and data
+into a solvable, correct model. Second, \emph{verification} moves from
+textual resemblance or manual reading toward executable checks (compile,
+solve, and comparison to $z^{\star}$ when available), so success is judged
+by whether the artifact passes a solver rather than by whether the prose
+looks right. Third, once modeling is a multi-stage pipeline, \emph{reliability}
+becomes first-class: errors cascade along data, model, and code; the failure
+surface is often downstream of the true root cause. Domain knowledge
+injection is necessary for problems such as ECR to be formulable at all;
+failure attribution and diagnosis--repair are necessary for the pipeline to
+recover when it does not. Our work sits in this third shift while retaining
+executable solver verification as the hard truth signal.
+
+\subsection{Reliability mechanisms in LLM multi-agent systems}
+\label{sec:related_reliability}
+Layered LLM multi-agent systems face a distinctive reliability problem:
+errors cascade across role boundaries, and the observable failure surface
+(crash, infeasibility, or wrong objective) is often downstream of the true
+root cause. In NLO pipelines this appears as data~$\tri$~model~$\tri$~code
+dependence---a modeling mistake may surface as a coding crash or a wrong
+solve. Domain knowledge and role scaffolding are a \emph{prerequisite} for
+hard OR tasks to be formulable at
+all~\citep{wu2024autogen,xiao2023coe,ahmaditeshnizi2024optimus}, but they do
+not by themselves certify which layer failed or compel a correct repair. A
+complementary line therefore treats verification as executable rather than
+textual: compile, solve, and check against solver feedback or a known
+optimum when
+available~\citep{ahmaditeshnizi2024optimus,ahmaditeshnizi2024optimus03}.
+Two further mechanism families address post-failure recovery. Failure
+attribution asks which agent and which step caused the failure: Who\&When
+shows that even strong LLM judges remain far from reliable step-level
+attribution~\citep{zhang2025whowhen}; subsequent work stresses full-trace
+observability~\citep{chen2026traceelephant}, hierarchical or causal-graph
+attribution~\citep{wang2026chief}, and Causal Agent Replay that intervenes
+on trajectory steps and re-executes forward~\citep{shah2026car}.
+Diagnosis--repair and multi-call protocols then try to act on that judgment:
+single-judge accusation with status-based priors, reverse-order sequential
+repair, multi-agent debate~\citep{du2023improving,liang2024mad}, and
+Reflexion-style verbal memory~\citep{shinn2023reflexion}. These lines
+increase deliberation or observability, yet they typically stop at naming
+(or reflective re-prompting). Missing for layered OR pipelines is a
+\emph{committed} inspection policy whose replies are settled by re-solve
+under a strict success rule---the incentive-compatible, executed-refutation
+mechanism we develop as a Stackelberg inspection game in
+Section~\ref{sec:related_game}.
+
+\subsection{Game-theoretic multi-agent LLM systems}
+\label{sec:related_game}
+Game-theoretic views of LLM multi-agent systems cover debate, Nash-style
+coordination, and Stackelberg resource
+governance~\citep{yi2025econ,stackelberg2026resource,du2023improving}.
+Classical inspection games analyze an inspector who commits to a monitoring
+policy and an inspectee who best-responds~\citep{avenhaus2002inspection,maschler1966inspection}.
+We use that template for layered NLO diagnosis--repair: the diagnosis agent
+is the inspector; data/model/code agents are inspectees; commitment is to
+causal-order probing plus executed refutation on the ECR blackboard. This
+differs from resource Stackelberg controllers (token or tool budgets) and
+from debate equilibria (message-passing agreement) in both players and
+payoffs. The empirical spine is whether committed causal order improves
+\emph{verifiable} attribution relative to unordered commitment and to
+non-committed single-judge or multi-call baselines
+(Section~\ref{sec:experiments}).
+
+%==============================================================================
+\section{Problem Description and Mathematical Formulation}
 \label{sec:ecr_model}
+
+\subsection{Problem description}
+\label{sec:ecr_desc}
+\label{sec:ecr_network}
 
 We validate the diagnosis--repair mechanism on a sea--land Empty Container
 Repositioning (ECR) problem under \emph{export-demand uncertainty}. The
@@ -147,9 +320,6 @@ must formulate and solve this DEP from a natural-language description plus
 structured instance data; the expert DEP optimum supplies the
 strict-success rule used by the diagnosis mechanism
 (Section~\ref{sec:stackelberg}).
-
-\subsection{Network and uncertainty}
-\label{sec:ecr_network}
 
 The network is a directed multigraph on node set
 $\mathcal{N}=\mathcal{H}\sqcup\mathcal{L}$, where sea ports
@@ -187,10 +357,13 @@ the pipeline to build the extensive-form DEP of the two-stage program below.
 All decisions are continuous nonnegative TEUs; at weekly scale the integrality
 gap is negligible.
 
-\subsection{Notation}
+\subsection{Mathematical formulation}
+\label{sec:ecr_formulation}
+
+\subsubsection{Sets, parameters, and variables}
 \label{sec:ecr_notation}
 
-\noindent\textbf{Sets.}
+\paragraph{Sets.}
 $\mathcal{H}^{\mathrm{hub}}$, $\mathcal{H}^{\mathrm{spoke}}$, $\mathcal{L}$;
 $\mathcal{N}^{\mathrm{inv}}=\mathcal{H}\cup\mathcal{L}$;
 modes $\mathcal{K}$; admissible arcs $\mathcal{A}$ as in~\eqref{eq:arc-set};
@@ -208,7 +381,7 @@ Flow variables are indexed on arcs $(i,j,\kappa)\in\mathcal{A}$;
 we write $x_{ij\kappa,t}^{\omega}$ interchangeably with $x_{a,t}^{\omega}$ for
 $a=(i,j,\kappa)$.
 
-\noindent\textbf{Deterministic parameters.}
+\paragraph{Deterministic parameters.}
 Exogenous supply $\xi_{n,t}$; spoke top-up $E_{i,t}$; initial inventory
 $I_{n,0}$; committed inland arrivals $\bar{Q}_{n,t}^{\mathrm{arr}}$ (zero on the
 first-window smoke instance); hub vessel calls $V_{i,t}\in\{0,1\}$ and
@@ -223,24 +396,24 @@ $c_n^{\mathrm{lease}}$, $c^{\mathrm{spill}}$, with
 $c^{\mathrm{spill}}\gg\max\{c_n^{\mathrm{lease}},c_n^{\mathrm{hold}},
 c_{ij\kappa}^{\mathrm{repo}}\}$.
 
-\noindent\textbf{Random parameters.}
+\paragraph{Random parameters.}
 Demand $\eta_{n,t}^{\omega}$ and probabilities $\pi_{\omega}$
 ($\sum_{\omega}\pi_{\omega}=1$). Scenarios are drawn by truncated-normal
 additive shocks about nominal means $\bar{\eta}_{n,t}$.
 
-\noindent\textbf{First-stage decisions (here-and-now).}
+\paragraph{First-stage decisions (here-and-now).}
 $y_{i,t}^{\mathrm{in}},\,y_{i,t}^{\mathrm{out}}\in\mathbb{R}_+$ for
 $i\in\mathcal{H}^{\mathrm{hub}}$, $t\in\mathcal{T}$: hub sea arrivals
 (arrival-week accounting) and departures, chosen \emph{before} demand is
 revealed.
 
-\noindent\textbf{Second-stage decisions (wait-and-see).}
+\paragraph{Second-stage decisions (wait-and-see).}
 For each $\omega\in\Omega$: arc flows $x_{ij\kappa,t}^{\omega}$
 ($(i,j,\kappa)\in\mathcal{A}$), inventories $I_{n,t}^{\omega}$, leases
 $r_{n,t}^{\omega}$, and spill $s_{n,t}^{\omega}$, all in $\mathbb{R}_+$.
 
-\subsection{Two-stage formulation [D1]--[D2]}
-\label{sec:ecr_formulation}
+\subsubsection{Mathematical model}
+\label{sec:ecr_mathmodel}
 
 The inland submodel is a \emph{node--arc} network formulation on the
 admissible digraph $(\mathcal{N},\mathcal{A})$: topology is encoded by the
@@ -388,14 +561,46 @@ The remaining inequalities are arc capacities~\eqref{eq:d2-flowcap} and yard
 caps~\eqref{eq:d2-invcap}. Lease variables are unbounded above; spill \(s\)
 with large \(c^{\mathrm{spill}}\) provides relatively complete recourse.
 
+\subsubsection{Success criterion for the agentic task}
+\label{sec:ecr_success}
+
 The agentic task is to emit a Gurobi implementation of the extensive-form DEP
 equivalent to~\eqref{eq:d1-obj}--\eqref{eq:d2-nn}. An expert DEP solve on the
 frozen smoke instance yields a known optimum $z^{\star}$ (approximately
-$1.390\times 10^{6}$ for $H{=}4$, $|\Omega|{=}5$, seed~$42$). A pipeline run
-is counted as a strict success iff the solver reports
-\textsc{Optimal} and the relative gap to $z^{\star}$ does not exceed $10^{-2}$
-(one percent; the experimental default). Injected root-cause labels for
-attribution experiments are defined on the same layered pipeline
+$1.390\times 10^{6}$ for $H{=}4$, $|\Omega|{=}5$, seed~$42$). Critically,
+a solver report of \textsc{Optimal} is \emph{not} by itself a certificate that
+the emitted model is the intended DEP: an incomplete or misspecified
+formulation can still be feasible and yield a spurious optimum
+$\hat{z}\neq z^{\star}$. Table~\ref{tab:outcome_taxonomy} therefore
+distinguishes four terminal outcomes by crossing the solver status with
+model correctness relative to $z^{\star}$.
+
+\begin{table}[pos=htbp]
+\centering
+\caption{Outcome categories mapping solver status to model correctness.}
+\label{tab:outcome_taxonomy}
+\small
+\begin{tabular}{@{}l c c@{}}
+\toprule
+\textbf{Outcome} & \textbf{Solver \texttt{OPTIMAL}?} & \textbf{Model correct?} \\
+\midrule
+Practical Optimal    & \checkmark & \checkmark \\
+Spurious Optimal     & \checkmark & $\times$ \\
+Model Infeasibility  & $\times$   & $\times$ \\
+Runtime Error        & (not reached) & (not reached) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+Here \emph{model correct} means the relative gap
+$|\hat{z}-z^{\star}|/|z^{\star}|$ does not exceed $10^{-2}$ (one percent; the
+experimental default). A pipeline run is counted as a \emph{strict success}
+(SSR) iff the outcome is \emph{Practical Optimal}: the solver reports
+\textsc{Optimal} \emph{and} the gap test against $z^{\star}$ passes.
+\textsc{Optimal} alone with a failed gap test is classified as
+\emph{Spurious Optimal} and does not count toward SSR. Injected root-cause
+labels for attribution experiments are defined on the same layered pipeline
 (data $\tri$ model $\tri$ code) and are independent of the OR model above.
 
 %==============================================================================
@@ -570,52 +775,76 @@ blame attributable rather than heuristic.
 \subsection{The Stackelberg Diagnosis--Repair Game as an Inspection Game}
 \label{sec:stackelberg}
 
-\paragraph{Why a game, not a single judge.} The baseline diagnoses a failed
-solve with what it calls an ``adversarial'' protocol: (i) a static heuristic
-prior over candidate agents keyed on the solver status (\textsc{Crash}
-$\Rightarrow$ code first; \textsc{Optimal}-but-wrong-objective $\Rightarrow$
-model first); (ii) a \emph{single} LLM call returning a suspect, a confidence,
-and a rationale; (iii) a backward step in which the accused agent
-self-verifies. The baseline is candid that this is role-asymmetric but
-\emph{not} game-theoretic --- it ``does not assume utility-maximizing agents,
-opposed payoff functions, or equilibrium behavior.'' There is no payoff
-structure, no equilibrium concept, no leader--follower commitment, and no
-strategic interaction among agents.
+We cast the diagnosis--repair stage as a
+Stackelberg game on the FSM multi-agent pipeline. The DiagnosisAgent moves
+first and commits --- observably --- to an inspection policy; the accused
+correctable agents then best-respond. Leader commitment plus follower
+response matches the pipeline's control structure: the orchestrator already
+routes through diagnosis before any repair is applied, so the natural
+extensive form is sequential rather than simultaneous classification.
 
-We argue that the conflicting-interest structure is nonetheless already
-present and is being ignored. Under the causal layering of
-Section~\ref{sec:layered}, an upstream defect surfaces as a downstream
-symptom, so the agent an observation implicates is frequently \emph{not} the
-one at fault. In particular, one cannot read the root-cause layer off the
-\texttt{SolverExecutor}'s failure surface alone: a Python traceback or
-crash locus typically marks where the pipeline \emph{broke}, most often in
-generated code, rather than where the defect was \emph{introduced}. Treating
-stack traces and solver logs as a direct pointer to the guilty agent is
-therefore systematically biased toward the downstream code layer --- precisely
-the single-judge failure mode that an inspection commitment is designed to
-avoid. A correctly self-interested accused agent should therefore
-\emph{deflect} blame it does not deserve and decline a repair that cannot fix
-an upstream cause --- exactly the incentive of an inspectee facing an
-inspector. We accordingly cast diagnosis--repair as a Stackelberg
+\subsubsection{Causal layering of defects and the deflection incentive}
+\label{sec:layered}
+
+Let the correctable core of the pipeline be the chain
+$a_1\tri a_2\tri a_3$ (DataEngineer $\tri$ ModelExpert $\tri$ PythonDeveloper),
+i.e.\ \emph{data $\tri$ model $\tri$ code}, where $\tri$ denotes ``is a causal
+prerequisite of.'' We assume \emph{strict causal layering of defects}: a defect
+introduced at layer $\ell\in\{1,2,3\}$ may manifest at any layer $j\ge \ell$,
+but a defect at layer $\ell$ cannot be the root cause of a symptom that
+requires only layers $<\ell$ to be well-formed. Consequently, the observation
+of a downstream failure (e.g.\ an infeasible solve, a wrong objective, or a
+traceback into solver-facing code) is consistent with several root-cause
+layers, and localizing the true root cause $\ell^{\star}$ from the failure
+evidence $\Ecal$ alone is fundamentally ambiguous: $\Ecal$ records the
+\emph{symptom locus} (often $a_3$), not a certified identity of
+$\ell^{\star}$. In particular, one cannot read the root-cause layer off the
+\texttt{SolverExecutor}'s failure surface alone: a Python traceback or crash
+locus typically marks where the pipeline \emph{broke}, most often in
+generated code, rather than where the defect was \emph{introduced}. The
+failure surface therefore motivates an \emph{inspection} protocol rather than
+a one-shot classification of the traceback locus.
+
+Causal layering of defects does not merely make attribution ambiguous; it
+gives the accused agents \emph{misaligned private incentives}, which is what
+turns diagnosis into a game rather than a classification. Consider an agent
+at layer $\ell$ that a failure has implicated. Two facts hold simultaneously:
+(i) repair is costly --- a backward step re-generates the agent's output,
+consumes tokens, and risks injecting a fresh defect; and (ii) if
+$\ell\neq\ell^{\star}$ (the layer is innocent, merely downstream of the true
+cause), then \emph{no} local repair at $\ell$ can make the solve pass,
+because by strict causal layering of defects the true defect lies upstream.
+An innocent implicated agent therefore strictly prefers to \emph{deflect}
+--- to rebut the accusation and point blame upstream --- rather than to
+accept a repair that wastes effort and cannot succeed. Symmetrically, even a
+guilty layer, if it could avoid the repair cost by deflecting, would be
+tempted to do so. The accused agents are thus not neutral truth-seekers whose
+objective coincides with the diagnostician's; they are self-interested
+inspectees. Resolving this requires an inspector that \emph{commits} to
+verification, which is what Section~\ref{sec:stage_game} constructs.
+
+This incentive structure is exactly that of an inspectee facing an inspector.
+We accordingly specialize the stage game to a Stackelberg
 \emph{inspection game}~\citep{avenhaus2002inspection,maschler1966inspection},
 a canonical class of leader--follower games in which an inspector commits to a
 monitoring policy and an inspectee best-responds. The diagnosis agent is the
 inspector (leader); the accused correctable agents are inspectees (followers);
 and the inspector's first-mover \emph{commitment} to a causal-order,
 executed-refutation policy is what induces truthful attribution as the
-inspectees' best response. Table~\ref{tab:game_mapping} maps the inspection-game
-elements to the pipeline and contrasts them with the single-judge baseline.
+inspectees' best response. Table~\ref{tab:game_mapping} maps the
+inspection-game elements to the pipeline and contrasts them with
+non-committed, single-judge protocols.
 
 \begin{table}[pos=htbp]
 \centering
 \small
 \caption{Mapping of Stackelberg inspection-game elements to the
-diagnosis--repair stage. Right column: what the single-judge baseline provides
-instead.}
+diagnosis--repair stage. Right column: what non-committed / single-judge
+protocols provide instead.}
 \label{tab:game_mapping}
 \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
 \toprule
-Inspection-game element & Concretization in our mechanism & Single-judge baseline \\
+Inspection-game element & Concretization in our mechanism & Non-committed / single-judge protocols \\
 \midrule
 Inspector / leader (moves first, commits) & DiagnosisAgent commits an inspection policy $\sigma$: probe order + executed refutation & One LLM call picks a suspect \\
 Inspectees / followers (best-respond) & Accused agents $a_1,a_2,a_3$: comply-and-repair or deflect-upstream & Accused agent self-checks in isolation \\
@@ -629,48 +858,7 @@ Stage-game apparatus & The LangGraph FSM (states = stage-game states) & (treated
 \end{tabularx}
 \end{table}
 
-\subsubsection{Layered error dependence and the deflection incentive}
-\label{sec:layered}
-
-Let the correctable core of the pipeline be the chain
-$a_1\tri a_2\tri a_3$ (DataEngineer $\tri$ ModelExpert $\tri$ PythonDeveloper),
-i.e.\ \emph{data $\tri$ model $\tri$ code}, where $\tri$ denotes ``is a causal
-prerequisite of.'' We assume \emph{strict layered error dependence}: a defect
-introduced at layer $\ell\in\{1,2,3\}$ may manifest at any layer $j\ge \ell$,
-but a defect at layer $\ell$ cannot be the root cause of a symptom that
-requires only layers $<\ell$ to be well-formed. Consequently, the observation
-of a downstream failure (e.g.\ an infeasible solve, a wrong objective, or a
-traceback into solver-facing code) is consistent with several root-cause
-layers, and localizing the true root cause $\ell^{\star}$ from the failure
-evidence $\Ecal$ alone is fundamentally ambiguous: $\Ecal$ records the
-\emph{symptom locus} (often $a_3$), not a certified identity of
-$\ell^{\star}$. This ambiguity is exactly what a single-judge classifier must
-resolve in one shot. Trusting the stack as a root-cause oracle is therefore
-insufficient: the failure surface motivates an \emph{inspection} protocol
-rather than a one-shot classification of the traceback locus.
-
-\paragraph{The conflict of interest this creates.} Layered dependence does not
-merely make attribution ambiguous; it gives the accused agents \emph{misaligned
-private incentives}, which is what turns diagnosis into a game rather than a
-classification. Consider an agent at layer $\ell$ that a failure has
-implicated. Two facts hold simultaneously: (i) repair is costly --- a backward
-step re-generates the agent's output, consumes tokens, and risks injecting a
-fresh defect; and (ii) if $\ell\neq\ell^{\star}$ (the layer is innocent, merely
-downstream of the true cause), then \emph{no} local repair at $\ell$ can make
-the solve pass, because by strict layered dependence the true defect lies
-upstream. An innocent implicated agent therefore strictly prefers to
-\emph{deflect} --- to rebut the accusation and point blame upstream --- rather
-than to accept a repair that wastes effort and cannot succeed. Symmetrically,
-even a guilty layer, if it could avoid the repair cost by deflecting, would be
-tempted to do so. The accused agents are thus not neutral truth-seekers whose
-objective coincides with the diagnostician's; they are self-interested
-inspectees. A protocol that merely \emph{asks} an accused agent to
-self-verify (the baseline) cannot separate a truthful deflection from a
-self-serving one, because both are cheap talk. Resolving this requires an
-inspector that \emph{commits} to verification, which is what
-Section~\ref{sec:stage_game} constructs.
-
-\subsubsection{Players, strategies, and the inspector's commitment}
+\subsubsection{Game formulation}
 \label{sec:stage_game}
 
 A diagnosis--repair stage game $G$ is instantiated whenever $\Delta$ routes
@@ -684,56 +872,39 @@ operating as an independent examiner. The inspectees are the correctable
 agents $a_1,a_2,a_3$; in a given probe the active inspectee is the agent
 $a_{\hat{\ell}}$ at the currently probed layer $\hat{\ell}$.
 
-\paragraph{The inspector's strategy is a committed policy.} The inspector's
-strategy is an \emph{inspection policy} $\sigma=(\omega,\,\nu)$ fixed
-\emph{before} any inspectee responds and observable to all: (i) a probing
-order $\omega$ over the layers, and (ii) a verification rule $\nu$ that
-resolves every inspectee response by \emph{executed refutation} --- a real
-re-solve under the strict-success rule --- rather than by accepting the
-inspectee's word. Committing to $\nu$ is the crux: it converts the inspectee's
-reply from cheap talk into a claim that will be mechanically checked.
-
-\paragraph{The inspectee's strategy is a response to being probed.} When probed
-at layer $\ell$, the inspectee chooses a response
-$r\in\{\textsc{comply},\textsc{deflect}\}$. To \textsc{comply} is to accept
-responsibility and emit a \emph{concrete repair} $h\in\mathcal{H}_{\ell}$ --- a
-specific fix with a justification tying it to the evidence --- which the
-inspector will execute. To \textsc{deflect} is to rebut the accusation and
-assert that the root cause lies at another (upstream) layer, a claim the
-inspector will likewise test.
-
-\paragraph{Commitment order $=$ causal order.} The probing order $\omega$
-follows the causal order $a_1\tri a_2\tri a_3$: the inspector probes the
-seeded suspect layer first and, when a layer is cleared, descends to the next
-causal layer. Play within a probe is strictly sequential --- the inspector's
-policy $\sigma$ is committed and observable, then the inspectee best-responds
---- which is what makes $G$ a Stackelberg game. Aligning the probing order
-with the causal order is the central design choice: it makes the first move
-causally meaningful (an upstream probe is settled by re-solve before the
-inspector can be blamed for descending too far) rather than a coin flip among
+\paragraph{Timing.} Play is Stackelberg: the inspector first commits to an
+observable inspection policy; the active inspectee then responds; the
+inspector finally settles the response by verification. The probing order
+$\omega$ follows the causal order $a_1\tri a_2\tri a_3$: the inspector probes
+the seeded suspect layer first and, when a layer is cleared, descends to the
+next causal layer. Aligning commitment order with causal order makes the
+first move causally meaningful (an upstream probe is settled by re-solve
+before the inspector descends) rather than a coin flip among
 observationally equivalent layers.
 
-\subsubsection{Inspectee response and verification by executed refutation}
-\label{sec:leader_follower}
-
-\paragraph{Inspectee response.} Given the evidence $\Ecal$ assembled from the
-blackboard --- stack trace, solver log, the code segment implicated by the
-traceback, the model definition, and the relevant data structures, together
-with the input--output pairs $\{(x^{(i)},y^{(i)})\}$ of the pipeline agents ---
-the inspectee at the probed layer $\hat{\ell}$ chooses its response
+\paragraph{Strategies.} The inspector's strategy is an \emph{inspection
+policy} $\sigma=(\omega,\,\nu)$ fixed \emph{before} any inspectee responds:
+(i)~a probing order $\omega$ over the layers, and (ii)~a verification rule
+$\nu$ that resolves every response by \emph{executed refutation} rather than
+by accepting the inspectee's word. When probed at layer $\ell$, the inspectee
+chooses
+$r\in\{\textsc{comply},\textsc{deflect}\}$. To \textsc{comply} is to accept
+responsibility and emit a concrete repair $h\in\mathcal{H}_{\ell}$; to
+\textsc{deflect} is to rebut the accusation and assert that the root cause
+lies upstream. Given evidence $\Ecal$ from the blackboard --- stack trace,
+solver log, implicated code, model definition, data structures, and pipeline
+input--output pairs $\{(x^{(i)},y^{(i)})\}$ --- the active inspectee emits
 \begin{equation}\label{eq:inspectee}
 (r,\,h)\;\gets\; a_{\hat{\ell}}^{-}\!\bigl(x^{(\hat{\ell})},\,y^{(\hat{\ell})},\,\Ecal\bigr),
 \qquad r\in\{\textsc{comply},\textsc{deflect}\},
 \end{equation}
-where, if $r=\textsc{comply}$, $h\in\mathcal{H}_{\hat{\ell}}$ is a concrete
-repair with a justification $\rho$, and if $r=\textsc{deflect}$, $h$ carries a
-rebuttal pointing at an upstream layer. Complying is a bet that ``the failure
-is caused by my layer, and here is precisely how I fix it''; deflecting is the
-claim ``my layer is well-formed given its inputs; the cause is upstream.''
+where, if $r=\textsc{comply}$, $h$ carries a justified repair, and if
+$r=\textsc{deflect}$, $h$ carries an upstream rebuttal.
 
-\paragraph{Verification by executed refutation.} Under its committed rule
-$\nu$, the inspector does not take the response on trust. It selects and
-\emph{executes} the cheapest decisive test of the response,
+\paragraph{Verification.}
+\label{sec:leader_follower}
+Under its committed rule $\nu$, the inspector does not take the response on
+trust. It selects and \emph{executes} the cheapest decisive test,
 \begin{equation}\label{eq:follower}
 \tau^{\star} \;\gets\; \arg\min_{\tau\in\mathcal{T}(r,h)}\,
       \mathrm{cost}(\tau)\quad\text{s.t.\ $\tau$ is decisive,}
@@ -746,30 +917,18 @@ v \;=\; \bigl(\,\beta,\;\hat{\ell}^{\star}\,\bigr)
 \;=\; I\!\bigl(r,\,h,\,\tau^{\star},\,S_t\bigr),
 \end{equation}
 where $\beta\in\{0,1\}$ records whether the probed layer is \emph{cleared}
-($\beta{=}1$: a compliance whose re-solve still fails --- a false confession
---- or a deflection the inspector upholds) or \emph{confirmed}
-($\beta{=}0$: a compliance whose re-solve passes the strict-success rule),
-and $\hat{\ell}^{\star}$ is the inspector's updated estimate of the true
-root-cause layer. Executing the test rather than merely ``reasoning about''
-it is what supplies a \emph{grounded} signal: a re-solve either meets the
-strict-success rule or it does not, so neither a false confession nor a
-dishonest deflection survives verification.
+($\beta{=}1$: a compliance whose re-solve still fails, or a deflection the
+inspector upholds) or \emph{confirmed} ($\beta{=}0$: a compliance whose
+re-solve passes the strict-success rule), and $\hat{\ell}^{\star}$ is the
+updated root-cause estimate. Executing the test supplies a grounded signal:
+neither a false confession nor a dishonest deflection survives. The FSM
+transition $\delta^{-}$ routes on this verdict: if $\beta=0$, the repair in
+$h$ is committed and $\Delta$ resumes downstream of $a_{\hat{\ell}}$; if
+$\beta=1$, $\Delta$ re-enters diagnosis and the inspector probes the next
+causal layer, until confirmation or budget exhaustion ($K$).
 
-\paragraph{Routing from the verdict.} The FSM transition $\delta^{-}$ is a
-function of the executed verdict, not of a confidence score:
-\begin{itemize}
-    \item if $\beta=0$ (confirmed), the repair $\tilde{y}$ in $h$ is committed
-    and $\Delta$ resumes the pipeline \emph{downstream} of $a_{\hat{\ell}}$;
-    \item if $\beta=1$ (cleared), $\Delta$ re-enters diagnosis and the
-    inspector probes the next causal layer, until a confirmation or budget
-    exhaustion ($K$).
-\end{itemize}
-This contrasts with the baseline, which routes on a single LLM confidence and
-re-accuses without an executed refutation.
-
-\subsubsection{Payoff structure and induced truthful attribution}
+\paragraph{Payoffs.}
 \label{sec:payoff}
-
 Because LLMs admit no stable, observable utility function, we do \emph{not}
 claim that an LLM ``feels'' a payoff. Instead we define numeric payoffs that
 the orchestrator optimizes and treat each LLM call as a \emph{black-box
@@ -799,35 +958,37 @@ well-defined at inference time; equilibria are properties of the
 orchestrator-defined game, while each LLM is a sampled best-responder within
 it.
 
-\paragraph{Commitment induces truthful attribution (the inspection-game
-deterrence effect).} The value of the inspector's first move is that its
-committed executed-refutation rule $\nu$ reshapes the inspectee's best
-response. Consider the two cases.
-\emph{(i) Innocent inspectee} ($\ell\neq\ell^{\star}$): by strict layered
-dependence a local repair cannot make the solve pass, so \textsc{comply}
-yields $-c_{\mathrm{rep}}$ (no reward $b$, and it will still be seen not to
-fix the solve), whereas a truthful \textsc{deflect} avoids the repair cost and
-is upheld by the inspector's targeted re-solve. Deflection strictly dominates
---- and, crucially, only a \emph{truthful} deflection survives $\nu$, since a
-dishonest one is refuted by re-solve. \emph{(ii) Guilty inspectee}
-($\ell=\ell^{\star}$): deflecting cannot succeed, because every upstream probe
-the inspector runs under causal order passes verification and the probe
-returns to $\ell^{\star}$ having only consumed rounds; complying and repairing
-yields $b-c_{\mathrm{rep}}$. Whenever $b>c_{\mathrm{rep}}$ (a resolved solve is
-worth more than the repair), \textsc{comply} is the guilty layer's best
-response. Hence the committed policy makes \emph{truthful attribution} --- the
-guilty complies, the innocent deflects honestly --- the induced best-response
-profile. This is the classical inspection-game deterrence result: it is the
-inspector's \emph{commitment}, not any assumed benevolence of the agents, that
-aligns individually optimal responses with correct root-cause localization.
-Without commitment (the baseline's cheap-talk self-verification), deflection
-is free and truthful attribution is not incentive-compatible.
+\subsubsection{Induced truthful attribution}
+\label{sec:deterrence}
 
-\subsubsection{A proposition on causal-order inspection}
+The value of the inspector's first move is that its committed
+executed-refutation rule $\nu$ reshapes the inspectee's best response ---
+the classical inspection-game deterrence effect. Consider the two cases.
+\emph{(i) Innocent inspectee} ($\ell\neq\ell^{\star}$): by strict causal
+layering of defects a local repair cannot make the solve pass, so
+\textsc{comply} yields $-c_{\mathrm{rep}}$ (no reward $b$, and it will still
+be seen not to fix the solve), whereas a truthful \textsc{deflect} avoids the
+repair cost and is upheld by the inspector's targeted re-solve. Deflection
+strictly dominates --- and, crucially, only a \emph{truthful} deflection
+survives $\nu$, since a dishonest one is refuted by re-solve.
+\emph{(ii) Guilty inspectee} ($\ell=\ell^{\star}$): deflecting cannot succeed,
+because every upstream probe the inspector runs under causal order passes
+verification and the probe returns to $\ell^{\star}$ having only consumed
+rounds; complying and repairing yields $b-c_{\mathrm{rep}}$. Whenever
+$b>c_{\mathrm{rep}}$ (a resolved solve is worth more than the repair),
+\textsc{comply} is the guilty layer's best response. Hence the committed
+policy makes \emph{truthful attribution} --- the guilty complies, the
+innocent deflects honestly --- the induced best-response profile. It is the
+inspector's \emph{commitment}, not any assumed benevolence of the agents,
+that aligns individually optimal responses with correct root-cause
+localization. Without commitment, deflection is cheap talk and truthful
+attribution is not incentive-compatible.
+
+\subsubsection{Proposition}
 \label{sec:proposition}
 
 \begin{propbox}[title={Proposition 1 (Causal-order inspection lowers mis-attribution)}]
-Under strict layered error dependence and an inspector committed to a
+Under strict causal layering of defects and an inspector committed to a
 causal-order, executed-refutation policy, each probe is \emph{decisive}: it
 either confirms the probed layer (a compliance whose re-solve passes) or
 clears it (a false confession refuted, or a truthful deflection upheld).
@@ -847,10 +1008,10 @@ with the downstream observation is a candidate; the viable set is the full
 observationally-equivalent upstream cone. Under committed inspection the
 inspectee at the probed layer $\ell$ must respond and the response is settled
 by executed refutation. If $\ell<\ell^{\star}$, no local repair can pass the
-re-solve (strict layered dependence), so a compliance is refuted and a
+re-solve (strict causal layering of defects), so a compliance is refuted and a
 deflection upheld --- either way $\ell$ is cleared and removed from the viable
 set. If $\ell=\ell^{\star}$, the incentive analysis of
-Section~\ref{sec:payoff} makes compliance the best response and the re-solve
+Section~\ref{sec:deterrence} makes compliance the best response and the re-solve
 passes, so the true layer is confirmed and never wrongly eliminated. Causal
 ordering guarantees layers are cleared from the top of the upstream cone
 downward, so each cleared probe strictly shrinks $V$ while simultaneous play
@@ -917,10 +1078,33 @@ permuted order performs as well as causal order, the thesis is falsified.
 \section{Experiments}
 \label{sec:experiments}
 
-The campaign tests whether a committed causal-order inspection policy improves
-\emph{verifiable} root-cause attribution under layered faults, rather than
-whether any strong LLM protocol can eventually repair a failed solve. Results
-are reported after the runs; the design below is fixed in advance.
+The campaign tests whether a committed inspection policy improves
+\emph{verifiable} root-cause attribution under layered faults---and whether
+it can match a strong single-judge LLM on naming accuracy---rather than
+whether any protocol can eventually repair a failed solve.
+\paragraph{Claim and mechanism under test.}
+We do not claim that Stackelberg inspection is uniquely able to name
+$\ell^{\star}$ from a stack trace: at failure time every method sees the same
+blackboard, so a capable single-judge LLM may match first-shot accuracy.
+The intended footing is the conjunction of (i)~accuracy that is at least
+competitive with single-judge diagnosis, (ii)~\emph{verifiable} attribution
+via commitment plus executed refutation, and (iii)~cost/audit properties
+under the same budget $K$. Achieving (i) requires an
+\emph{evidence-informed} commitment: the leader forms a \emph{layer ranking}
+from the stack and agent histories (ranks or votes---\emph{not} LLM-reported
+probabilities, which are poorly calibrated), commits $\omega$, then probes
+with executed refutation. Status-prior-only $\omega$ is treated as a
+preliminary apparatus, not the final proposed policy.
+\paragraph{Pre-registered expectations.}
+Each experiment below states an \emph{expected conclusion} fixed before the
+corresponding redesigned runs. The campaign is organized as three blocks:
+commitment-order ablation, a unified baseline comparison (internal and
+external protocols), and mechanism diagnostics. Tables marked
+\emph{measured} report the evidence-informed redesign
+(\texttt{omega\_source}=\texttt{evidence\_rank}, hybrid rank under the
+force-zero plant); tables marked \emph{preliminary} are from the earlier
+status-prior $\omega$ implementation and do not substitute for the redesign.
+External Debate/Reflexion and Exp-C remain unrun at the time of writing.
 
 \subsection{Setup}
 \label{sec:exp_setup}
@@ -931,8 +1115,13 @@ Section~\ref{sec:ecr_model} on the exported dataset
 \texttt{prob\_tslp\_ecr\_demand}. We start from the smoke instance
 \texttt{smoke\_H4\_Omega5} and extend to a small family of
 horizon/scenario configurations from the same generator. The forward
-pipeline, blackboard schema, strict-success rule, and sandbox solver path are
-shared.
+pipeline, blackboard schema, strict-success rule
+(Table~\ref{tab:outcome_taxonomy}), and sandbox solver path are shared. An
+end-to-end smoke run on \texttt{smoke\_H4\_Omega5} with progressive knowledge
+injection terminated in \emph{Practical Optimal}
+($\hat{z}\approx z^{\star}\approx 1.390\times 10^{6}$, relative gap below the
+$10^{-2}$ threshold): the solver's \textsc{Optimal} status was therefore
+\emph{not} a Spurious Optimal under the taxonomy above.
 
 \paragraph{Model and budget $K$.}
 Provider and model are held fixed within each comparison block and reported
@@ -961,14 +1150,16 @@ method receives privileged tools beyond its diagnosis policy.
 \begin{itemize}
     \item \textbf{(A) Proposed / ablation family.}
     \texttt{diagnosis\_mode}=\texttt{stackelberg} with committed policy
-    $\sigma=(\omega,\nu)$ and $\nu$ fixed as executed refutation. The probing
-    order $\omega$ is set to \texttt{causal}, \texttt{reverse}, or
-    \texttt{random}.
-    \item \textbf{(B) Internal baselines.}
+    $\sigma=(\omega,\nu)$ and $\nu$ fixed as executed refutation. The leader
+    forms an evidence-informed layer ranking (no confidence weights), then
+    commits a probing order $\omega\in\{\texttt{causal},\texttt{reverse},
+    \texttt{random}\}$ obtained by aligning that ranking with
+    (or permuting against) the data$\tri$model$\tri$code skeleton.
+    \item \textbf{(B) Internal baselines} (Exp-B, same table as C).
     (i)~\texttt{adversarial}: single-judge LLM accusation plus accused-agent
     self-check; (ii)~\texttt{sequential}: fixed reverse-order backward chain
     without an inspection commitment.
-    \item \textbf{(C) External verification baselines.}
+    \item \textbf{(C) External verification baselines} (Exp-B).
     (i)~\emph{Debate}~\citep{du2023improving}: multiple diagnosis personas
     argue for a fixed number of rounds; terminal positions are aggregated by
     majority vote (no LLM-reported confidence weights; ties broken by the
@@ -977,104 +1168,276 @@ method receives privileged tools beyond its diagnosis policy.
     accusation augmented with verbal reflections after failed
     diagnose--repair attempts, conditioned upon in later diagnosis rounds,
     again sharing the same repair/re-solve machinery.
+    Internal and external protocols answer one baseline question and are
+    reported together in Section~\ref{sec:exp_baselines}; execution may stage
+    (B) before (C) for cost control.
 \end{itemize}
 
 \subsection{Metrics}
 \label{sec:exp_metrics}
 
-The primary metric is root-cause attribution accuracy
-$\mathbf{1}\{\hat{a}=a^{\star}\}$, optionally stratified by injected origin
-agent and solver-status surface. Secondary metrics are strict-success rate at
-budget $K$ (SSR@$K$), realized probe rounds, and total tokens. For
-Exp.~\ref{sec:exp_iv} we additionally record deflect rates, the fraction of
+The primary metric is \emph{verified} root-cause attribution accuracy
+$\mathbf{1}\{\hat{a}=a^{\star}\}$ where $\hat{a}$ is the layer supported by
+executed refutation (not merely last-comply credit), optionally stratified by
+injected origin and solver-status surface. For commitment-order contrasts we
+also report first-probe hit $\mathbf{1}\{\omega_1=a^{\star}\}$. Secondary
+metrics are SSR@$K$, probe rounds, and tokens. SSR counts only
+\emph{Practical Optimal} outcomes in Table~\ref{tab:outcome_taxonomy}; a bare
+\textsc{Optimal} that fails the $z^{\star}$ gap test
+(\emph{Spurious Optimal}) does not contribute. For
+Exp.~\ref{sec:exp_diag} we additionally record deflect rates, the fraction of
 compliances and deflections overturned by executed refutation, and
 analysis-mode episode payoffs $(u_L,u_F)$ from Section~\ref{sec:payoff}.
-Highest SSR alone is not treated as a sufficient claim: under strong models
-many protocols may eventually repair; the scientific contrast is verifiable
-attribution under commitment.
+Highest SSR alone is not a sufficient claim: under strong models many
+protocols may eventually repair; the scientific contrast is verifiable
+attribution under commitment at competitive naming accuracy.
 
-\subsection{Exp-I: Commitment-order ablation}
+\subsection{Exp-A: Commitment-order ablation}
+\label{sec:exp_ablation}
 \label{sec:exp_i}
 
-This experiment is the decisive test of Proposition~1. Holding $\nu$ and $K$
-fixed, we compare stackelberg inspection under
+\paragraph{Question.}
+Does the inspector's committed probing order carry information under layered
+faults? Equivalently: holding $\nu$ and $K$ fixed, is causal-order commitment
+better than reverse or random commitment on first-probe hit and verified
+attribution?
+
+\paragraph{Design.}
+All cells use \texttt{diagnosis\_mode}=\texttt{stackelberg} with evidence-informed
+ranking at commit time. We vary only
 $\omega\in\{\texttt{causal},\texttt{reverse},\texttt{random}\}$ on the
-injection grid of Section~\ref{sec:exp_setup}. Causal order is the proposed
-commitment; reverse and random retain commitment and multi-round probing but
-break alignment with data $\tri$ model $\tri$ code.
+injection grid of Section~\ref{sec:exp_setup}. Causal $\omega$ rotates the
+data$\tri$model$\tri$code skeleton so that the top-ranked layer is probed
+first; reverse and random break that alignment (and, per the redesign spec,
+do not reuse the rank tip), isolating order from naming skill.
 
-\paragraph{Pilot.}
-Before the full grid we run a small upstream-fault / downstream-symptom pilot
-contrasting at least causal and random (or reverse) orders under identical
-$K$, optionally including a single full-context LLM attribution call as a
-capability reference. The pilot is interpreted as follows. If causal order
-yields a clear attribution gain over permuted orders, we proceed to the full
-ablation table. If attribution is uniformly high and causal order is
-indistinguishable from a permuted order, the empirical content of
-Proposition~1 is not supported under the present implementation or setting,
-and the campaign is revised before claiming a commitment-order effect. If
-non-committed strong attribution already saturates accuracy at lower cost, we
-narrow subsequent claims to mechanism and commitment-order contrasts rather
-than aggregate superiority. The pilot subsection may be removed once the main
-ablation table is in place.
+\paragraph{Expected conclusion.}
+Causal $\omega$ yields strictly higher first-probe hit and verified
+attribution than reverse, and at least weakly higher than random, at
+comparable token cost. If causal $\approx$ random/reverse, Proposition~1 is
+not supported and the ranking/alignment design is revised before baselines.
 
-\subsection{Exp-II: Internal baselines}
+\paragraph{Measured results (evidence-informed; thin $n{=}3$).}
+Table~\ref{tab:exp_ablation} reports the redesigned ablation on
+\texttt{smoke\_H4\_Omega5} with plant \texttt{me\_force\_zero\_sea},
+$K{=}3$, provider DashScope / \texttt{deepseek-v4-flash}, and
+\texttt{rank\_method}=\texttt{hybrid} (force-zero smell tips
+\texttt{model\_expert} without inventing a second diagnosis mechanism).
+Causal commitment achieves first-probe $3/3$ and the only non-zero verified
+attribution ($1/3$); reverse and random are $0/3$ on both primary metrics.
+SSR@$K$ likewise concentrates on causal ($2/3$). These counts are
+directional under thin $n$; they are not a definitive Proposition~1 proof.
+
+\begin{table}[t]
+\centering
+\caption{Exp-A commitment-order ablation --- \textbf{measured}
+(evidence-informed; $n{=}3$/order; $K{=}3$; hybrid rank). Primary: first-probe
+hit and verified attribution.}
+\label{tab:exp_ablation}
+\label{tab:exp_i}
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+$\omega$ & First-probe hit & Verified attr.\ & SSR@$K$ & Mean tokens \\
+\midrule
+causal  & $3/3$ (1.00) & $1/3$ (0.33) & $2/3$ & $1.08{\times}10^{5}$ \\
+random  & $0/3$ (0.00) & $0/3$ (0.00) & $0/3$ & $1.26{\times}10^{5}$ \\
+reverse & $0/3$ (0.00) & $0/3$ (0.00) & $0/3$ & $1.15{\times}10^{5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Preliminary results (status-prior $\omega$; real $n{=}5$).}
+Table~\ref{tab:exp_ablation_prelim} records the earlier status-prior run
+(last-comply attribution). Directional on first-probe only; superseded as the
+primary Exp-A table by Table~\ref{tab:exp_ablation}.
+
+\begin{table}[t]
+\centering
+\caption{Exp-A preliminary (status-prior $\omega$; real $n{=}5$; last-comply attr.).}
+\label{tab:exp_ablation_prelim}
+\label{tab:exp_i_prelim}
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+$\omega$ & First-probe hit & Attr.\ hit & SSR@$K$ & Mean tokens \\
+\midrule
+causal  & $4/5$ (0.80) & $0/5$ & $1/5$ & $1.38{\times}10^{5}$ \\
+random  & $3/5$ (0.60) & $0/5$ & $0/5$ & $1.38{\times}10^{5}$ \\
+reverse & $0/5$ (0.00) & $1/5$ & $1/5$ & $1.40{\times}10^{5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Exp-B: Baselines (internal and external)}
+\label{sec:exp_baselines}
 \label{sec:exp_ii}
-
-On the same injection grid and budget $K$ we compare causal-order stackelberg
-inspection to the internal baselines in (B): adversarial single-judge
-diagnosis and sequential reverse-chain repair. We report attribution accuracy
-as the primary contrast, with SSR@$K$ and token/round cost as secondary
-measures of whether any attribution gain is purchased at disproportionate
-expense.
-
-\subsection{Exp-III: External verification baselines}
 \label{sec:exp_iii}
 
-We next include the external baselines in (C), multi-agent
-debate~\citep{du2023improving} and Reflexion-style
-self-critique~\citep{shinn2023reflexion}, under the same blackboard, repair
-path, and $K$. The question is whether causal-order inspection retains an
-attribution or cost advantage once stronger multi-call LLM protocols are
-admitted, or whether apparent gains reduce to additional LLM invocations.
-Attribution is reported jointly with tokens and rounds.
+\paragraph{Question.}
+Relative to alternative diagnosis protocols that share the same blackboard,
+repair maps, and budget $K$, does evidence-informed causal Stackelberg
+achieve verified attribution that is at least competitive with a strong
+single-judge LLM, while retaining an auditable commit--probe--refute trail?
+Do stronger multi-call protocols (Debate, Reflexion) erase that advantage on
+accuracy, cost, or both?
 
-\subsection{Exp-IV: Inspection diagnostics}
+\paragraph{Design.}
+We compare causal Stackelberg ($\omega$ from evidence-informed ranking aligned
+to the causal skeleton) against the methods in Section~\ref{sec:exp_methods}:
+\emph{internal} baselines (adversarial, sequential) and \emph{external}
+verification baselines (Debate, Reflexion). Internal protocols stress fairness
+inside the same stack; external protocols stress the strong-LLM ceiling.
+Implementation may stage internal cells before external ones for cost control;
+scientifically they answer one comparison question and are reported in one
+table.
+
+\paragraph{Expected conclusion.}
+Verified attribution: Stackelberg $\geq$ adversarial $\gg$ sequential.
+SSR may favour sequential (blind repair). Debate may match Stackelberg on
+verified attribution but at higher tokens and lower audit coverage; Reflexion
+should not dominate both accuracy and cost. If adversarial or Debate strictly
+dominates Stackelberg on verified attribution at similar or lower cost with no
+audit gap worth claiming, the ranking/commitment design (or the paper claim)
+is revised before diagnostics scaling.
+
+\paragraph{Measured results (evidence-informed; internal only; thin $n{=}3$).}
+Table~\ref{tab:exp_baselines} reports the redesigned internal comparison on
+the same plant, model, and $K$ as Exp-A, using the Exp-A causal cells as the
+Stackelberg arm. Verified attribution is $1/3$ for causal Stackelberg and
+$0/3$ for both adversarial and sequential (gate: SB $\geq$ adversarial).
+First-probe remains $3/3$ under Stackelberg versus $1/3$ adversarial.
+SSR@$K$ is highest for Stackelberg ($2/3$) on this draw; sequential's mean
+token count is depressed by one zero-token failed episode
+(\texttt{eb\_seq\_r1}) and should be read with that caveat. Debate and
+Reflexion were not run in this pass (cost freeze until SB verified rates
+stabilize).
+
+\begin{table}[t]
+\centering
+\caption{Exp-B internal baselines --- \textbf{measured}
+(evidence-informed; $n{=}3$; $K{=}3$). Primary: verified attribution.
+External Debate/Reflexion not run.}
+\label{tab:exp_baselines}
+\label{tab:exp_ii}
+\label{tab:exp_iii}
+\begin{tabular}{@{}ll c c c c@{}}
+\toprule
+Family & Method & Verified attr.\ & First-probe & SSR@$K$ & Mean tokens \\
+\midrule
+Proposed & stackelberg (causal)
+  & $1/3$ (0.33) & $3/3$ (1.00) & $2/3$ & $1.08{\times}10^{5}$ \\
+Internal & adversarial
+  & $0/3$ (0.00) & $1/3$ (0.33) & $1/3$ & $1.84{\times}10^{5}$ \\
+Internal & sequential
+  & $0/3$ (0.00) & $0/2$ (0.00) & $1/3$ & $0.61{\times}10^{5}$ \\
+External & Debate / Reflexion
+  & --- & --- & --- & not run \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Preliminary results (status-prior; real $n{=}5$, internal only).}
+Table~\ref{tab:exp_baselines_prelim}: last-comply attribution was $0/5$ for
+all three methods---motivating verified accounting and evidence-informed rank.
+External baselines were not run in that preliminary pass.
+
+\begin{table}[t]
+\centering
+\caption{Exp-B preliminary internal baselines (status-prior; real $n{=}5$).}
+\label{tab:exp_baselines_prelim}
+\label{tab:exp_ii_prelim}
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+Method & Attr.\ hit & First-probe hit & SSR@$K$ & Mean tokens \\
+\midrule
+stackelberg (causal) & 0/5 (0.00) & 4/5 (0.80) & 1/5 & $1.38{\times}10^{5}$ \\
+adversarial & 0/5 (0.00) & 2/5 (0.40) & 0/5 & $2.35{\times}10^{5}$ \\
+sequential & 0/5 (0.00) & 0/4 (0.00) & 2/5 & $0.86{\times}10^{5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Exp-C: Inspection diagnostics}
+\label{sec:exp_diag}
 \label{sec:exp_iv}
 
-Finally we examine mechanism-level quantities predicted by
-Section~\ref{sec:payoff}: the rate at which inspectees deflect; the fraction
-of deflections and compliances overturned by executed refutation; and
-truthful-attribution rate as a function of the budget $K$. These diagnostics
-test whether the committed policy induces the intended deterrence pattern
-(guilty layers comply, innocent deflections are upheld only when consistent
-with re-solve) rather than merely adding probing rounds.
+\paragraph{Question.}
+Is commitment operational in the implementation---not merely additional LLM
+calls? As the budget $K$ grows, does verified attribution rise under causal
+commitment, and are inconsistent deflects overturned by executed refutation?
+
+\paragraph{Design.}
+We sweep $K$ for causal Stackelberg (and, as references, adversarial and
+sequential) on the same injection grid, recording verified attribution versus
+$K$, deflect rates, and the fraction of deflects/compliances overturned by
+re-solve. Analysis-mode payoffs $(u_L,u_F)$ from Section~\ref{sec:payoff}
+may be reported as secondary trajectory summaries.
+
+\paragraph{Expected conclusion.}
+Verified attribution rises with $K$ faster under causal Stackelberg than under
+random/reverse or non-committed baselines; deflects that contradict re-solve
+are overturned at high rate. Flat curves in $K$ or near-zero overturn rates
+indicate that commitment is not operational.
+
+\paragraph{Illustrative expected pattern (mock; not measured).}
+Table~\ref{tab:exp_diag}.
+
+\begin{table}[t]
+\centering
+\caption{Exp-C diagnostics --- \textbf{illustrative mock} (verified attr.\ vs.\ $K$;
+deflect overturn under causal Stackelberg).}
+\label{tab:exp_diag}
+\label{tab:exp_iv}
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+Method / $K$ & $K{=}1$ & $K{=}2$ & $K{=}3$ & Deflect overturn \\
+\midrule
+stackelberg causal & 0.45 & 0.60 & 0.70 & 0.75 \\
+adversarial        & 0.50 & 0.55 & 0.60 & --- \\
+sequential         & 0.10 & 0.15 & 0.20 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \paragraph{Claim boundary.}
 Comparisons are scoped to layered-error natural-language optimization on the
 TSLP ECR pipeline. We do not claim gains for general LLM reasoning, nor that
 inspection is the unique protocol that can eventually repair a failed solve.
-The intended positive claim is that causal-order committed inspection improves
-(or cost-efficiently matches) verifiable root-cause attribution relative to
-unordered commitment and to non-committed verification baselines under the
-injection regime above.
+The intended positive claim is that evidence-informed causal-order committed
+inspection matches (or exceeds) strong single-judge naming accuracy while
+improving verifiable attribution and auditability relative to unordered
+commitment and to non-committed verification baselines under the injection
+regime above.
 
 %==============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-[Placeholder] To follow once Exp-I--IV report attribution, cost, and
+[Placeholder] To follow once Exp-A--C report attribution, cost, and
 mechanism diagnostics.
 
 %==============================================================================
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem[Wu et al.(2024)]{wu2024autogen} Q.~Wu et al. AutoGen: Enabling next-gen LLM applications via multi-agent conversation. In \emph{COLM}, 2024.
-\bibitem[Xiao et al.(2023)]{xiao2023coe} Y.~Xiao et al. Chain-of-experts: When LLMs meet complex operations research. \emph{arXiv preprint}, 2023.
-\bibitem[Du et al.(2023)]{du2023improving} Y.~Du et al. Improving factuality and reasoning in language models through multiagent debate. \emph{arXiv:2305.14325}, 2023.
-\bibitem[Shinn et al.(2023)]{shinn2023reflexion} N.~Shinn et al. Reflexion: Language agents with verbal reinforcement learning. In \emph{NeurIPS}, 2023.
+\bibitem[Xiao et al.(2024)]{xiao2023coe} Y.~Xiao et al. Chain-of-experts: When LLMs meet complex operations research problems. In \emph{ICLR}, 2024. \url{https://openreview.net/forum?id=HobyL1B9CZ}.
+\bibitem[AhmadiTeshnizi et al.(2024a)]{ahmaditeshnizi2024optimus} A.~AhmadiTeshnizi, W.~Gao, M.~Udell. OptiMUS: Scalable optimization modeling with (MI)LP solvers and large language models. In \emph{ICML}, PMLR 235:577--596, 2024. \url{https://arxiv.org/abs/2402.10172}.
+\bibitem[AhmadiTeshnizi et al.(2024b)]{ahmaditeshnizi2024optimus03} A.~AhmadiTeshnizi, W.~Gao, H.~Brunborg, S.~Talaei, M.~Udell. OptiMUS-0.3: Using large language models to model and solve optimization problems at scale. \emph{arXiv:2407.19633}, 2024.
+\bibitem[Yang et al.(2025)]{yang2025orthought} B.~Yang, Q.~Zhou, J.~Li, C.~Su, P.~Angeloudis, S.~Hu. ORThought: Benchmarking and automating logistics optimization modeling via structured LLM reasoning. \emph{arXiv:2508.14410}, 2025.
+\bibitem[Du et al.(2023)]{du2023improving} Y.~Du, S.~Li, A.~Torralba, J.~B.~Tenenbaum, I.~Mordatch. Improving factuality and reasoning in language models through multiagent debate. \emph{arXiv:2305.14325}, 2023.
+\bibitem[Liang et al.(2024)]{liang2024mad} T.~Liang, Z.~He, W.~Jiao, et al. Encouraging divergent thinking in large language models through multi-agent debate. In \emph{EMNLP}, pages 17889--17904, 2024.
+\bibitem[Shinn et al.(2023)]{shinn2023reflexion} N.~Shinn, F.~Cassano, A.~Gopinath, K.~Narasimhan, S.~Yao. Reflexion: Language agents with verbal reinforcement learning. In \emph{NeurIPS}, 2023.
+\bibitem[Zhang et al.(2025)]{zhang2025whowhen} S.~Zhang, M.~Yin, J.~Zhang, et al. Which agent causes task failures and when? On automated failure attribution of LLM multi-agent systems. In \emph{ICML}, PMLR 267:76583--76599, 2025. \url{https://arxiv.org/abs/2505.00212}.
+\bibitem[Chen et al.(2026)]{chen2026traceelephant} M.~Chen, J.~Wang, F.~Mu, et al. Seeing the whole elephant: A benchmark for failure attribution in LLM-based multi-agent systems. In \emph{ACL}, 2026. \url{https://arxiv.org/abs/2604.22708}.
+\bibitem[Wang et al.(2026)]{wang2026chief} Y.~Wang, W.~Wu, J.~Wang, Q.~Wang. From flat logs to causal graphs: Hierarchical failure attribution for LLM-based multi-agent systems. \emph{arXiv:2602.23701}, 2026.
+\bibitem[Shah(2026)]{shah2026car} J.~Shah. Causal Agent Replay: Counterfactual attribution for LLM-agent failures. \emph{arXiv:2606.08275}, 2026.
+\bibitem[Yi et al.(2025)]{yi2025econ} From debate to equilibrium: Belief-driven multi-agent LLM reasoning via Bayesian Nash equilibrium. In \emph{ICML}, 2025. \url{https://proceedings.mlr.press/v267/yi25c.html}.
+\bibitem[Wang(2026)]{stackelberg2026resource} B.~Wang. A Stackelberg framework for resource-aware LLM agents: Learning, repair, and conditional guarantees. \emph{arXiv:2606.23026}, 2026.
 \bibitem[von Stackelberg(1952)]{stackelberg1952} H.~von~Stackelberg. \emph{The Theory of the Market Economy}. Oxford University Press, 1952.
 \bibitem[Avenhaus et al.(2002)]{avenhaus2002inspection} R.~Avenhaus, B.~von~Stengel, S.~Zamir. Inspection games. In R.~J.~Aumann and S.~Hart (eds.), \emph{Handbook of Game Theory with Economic Applications}, vol.~3, ch.~51, pp.~1947--1987. Elsevier, 2002.
 \bibitem[Maschler(1966)]{maschler1966inspection} M.~Maschler. A price leadership method for solving the inspector's non-constant-sum game. \emph{Naval Research Logistics Quarterly}, 13(1):11--33, 1966.
 \bibitem[Littman(1994)]{littman1994markov} M.~L.~Littman. Markov games as a framework for multi-agent reinforcement learning. In \emph{ICML}, 1994.
+\bibitem[Poiani et al.(2024)]{poiani2024ecr} R.~Poiani, C.~Stirbu, A.~M.~Metelli, M.~Restelli. Optimizing empty container repositioning and fleet deployment via configurable Semi-POMDPs. \emph{IEEE Transactions on Intelligent Transportation Systems}, 25(5):4704--4711, 2024. \url{https://doi.org/10.1109/TITS.2023.3329677}.
+\bibitem[Wang et al.(2025a)]{wang2025ecrslot} W.~Wang, C.~Diao, W.~He, Z.~Jin, Z.~Yang. Collaborative optimization of container liner slot allocation and empty container repositioning within port clusters. \emph{Journal of Marine Science and Engineering}, 13(1):159, 2025. \url{https://doi.org/10.3390/jmse13010159}.
+\bibitem[Cai et al.(2025)]{cai2025ecrjoint} J.~Cai, Y.~Huang, C.~Diao, Z.~Jin. Joint optimization of multi-period empty container repositioning and inventory control based on adaptive particle swarm algorithm. \emph{Journal of Marine Science and Engineering}, 13(6):1113, 2025. \url{https://doi.org/10.3390/jmse13061113}.
+\bibitem[Liu et al.(2025)]{liu2025llmtransport} T.~Liu, J.~Yang, Y.~Yin. Toward LLM-agent-based modeling of transportation systems: A conceptual framework. \emph{Artificial Intelligence for Transportation}, 1:100001, 2025. \url{https://doi.org/10.1016/j.ait.2025.100001}.
 \end{thebibliography}
 
 \end{document}
