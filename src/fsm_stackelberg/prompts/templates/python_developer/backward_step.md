@@ -63,3 +63,4 @@ Or if caused by you:
 - If `is_caused_by_you: true`, you MUST provide `refined_result` with complete, working Python code.
 - Use actual data keys from `data_access_guide`, NOT symbol names.
 - The code must be a complete `optimize(data)` function that returns a dict with `status` and `objective_value`.
+- Name the Gurobi model `model` (not `m`); name transport-mode indices `mode` (not `m`). Do not shadow the model object with a loop index.

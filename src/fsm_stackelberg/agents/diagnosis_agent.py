@@ -577,9 +577,16 @@ def _stackelberg_diagnosis(
             probe_seed,
         )
     else:
-        # Re-entry: previous probe was settled. Clear the last probed layer.
+        # Re-entry: previous probe was settled.
         # - comply whose re-solve still failed → false confession (cleared)
-        # - deflect → upheld pending next probe (cleared of guilt for now)
+        # - deflect → symptom-scoped clear (advance ω); may reopen later if the
+        #   surface symptom changes while formulation evidence remains
+        #   (see game.clear_policy).
+        from ..game.clear_policy import (
+            reopen_symptom_scoped_deflects,
+            symptom_fingerprint,
+        )
+
         last_agent = state.get("error_agent")
         if last_agent and last_agent not in cleared_layers:
             cleared_layers.append(last_agent)
@@ -594,16 +601,22 @@ def _stackelberg_diagnosis(
                 re_solve_strict_success=False,
                 retry_index=int(state.get("retry_count") or 0),
                 overturn=complied,  # claimed repair but still failing
+                symptom_fingerprint=symptom_fingerprint(state),
             )
             refutation_log.append(entry)
             state["refutation_log"] = refutation_log
             logger.info(
                 "DiagnosisAgent (stackelberg): cleared layer=%s action=%s "
-                "overturn=%s",
+                "overturn=%s symptom=%s",
                 last_agent,
                 action,
                 entry["overturn"],
+                entry.get("symptom_fingerprint"),
             )
+
+        cleared_layers = reopen_symptom_scoped_deflects(
+            cleared_layers, refutation_log, state
+        )
 
     error_agent = next_unclear_layer(probe_queue, cleared_layers)
     if error_agent is None:

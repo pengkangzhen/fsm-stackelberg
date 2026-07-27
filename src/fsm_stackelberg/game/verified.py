@@ -14,6 +14,7 @@ def make_refutation_entry(
     retry_index: int,
     symptom_cleared: bool | None = None,
     overturn: bool | None = None,
+    symptom_fingerprint: str | None = None,
 ) -> Dict[str, Any]:
     """One probe-settlement record for ``state['refutation_log']``."""
     if overturn is None:
@@ -21,7 +22,7 @@ def make_refutation_entry(
         overturn = bool(error_resolved) and not re_solve_strict_success
     if symptom_cleared is None:
         symptom_cleared = bool(re_solve_strict_success)
-    return {
+    entry: Dict[str, Any] = {
         "layer": layer,
         "action": action,  # "comply" | "deflect"
         "error_resolved": bool(error_resolved),
@@ -30,6 +31,9 @@ def make_refutation_entry(
         "overturn": bool(overturn),
         "retry_index": int(retry_index),
     }
+    if symptom_fingerprint is not None:
+        entry["symptom_fingerprint"] = str(symptom_fingerprint)
+    return entry
 
 
 def ensure_success_refutation_entry(state: Dict[str, Any]) -> List[Dict[str, Any]]:

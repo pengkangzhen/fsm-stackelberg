@@ -206,15 +206,17 @@ for i in all_nodes:
 4. **Decision variables**: names MUST match `symbol` from `model_blueprint.model_components.decision_variables`
 5. **NEVER use `try...except`** — the sandbox handles all errors. Using `except Exception` hides real errors and makes diagnosis impossible.
 6. **ONLY use `import gurobipy as gp`** — the sandbox pre-injects `gp` and `GRB` into the global namespace. Do NOT use any other alias (like `grb`).
-7. **BEWARE variable shadowing in generator expressions** — `for (i, q, k) in data['allowed_transport']` inside `for q in shippers` shadows the outer `q`. Use distinct variable names (e.g., `for (ii, qq, kk) in ...`) or iterate with explicit if-filters.
-8. **Use `try...finally` ONLY with `m.dispose()`** — no except blocks allowed.
+7. **BEWARE variable shadowing in nested loops / generator expressions** — an inner `for` that reuses an outer loop index (or the Gurobi model name) silently overwrites it. Use distinct variable names or iterate with explicit if-filters.
+8. **Do not shadow the Gurobi model object with a loop index.** Prefer `model = gp.Model(...)` for the model and `mode` (not `m`) for transport-mode indices. Never bind the model to a name that a later loop also uses as an index.
+9. **Use `try...finally` ONLY with `model.dispose()`** — no except blocks allowed.
 
 ## Output Requirements
 
 1. Output ONLY raw Python code — no markdown fences, no explanatory text, no `if __name__`
-2. Use `try...finally` with `m.dispose()` to prevent memory leaks (NO except blocks)
-3. Always check `m.Status` after `m.optimize()` — handle non-optimal statuses gracefully
-4. Return dict:
+2. Name the Gurobi model `model` (not `m`); name transport-mode indices `mode` (not `m`) — do not shadow the model with a loop index
+3. Use `try...finally` with `model.dispose()` to prevent memory leaks (NO except blocks)
+4. Always check `model.Status` after `model.optimize()` — handle non-optimal statuses gracefully
+5. Return dict:
 
 ```python
 # On success:

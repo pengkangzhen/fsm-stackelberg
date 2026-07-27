@@ -24,8 +24,20 @@ from ..utils.llm_config import get_llm
 from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
 from ..utils.run_log import record_step_event, save_backward_artifact
+from ..utils.code_sanitize import unshadow_gurobi_model_m
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_python_code(python_code: str) -> str:
+    """Apply deterministic fixes to LLM-generated Gurobi code."""
+    fixed, rewritten = unshadow_gurobi_model_m(python_code)
+    if rewritten:
+        logger.warning(
+            "PythonDeveloper: rewrote shadowed Gurobi model `m` → `model` "
+            "(mode index `m` in for-loop would otherwise break addVar/dispose)"
+        )
+    return fixed
 
 
 def _build_data_access_guide(data_engineer_output: DataEngineerOutput, schema: Dict = None) -> Dict:
@@ -212,6 +224,8 @@ def python_developer_node(state: Dict) -> Dict:
         python_code = python_code.split("```python")[1].split("```")[0].strip()
     elif "```" in python_code:
         python_code = python_code.split("```")[1].split("```")[0].strip()
+
+    python_code = _sanitize_python_code(python_code)
 
     logger.info(f"PythonDeveloper: Generated code ({len(python_code)} chars)")
     logger.info(f"PythonDeveloper: tokens={cb.total_tokens}, duration={duration:.2f}s")
