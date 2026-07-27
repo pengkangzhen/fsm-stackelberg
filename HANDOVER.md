@@ -21,12 +21,11 @@
   **Independent codebase** — do not modify `mako` / do not sync back.
   Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
 - **Repo.** `git@github.com:pengkangzhen/fsm-stackelberg.git`, branch `main`
-  (includes merge `869752b` structured run logging).
-- **Current state (2026-07-23).**
+  (local tip includes `bf0c849` Exp-I injection/pilot tooling; push if needed).
+- **Current state (2026-07-27).**
   - Phase 0 skipped; Phase 1 Stackelberg PoC **done**; Phase 2 analysis-mode
-    payoffs **done** (`src/fsm_stackelberg/game/payoff.py`), including
-    commitment diagnostics (`committed_omega`, `first_probe_hit` / `kill_hit`,
-    `attribution_hit`) for Exp-I.
+    payoffs **done** (`src/fsm_stackelberg/game/payoff.py`), with Exp-I
+    diagnostics: `first_probe_hit` / `kill_hit` / `committed_omega`.
   - **Progressive knowledge injection** (catalog → request → full text; not
     RAG, not dump-all) is the default via
     `src/fsm_stackelberg/knowledge/progressive.py`, wired through
@@ -38,33 +37,181 @@
     **Machine-readable authority = manifest + events**, not `workflow.log`
     (human mirror only). Summarize / Exp-I scripts should read those files.
   - Default dataset: `prob_tslp_ecr_demand` / `smoke_H4_Omega5`.
-  - **Smoke E2E on TSLP done** (2026-07-22): `smoke_H4_Omega5` with
-    `--knowledge progressive`, provider **Qwen** / `qwen3.7-plus` (MiMo 402
-    insufficient balance; DeepSeek 401 invalid key). ME catalog→request→load
-    worked (round1: stage1/stage2/structure; round2: data-access); Stackelberg
-    probe loop ran; final `OPTIMAL`, gap≈0 vs GT (`obj≈1.389581e6`). Artifacts:
-    `results/mako/Qwen_qwen3.7-plus/prob_tslp_ecr_demand_k3/smoke_H4_Omega5/`,
-    log `logs/smoke_H4_Omega5_qwen_20260722_192901.log`.
-  - **Exp-I pilot ran** (2026-07-22 evening): injection + 4-way grid on
-    `me_drop_stage2_balance` / `a*=model_expert`. Summary:
-    `results/exp_i_pilot/summary.md`. **Kill verdict: `kill_or_revise`** —
-    no valid causal≻random signal. Issues: (i) plant too weak / PD can
-    re-derive balances → causal attributed `python_developer` after SSR;
-    reverse first-pass SSR with K=0 (no diagnosis); (ii) random + adversarial
-    aborted on DashScope DNS (`Temporary failure in name resolution`).
-    Infra added: `src/fsm_stackelberg/injection/`, `--inject`,
-    `scripts/run_exp_i_pilot.sh`.
-  - Manuscript method §inspection game drafted; Experiments protocol
-    **written** (Setup → Methods → Metrics → Exp-I–IV), results empty.
-  - **Next concrete work (ordered):**
-    1. **Smoke E2E on TSLP** — restore a working LLM key, then run
-       `smoke_H4_Omega5` with `--knowledge progressive` and confirm ME can
-       request/load modules and the solve/diagnosis loop completes
-       (also verify `run_manifest.json` / `events.jsonl` land under `results/`).
-    2. Exp-I pilot (kill criteria) — fault injection +
-       `stackelberg × {causal, reverse, random}` vs `adversarial`
-       (aggregate `first_probe_hit` from manifests).
-    3. Exp-II; implement Debate + Reflexion; Exp-III/IV.
+  - **Smoke E2E on TSLP done** (2026-07-22): `--knowledge progressive`,
+    historically Qwen/`qwen3.7-plus`; **current cheap default =
+    DashScope/`deepseek-v4-flash`**. Final **Practical Optimal** vs GT
+    \(z^\star\approx 1.389581\times 10^{6}\) (solver `OPTIMAL` alone is not
+    enough — see manuscript `tab:outcome_taxonomy`).
+  - **Fault injection + Exp-I pilot infra done** (`--inject`,
+    `src/fsm_stackelberg/injection/`, ME→PD one-shot `fault_injector` node).
+    Default strong plant: `me_force_zero_sea` (force \(y_{\mathrm{in}}=y_{\mathrm{out}}=0\);
+    keep min objective + balances; clear loaded knowledge bodies).
+  - **Probe-order ablation fixed:** `random` / `reverse` no longer
+    Prior-rotated onto the status seed (only `causal` rotates). Optional
+    `--probe_seed` for reproducible random shuffles.
+  - **Exp-I kill-criteria pilot v3 PASSED** (2026-07-23):
+    causal **2/3≈0.67** > random **1/3≈0.33** → proceed.
+    Summary: `results/exp_i_pilot_v3/summary.md`.
+  - **Full Exp-I n=5 DONE** (2026-07-23, cost-safe staged run):
+    `stackelberg × {causal, reverse, random}`, plant `me_force_zero_sea`,
+    \(a^\*=\)`model_expert`, \(K=3\), Qwen/`qwen3.7-plus`. Primary
+    `first_probe_hit`: causal **4/5=0.80** > random **3/5=0.60** >
+    reverse **0/5=0.00** → kill verdict **`pass`**. Secondary:
+    `attribution_hit` 0/5, 1/5, 0/5; SSR@$K$ 1/5, 1/5, 0/5. Reused pilot
+    causal/random r1–3; new API ≈1.24M tokens (~¥3.8 est.); hard cap ¥10.
+    Summary: `results/exp_i_full/summary.md`. Runners:
+    `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`.
+    **Do not** treat n=5 as definitive Prop.~1 proof; optional expand n
+    later if budget allows. Caveat: CRASH surfaces still Prior-rotate
+    causal onto PD first (causal_r1 miss); last-comply attribution remains
+    weak.
+  - Earlier pilots (historical): v1/v2 `kill_or_revise`.
+  - **Exp-II overnight** (2026-07-23, status=`ok`):
+    adversarial + sequential, plant `me_force_zero_sea`, n=5, K=3,
+    Qwen/`qwen3.7-plus`. Primary `attribution_hit`.
+    - adversarial: attr 0/5 (0.00), first_probe 2/5 (0.40), SSR 0/5 (0.00), mean_tok=234844.2
+    - sequential: attr 0/5 (0.00), first_probe 0/4 (0.00), SSR 2/5 (0.40), mean_tok=85609.6
+    - stackelberg: attr 0/5 (0.00), first_probe 4/5 (0.80), SSR 1/5 (0.20), mean_tok=138219.0
+    Spend ≈ ¥3.94 (1294730 tokens). Summary: `results/exp_ii/summary.md`.
+    Runners: `scripts/run_exp_ii_overnight.sh`, `run_exp_ii.sh`, `summarize_exp_ii.py`.
+  - Manuscript: `§Experiments` reorganized into **three blocks**
+    (Exp-A ablation / Exp-B unified baselines / Exp-C diagnostics);
+    mock main tables + status-prior preliminary tables; Exp-B merges former
+    Exp-II+III narratively (execution may still stage internal before external).
+  - **Claim reset (2026-07-24) — redesign before more API spend.**
+    Qualitative review: status-prior Stackelberg does **not** naturally beat
+    a strong LLM single-judge on naming accuracy (symmetric evidence at
+    failure time). Footing = **verifiable attribution + adversarial
+    robustness + cost/audit**, with accuracy **≥ / not behind** single-judge
+    as a hard requirement → requires **Evidence-informed commitment**:
+    Leader forms a **layer ranking** from stack+history (**no** calibrated
+    LLM probabilities), **commits** \(\omega\), then probe + **executed
+    refutation**; attribution = verified, not last-comply. Do **not** start
+    Exp-B external (Debate/Reflexion) until redesign ships and smoke shows
+    non-zero verified-attr.
+    **Spec locked:** [`docs/SPEC_EVIDENCE_INFORMED_SB.md`](./docs/SPEC_EVIDENCE_INFORMED_SB.md).
+  - **Evidence-informed SB — CODE DONE; ¥1 smoke structural PASS (2026-07-24).**
+    - Impl: `game/ranking.py` (`rank_layers` / `align_omega`), `game/verified.py`,
+      rank prompt `prompts/templates/diagnosis_agent/rank.md`, wired in
+      `_stackelberg_diagnosis`; CLI `--omega_source evidence_rank|status_prior`
+      (default `evidence_rank`), `--rank_method llm_rank|heuristic|hybrid`.
+      Exp-A freeze: causal uses rank tip; reverse/random ignore rank.
+      Primary fields: `verified_attributed_layer` / `verified_attribution_hit`
+      + `refutation_log` in `episode_payoff`. Tests:
+      `tests/test_ranking.py`, `tests/test_verified_attr.py` (green).
+    - Smoke (Qwen/`qwen3.7-plus`, `me_force_zero_sea`, K=3):
+      - SB: `results/mako/Qwen_qwen3.7-plus/prob_tslp_ecr_demand_k3/smoke_H4_Omega5/evidence_sb_causal_er/`
+        — exit 0; `omega`+`rank`+`omega_source` logged; `verified_attribution_hit=False`
+        (rank tipped PD on CRASH; K exhausted; ~166k tok).
+      - Adv: `.../evidence_adv/` — exit 0; SSR=1 but â_ver=PD ≠ a\*=ME
+        (`verified_attribution_hit=False`; ~111k tok).
+      - Notes: `results/evidence_informed_smoke/SUMMARY.md`.
+    - Gate: **structural pass**; **verified-attr miss** on that draw.
+  - **Provider (2026-07-24+):** cost-gated redesigned runs prefer
+    **DashScope / `deepseek-v4-flash`** (百炼 OpenAI-compat;
+    `QWEN_*` or `DASHSCOPE_API_KEY`; `enable_thinking` default **off** —
+    set `FSM_ENABLE_THINKING=1` for Bailian chat-style thinking).
+    Qwen Exp-A partial aborted (~¥3.1) → `results/exp_a_evidence_qwen_partial/`.
+  - **Redesigned Exp-A DONE (2026-07-24, DashScope/`deepseek-v4-flash`).**
+    n=3 × {causal, reverse, random}, plant `me_force_zero_sea`, K=3,
+    `--omega_source evidence_rank`. Spend **1.21M tok ≈ ¥3.69**; 9/9 CELL_OK;
+    no budget stop.
+    - first_probe: causal **1/3≈0.33** > reverse **0/3** > random **0/3**
+      → gate verdict **`pass`** (thin; only `ea_causal_r3` tipped ME).
+    - **verified_attribution_hit: 0/9**; **SSR@$K$: 0/9** — mechanism primary
+      metric failed; do **not** treat as paper-ready success.
+    - Failure modes (inspect trajectories):
+      1. CRASH surfaces → llm_rank often tips **PD** (traceback-as-oracle);
+         K burned on PD/DE overturns before ME.
+      2. Even correct tip (`ea_causal_r3`: ME first, OPTIMAL-but-gap≈74%):
+         ME backward saw **pre-injection** history (hid `Injected_Force_Zero`);
+         LLM “fixed” unrelated `sea_outbound_floor` → overturn; never Practical
+         Optimal → no verified.
+    - Summary: `results/exp_a_evidence/summary.md` (+ `summary.json`).
+      Results root: `results/mako/DashScope_deepseek-v4-flash/prob_tslp_ecr_demand_k3/smoke_H4_Omega5/exp_i_pilot_ea_*`.
+      Runners: `scripts/launch_exp_a_evidence.sh`, `run_exp_a_evidence.sh`,
+      `summarize_exp_a_evidence.py`. Exp-B runners ready but **not run**:
+      `run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py`.
+  - **Verified-attr repair CODE DONE (2026-07-27); live smoke UNLOCKED verified.**
+    Root cause of `ea_causal_r3` gap: ME `backward_step` used
+    `get_last_forward_output` (pre-plant) + LLM rewritten wrong floors.
+    Fixes shipped:
+      1. `rank.md`: traceback ≠ root; force-zero / \(y_{\mathrm{in}},y_{\mathrm{out}}=0\) → tip ME.
+      2. `ranking._heuristic_rank`: force-zero smell → +ME / −PD; hybrid shortcuts
+         to heuristic when smell present. Tests: `tests/test_ranking.py`.
+      3. ME backward: prefer **current** `model_expert_output`; on comply with
+         force-zero present → **minimal strip** of plant constraint (keep rest);
+         strip regex must **not** match nonnegativity `(>= y_in 0)` (v1 smoke
+         false positive). Prompt `model_expert/backward_step.md` updated.
+         Tests: `tests/test_me_force_zero_repair.py` (green).
+      4. `fault_injector`: record planted ME into `output_history` as forward.
+    **¥1 re-smoke (DashScope/`deepseek-v4-flash`, 2026-07-27):**
+      - Adv `verified_fix_adv`: **`verified_attribution_hit=True`**,
+        â_ver=`model_expert`, SSR=1, obj≈\(z^\star\), ~159k tok.
+      - SB v2 `verified_fix_sb_causal_er_v2`: tip ME + strip OK, but PD
+        regen KeyError→193% gap; verified=False (~114k tok).
+      - Summary: `results/evidence_informed_smoke_v2/SUMMARY.md`.
+  - **Re-Exp-A hybrid DONE (2026-07-27).** Old llm_rank cells backed up as
+    `exp_i_pilot_ea_*_llmrank_20260724`. New grid n=3,
+    `--rank_method hybrid`, DashScope/`deepseek-v4-flash`, ~1.05M tok ≈ ¥3.18.
+    Summary: `results/exp_a_evidence_hybrid/summary.md`.
+    - first_probe: causal **3/3=1.0** > reverse **0/3** > random **0/3**
+    - verified: causal **1/3≈0.33** > reverse **0** > random **0**
+    - SSR: causal **2/3≈0.67** > reverse/random **0**
+    - Gate **`pass`**. Standout: `ea_causal_r3` verified=True, SSR=True, K=1.
+  - **Exp-B internal hybrid DONE (2026-07-27).** n=3 × {adv, seq},
+    ~0.74M tok ≈ ¥2.24. Summary:
+    `results/exp_b_internal_evidence_hybrid/summary.md`.
+    - verified: SB **0.33** ≥ adversarial **0.00** ≥ sequential **0.00**
+      → gate **`pass`** (thin; SB win is 1/3 vs 0/3).
+    - Caveats: `eb_seq_r1` tokens=0 (KeyError `solver_executor`); adv grid
+      0/3 verified despite earlier smoke adv hit (high variance / PD regen).
+  - **Next concrete work (ordered) — Debate still frozen:**
+    1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
+    2. Decide: expand n (cost) vs audit PD-regen after ME strip (why causal
+       verified only 1/3; why adv grid ≠ smoke).
+    3. Exp-B external (Debate/Reflexion) + Exp-C — freeze until SB verified
+       rate is stabler / n larger.
+    4. ~~Manuscript tables: replace mock with hybrid Exp-A/B numbers~~ **done**
+       (`els-cas-templates/manuscript.tex`: `tab:exp_ablation`,
+       `tab:exp_baselines`; thin-$n$ caveat; Exp-C still mock; Debate not run).
+    5. Decide: expand $n$ / audit PD-regen vs draft Results prose around the
+       measured tables. Debate still frozen.
+
+### Next-agent prompt (copy-paste)
+
+Paste the block below into a new chat to continue.
+
+```markdown
+# 任务：稳住 SB verified 率 / 决定是否扩 n（Exp-A/B hybrid 已跑完）
+
+Verified 已打通；hybrid Exp-A/B internal **gate pass**（薄样本）。
+先读：
+
+1. `HANDOVER.md` TL;DR（Re-Exp-A / Exp-B hybrid DONE）
+2. `results/exp_a_evidence_hybrid/summary.md`
+3. `results/exp_b_internal_evidence_hybrid/summary.md`
+4. `results/evidence_informed_smoke_v2/SUMMARY.md`
+
+## 硬约束
+
+- **不要**跑 Debate/Reflexion，除非用户明确要求。
+- Provider：**DashScope / deepseek-v4-flash**；控制预算。
+- 主指标：`verified_attribution_hit`。
+
+## 立刻做（择一，先问用户）
+
+A. 审计 PD regen after ME strip（对照 `ea_causal_r3` 成功 vs `r1`/`r2` 失败）
+B. 小扩 n（如 causal n→5）cost-gated
+C. 更新 manuscript 实验表（标 thin-n）
+
+## 验收
+
+- [ ] 有明确下一步决策 + HANDOVER 更新
+- [ ] 未盲开 Debate
+```
+
+
 
 ---
 
@@ -215,7 +362,7 @@ u_L = S - \mu_K K - \mu_C (C/C_0)
 Without \(a^\*\) (`--true_root_cause`), `u_F` is `null`. Tests:
 `tests/test_payoff.py`.
 
-### Phase 3 / manuscript Exp-I–III — OPEN (next)
+### Phase 3 / manuscript Exp-I–III — PILOT DONE; FULL GRID OPEN
 
 Manuscript protocol (`§Experiments`):
 
@@ -223,15 +370,26 @@ Manuscript protocol (`§Experiments`):
 |---|---|
 | **Setup** | TSLP data, fixed model, budget \(K\), upstream injection / downstream symptom, fairness (same blackboard + repair path) |
 | **Methods** | (A) stackelberg × {causal, reverse, random}; (B) adversarial, sequential; (C) Debate + Reflexion |
-| **Metrics** | Primary: attribution \(\mathbf{1}\{\hat a=a^\*\}\); secondary: SSR@\(K\), tokens/rounds; diagnostics in Exp-IV |
-| **Exp-I** | Commitment-order ablation (+ **pilot / kill criteria** — written; may delete later) |
-| **Exp-II** | Internal baselines |
-| **Exp-III** | Debate (majority vote, **no LLM confidence weights**) + Reflexion |
-| **Exp-IV** | Deflect / overturn rates, attribution vs \(K\) |
+| **Metrics** | Primary: verified attribution + first-probe (ablation); last-comply secondary. SSR@$K$, tokens, audit; Exp-C: vs \(K\), deflect overturn |
+| **Exp-A** | Commitment-order ablation — status-prior n=5 DONE; **evidence_rank n=3 DONE** (first-probe pass, verified 0) |
+| **Exp-B** | Unified baselines: internal (adversarial, sequential) + external (Debate, Reflexion) — **internal not re-run under evidence protocol yet** |
+| **Exp-C** | Inspection diagnostics (attr vs \(K\), overturn) |
 
-**Immediate next task:** revise Exp-I plant (current
-`me_drop_stage2_balance` too weak / network-contaminated) and re-run the
-pilot kill-criteria grid before full Exp-I.
+**Immediate next task:** Manuscript Exp-A/B tables **updated** to measured
+hybrid $n{=}3$ (`tab:exp_ablation`, `tab:exp_baselines`). Next: stabilize SB
+verified (PD regen) and/or expand $n$, then Results prose; Debate frozen.
+Summaries: `results/exp_a_evidence_hybrid/summary.md`,
+`results/exp_b_internal_evidence_hybrid/summary.md`.
+
+Runners (gitignored results under `results/`):
+- **Evidence Exp-A/B:** `scripts/launch_exp_a_evidence.sh`,
+  `run_exp_a_evidence.sh`, `summarize_exp_a_evidence.py`,
+  `run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py`
+- Legacy status-prior: `scripts/launch_exp_i_full.sh` / `run_exp_i_full.sh`,
+  `launch_exp_i_v3.sh` / `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py`
+- CLI: `--inject me_force_zero_sea --true_root_cause model_expert`
+  `--probe_order {causal,reverse,random} [--probe_seed N]`
+  `--omega_source evidence_rank|status_prior --rank_method llm_rank|heuristic`
 
 Debate design note (agreed): debaters output `{suspected_agent, argument}`
 only; aggregate by majority vote; tie-break via status prior — **do not**
@@ -246,7 +404,9 @@ adapt to TSLP + fsm-stackelberg).
 ### Phase 5 — Proposition — PARTIAL
 
 Prop. 1 is in the manuscript; formal bound optional; **empirical validation =
-Exp-I**. Do not claim the prop is validated until ablation lands.
+Exp-I**. n=5 commitment-order table landed (`pass`: causal > random >
+reverse on `first_probe_hit`). Still treat as **directional evidence**, not
+a definitive prop validation, until larger \(n\) / multi-plant replication.
 
 ---
 
@@ -280,16 +440,18 @@ Exp-I**. Do not claim the prop is validated until ablation lands.
 | Prune CoE/OptiMUS under `baselines/` | defer | different family; not Exp-III head-to-head |
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
-| Exp-I pilot subsection in tex | keep for now | user OK to delete after main tables |
+| Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
 
 ## 8. Environment checklist
 
 - [x] `uv sync` (venv at `.venv/`)
-- [x] `.env` with API keys (`python-dotenv`; Qwen works; MiMo balance /
-      DeepSeek key still broken as of 2026-07-22)
-- [ ] Gurobi license active (`gurobipy>=12.0.2`)
+- [x] `.env` with API keys (`python-dotenv`; **DashScope/`deepseek-v4-flash`
+      via `QWEN_*` works**; Qwen/`qwen3.7-plus` also OK; official DeepSeek
+      / MiMo keys historically flaky — prefer 百炼)
+- [x] Gurobi license active via `GRB_LICENSE_FILE` (academic WLS; verified in
+      smoke / pilot runs)
 - [x] GitHub remote in use (`origin` → `pengkangzhen/fsm-stackelberg`)
 
 ---
@@ -298,18 +460,26 @@ Exp-I**. Do not claim the prop is validated until ablation lands.
 
 | Purpose | Path |
 |---|---|
-| Manuscript | `els-cas-templates/manuscript.tex` (§stackelberg, §experiments) |
+| Manuscript | `els-cas-templates/manuscript.tex` (§stackelberg, §experiments, `tab:outcome_taxonomy`) |
+| Evidence-informed SB **spec** | `docs/SPEC_EVIDENCE_INFORMED_SB.md` |
 | FSM | `src/fsm_stackelberg/graph/workflow.py` |
 | State | `src/fsm_stackelberg/graph/state.py` |
-| Stackelberg inspector | `src/fsm_stackelberg/agents/diagnosis_agent.py` |
+| Stackelberg inspector | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`build_probe_order`) |
 | Progressive knowledge | `src/fsm_stackelberg/knowledge/progressive.py` |
 | Feature plug-ins | `src/fsm_stackelberg/plugins/features.py` |
 | Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
-| Episode payoffs + commitment diagnostics | `src/fsm_stackelberg/game/payoff.py` |
-| Run logs (`run_manifest.json` / `events.jsonl` / `artifacts/`) | `src/fsm_stackelberg/utils/run_log.py` |
+| Episode payoffs + kill / verified | `src/fsm_stackelberg/game/payoff.py`, `game/verified.py` |
+| Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
+| Fault plants (Exp-I) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` |
+| Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
+| Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
+| Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |
+| Redesigned Exp-A (evidence_rank) | `results/exp_a_evidence/summary.md` + runners `scripts/launch_exp_a_evidence.sh`, `run_exp_a_evidence.sh`, `summarize_exp_a_evidence.py` |
+| Redesigned Exp-B internal (ready, not run) | `scripts/run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py` |
+| LLM providers | `src/fsm_stackelberg/utils/llm_config.py` (DashScope + `deepseek-v4-flash`) |
 | TSLP export / GT | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
 | Inspectee repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` |
-| CLI | `src/fsm_stackelberg/main.py` (`--log_prompts`, `--temperature`, `--probe_seed`, `--inject`) |
+| CLI | `src/fsm_stackelberg/main.py` (`--inject`, `--probe_order`, `--probe_seed`, `--omega_source`, `--rank_method`, `--true_root_cause`) |
 | Smoke instance | `dataset/prob_tslp_ecr_demand/instances/smoke_H4_Omega5` |
 | TSLP knowledge | `src/fsm_stackelberg/knowledge/domains/tslp/` |
 | Sibling repos | `../tslp-ecr-demand`, `../ecr-shared-data` |

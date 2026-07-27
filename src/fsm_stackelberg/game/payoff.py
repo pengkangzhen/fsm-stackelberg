@@ -14,6 +14,9 @@ token spend. Coefficients are design parameters, not claimed LLM utilities.
 Exp-I kill criteria also records commitment-order diagnostics:
 ``first_probe_hit`` = 1{first probed layer = a*} (order ablation signal),
 distinct from last-comply ``attribution_hit`` (which confounds cascade repairs).
+
+Evidence-informed redesign: primary attribution metric is
+``verified_attribution_hit`` from executed refutation (not last-comply).
 """
 
 from __future__ import annotations
@@ -67,6 +70,8 @@ def infer_attributed_layer(state: Dict[str, Any]) -> Optional[str]:
     re-solve passed strict success — that layer is the mechanism's root-cause
     claim. First-pass success with no diagnosis yields None (no inspection game).
     Failed / exhausted inspection yields None.
+
+    Legacy / secondary metric. Prefer ``infer_verified_attribution`` for Exp-B+.
     """
     if not is_strict_success(state):
         return None
@@ -132,6 +137,9 @@ def infer_commitment_diagnostics(state: Dict[str, Any]) -> Dict[str, Any]:
         "true_root_rank_in_omega": true_root_rank,
         "plant_layer_complied": plant_complied if true_root else None,
         "kill_hit": first_probe_hit,
+        "omega_source": policy.get("omega_source"),
+        "rank": policy.get("rank"),
+        "rank_method": policy.get("rank_method"),
     }
 
 
@@ -144,6 +152,7 @@ def compute_episode_payoffs(
     tokens: int,
     config: PayoffConfig = DEFAULT_PAYOFF_CONFIG,
     commitment: Optional[Dict[str, Any]] = None,
+    verified: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Compute numeric u_L / u_F for one diagnosis-repair episode."""
     K = max(0, int(probe_rounds))
@@ -186,6 +195,10 @@ def compute_episode_payoffs(
     }
     if commitment:
         out.update(commitment)
+    if verified:
+        out["verified_attributed_layer"] = verified.get("verified_attributed_layer")
+        out["verified_attribution_hit"] = verified.get("verified_attribution_hit")
+        out["refutation_log_summary"] = verified.get("refutation_log_summary")
     return out
 
 
@@ -195,9 +208,14 @@ def finalize_episode_payoffs(
     config: PayoffConfig = DEFAULT_PAYOFF_CONFIG,
 ) -> Dict[str, Any]:
     """Derive payoffs from a finished AgentState and return the payoff dict."""
+    from .verified import infer_verified_attribution
+
     success = is_strict_success(state, gap_tol=config.gap_tol)
     attributed = infer_attributed_layer(state)
     commitment = infer_commitment_diagnostics(state)
+    verified = infer_verified_attribution(state)
+    # Persist completed refutation log back onto state for callers that dump it.
+    state["refutation_log"] = verified.get("refutation_log") or state.get("refutation_log") or []
     return compute_episode_payoffs(
         success=success,
         attributed_layer=attributed,
@@ -206,4 +224,5 @@ def finalize_episode_payoffs(
         tokens=int(state.get("total_tokens") or 0),
         config=config,
         commitment=commitment,
+        verified=verified,
     )

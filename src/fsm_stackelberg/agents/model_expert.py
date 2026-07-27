@@ -5,8 +5,9 @@ Translates business problems into formal mathematical optimization models.
 
 import json
 import logging
+import re
 import time
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -27,6 +28,74 @@ from ..utils.run_log import record_step_event, save_backward_artifact
 from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
 logger = logging.getLogger(__name__)
+
+# Names / expression smells for *forced-zero* sea repositioning (plant).
+# Do NOT match nonnegativity `(>= y_in 0)` — that is a false positive that
+# deleted balances in verified_fix_sb smoke (2026-07-27).
+_FORCE_ZERO_NAME_RE = re.compile(
+    r"(injected_force_zero|force_zero_sea|force_zero_y)",
+    re.IGNORECASE,
+)
+_FORCE_ZERO_EQ_PAIR_RE = re.compile(
+    r"\(=\s*y_in\[[^\]]+\]\s*0\).{0,200}\(=\s*y_out\[[^\]]+\]\s*0\)"
+    r"|\(=\s*y_out\[[^\]]+\]\s*0\).{0,200}\(=\s*y_in\[[^\]]+\]\s*0\)",
+    re.IGNORECASE | re.DOTALL,
+)
+_FORCE_ZERO_DESC_RE = re.compile(
+    r"force\s+all\s+stage-?1\s+sea\s+repositioning",
+    re.IGNORECASE,
+)
+
+
+def _format_me_for_prompt(me: object) -> str:
+    if me is None:
+        return "N/A"
+    if hasattr(me, "model_dump_json"):
+        return me.model_dump_json(indent=2)
+    if isinstance(me, dict):
+        return json.dumps(me, ensure_ascii=False, indent=2, default=str)
+    return str(me)
+
+
+def _as_model_expert_output(me: object) -> Optional[ModelExpertOutput]:
+    if me is None:
+        return None
+    if isinstance(me, ModelExpertOutput):
+        return me
+    try:
+        return ModelExpertOutput.model_validate(me)
+    except Exception:
+        return None
+
+
+def strip_force_zero_sea_constraints(
+    me: ModelExpertOutput,
+) -> Tuple[ModelExpertOutput, List[str]]:
+    """Drop constraints that force y_in/y_out to zero (minimal ME repair hygiene).
+
+    Used after a comply so a wrong LLM rewrite cannot leave the plant constraint
+    in place, and so an LLM that fixes something else still loses the plant.
+    """
+    components = me.model_components
+    kept = []
+    dropped: List[str] = []
+    for c in components.constraints:
+        name = c.name or ""
+        expr = c.expression or ""
+        desc = c.description or ""
+        if (
+            _FORCE_ZERO_NAME_RE.search(name)
+            or _FORCE_ZERO_EQ_PAIR_RE.search(expr)
+            or _FORCE_ZERO_DESC_RE.search(desc)
+            or _FORCE_ZERO_DESC_RE.search(name + " " + desc)
+        ):
+            dropped.append(c.name)
+            continue
+        kept.append(c)
+    if not dropped:
+        return me, []
+    new_components = components.model_copy(update={"constraints": kept})
+    return me.model_copy(update={"model_components": new_components}), dropped
 
 
 def _strip_satisfied_knowledge_requests(result: ModelExpertOutput, state: Dict) -> ModelExpertOutput:
@@ -239,7 +308,13 @@ def model_expert_backward_step(state: Dict) -> Dict:
     de_output_str = data_engineer_output.model_dump_json(indent=2) if data_engineer_output else "N/A"
 
     output_history = state.get("output_history", [])
-    previous_output = get_last_forward_output(output_history, "model_expert")
+    # Prefer the *current* blackboard ME (post-injection). History's last
+    # forward is often the pre-plant artifact and hides Injected_Force_Zero.
+    current_me = state.get("model_expert_output")
+    if current_me is not None:
+        previous_output = _format_me_for_prompt(current_me)
+    else:
+        previous_output = get_last_forward_output(output_history, "model_expert")
 
     # Create chain for backward step
     llm = get_llm(provider=state.get("provider"), model=state.get("model"), temperature=0)
@@ -309,15 +384,65 @@ def model_expert_backward_step(state: Dict) -> Dict:
     agent_metrics["model_expert"]["num_calls"] += 1
 
     # Handle result
-    if result.is_caused_by_you and result.refined_result:
-        # Agent admitted fault and provided correction
+    metrics_tail = {
+        "step_metrics": step_metrics,
+        "node_metrics": node_metrics,
+        "agent_metrics": agent_metrics,
+        "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
+        "total_duration_s": state.get("total_duration_s", 0.0) + duration,
+    }
+
+    if result.is_caused_by_you:
         logger.info(f"ModelExpert backward_step: Agent admitted fault. Reason: {result.reason}")
 
-        # Parse refined result
+        # Prefer minimal plant strip from *current* blackboard when force-zero
+        # is present (ea_causal_r3: LLM rewrote unrelated floors and left gap).
+        cur_me = _as_model_expert_output(current_me)
+        if cur_me is not None:
+            stripped_cur, dropped_cur = strip_force_zero_sea_constraints(cur_me)
+            if dropped_cur:
+                logger.info(
+                    "ModelExpert backward_step: minimal strip of force-zero "
+                    "constraint(s) from current ME: %s",
+                    dropped_cur,
+                )
+                refined_output = _strip_satisfied_knowledge_requests(stripped_cur, state)
+                current_round = state.get("current_round", 1)
+                output_history = record_agent_output(
+                    output_history=output_history,
+                    agent_name="model_expert",
+                    output=refined_output,
+                    current_round=current_round,
+                    step_type="backward",
+                )
+                return {
+                    "model_expert_output": refined_output,
+                    "data_engineer_output": data_engineer_output,
+                    "error_resolved": True,
+                    "backward_reason": (
+                        f"{result.reason} "
+                        f"[minimal_strip:{','.join(dropped_cur)}]"
+                    ),
+                    "output_history": output_history,
+                    "current_round": current_round,
+                    **metrics_tail,
+                }
+
+        if not result.refined_result:
+            logger.info(
+                "ModelExpert backward_step: admitted fault but no refined_result "
+                "and no force-zero to strip"
+            )
+            return {
+                "error_resolved": False,
+                "backward_reason": result.reason,
+                **metrics_tail,
+            }
+
+        # Parse refined result (no force-zero plant on blackboard)
         if isinstance(result.refined_result, dict):
             refined_dict = result.refined_result
         elif isinstance(result.refined_result, str):
-            # Try to parse as JSON
             try:
                 refined_dict = json.loads(result.refined_result)
             except json.JSONDecodeError:
@@ -325,11 +450,7 @@ def model_expert_backward_step(state: Dict) -> Dict:
                 return {
                     "error_resolved": False,
                     "backward_reason": result.reason,
-                    "step_metrics": step_metrics,
-                    "node_metrics": node_metrics,
-                    "agent_metrics": agent_metrics,
-                    "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
-                    "total_duration_s": state.get("total_duration_s", 0.0) + duration,
+                    **metrics_tail,
                 }
         else:
             refined_dict = result.refined_result.model_dump()
@@ -358,22 +479,23 @@ def model_expert_backward_step(state: Dict) -> Dict:
             return {
                 "error_resolved": False,
                 "backward_reason": result.reason,
-                "step_metrics": step_metrics,
-                "node_metrics": node_metrics,
-                "agent_metrics": agent_metrics,
-                "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
-                "total_duration_s": state.get("total_duration_s", 0.0) + duration,
+                **metrics_tail,
             }
         refined_output = _strip_satisfied_knowledge_requests(refined_output, state)
+        refined_output, dropped_fz = strip_force_zero_sea_constraints(refined_output)
+        if dropped_fz:
+            logger.info(
+                "ModelExpert backward_step: stripped force-zero sea constraint(s): %s",
+                dropped_fz,
+            )
 
-        # Record the correction
         current_round = state.get("current_round", 1)
         output_history = record_agent_output(
             output_history=output_history,
             agent_name="model_expert",
             output=refined_output,
             current_round=current_round,
-            step_type="backward"
+            step_type="backward",
         )
 
         return {
@@ -382,12 +504,8 @@ def model_expert_backward_step(state: Dict) -> Dict:
             "error_resolved": True,
             "backward_reason": result.reason,
             "output_history": output_history,
-            "step_metrics": step_metrics,
-            "node_metrics": node_metrics,
-            "agent_metrics": agent_metrics,
-            "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
-            "total_duration_s": state.get("total_duration_s", 0.0) + duration,
             "current_round": current_round,
+            **metrics_tail,
         }
 
     # Agent doesn't admit fault or no correction provided
@@ -395,9 +513,5 @@ def model_expert_backward_step(state: Dict) -> Dict:
     return {
         "error_resolved": False,
         "backward_reason": result.reason,
-        "step_metrics": step_metrics,
-        "node_metrics": node_metrics,
-        "agent_metrics": agent_metrics,
-        "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
-        "total_duration_s": state.get("total_duration_s", 0.0) + duration,
+        **metrics_tail,
     }

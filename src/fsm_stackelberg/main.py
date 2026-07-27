@@ -316,6 +316,20 @@ def main():
         default=None,
         help="RNG seed for --probe_order random (reproducible shuffle; ignored otherwise)",
     )
+    parser.add_argument(
+        "--omega_source",
+        type=str,
+        default="evidence_rank",
+        choices=["evidence_rank", "status_prior"],
+        help="How Stackelberg commits ω: evidence_rank (default) or legacy status_prior",
+    )
+    parser.add_argument(
+        "--rank_method",
+        type=str,
+        default="llm_rank",
+        choices=["llm_rank", "heuristic", "hybrid"],
+        help="Layer ranking method for evidence_rank (default: llm_rank)",
+    )
     parser.add_argument("--knowledge", type=str, default="progressive",
                         choices=["progressive", "enable", "disable"],
                         help="Knowledge injection: progressive (catalog→request→load; default), "
@@ -569,6 +583,8 @@ def main():
                 temperature=float(args.temperature),
                 probe_seed=args.probe_seed,
                 inject_id=args.inject_id,
+                omega_source=getattr(args, "omega_source", "evidence_rank"),
+                rank_method=getattr(args, "rank_method", "llm_rank"),
             )
         except Exception as exc:
             logger.exception("MAKO workflow crashed; recording failure result.")

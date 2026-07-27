@@ -50,6 +50,9 @@ class AgentState(TypedDict, total=False):
     inspection_policy: Optional[Dict[str, Any]]  # committed σ = (ω, ν)
     probe_queue: List[str]  # committed probing order for this failure episode
     cleared_layers: List[str]  # layers cleared by executed refutation / upheld deflection
+    refutation_log: List[Dict[str, Any]]  # per-probe executed-refutation records
+    omega_source: str  # "evidence_rank" (default) | "status_prior"
+    rank_method: str  # "llm_rank" | "heuristic" | "hybrid"
 
     # Backward step results
     error_resolved: Optional[bool]  # Whether backward_step resolved the error

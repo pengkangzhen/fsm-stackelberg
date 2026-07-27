@@ -337,6 +337,8 @@ def run_mako(
     temperature: float = 0.0,
     probe_seed: int = None,
     inject_id: str = None,
+    omega_source: str = "evidence_rank",
+    rank_method: str = "llm_rank",
 ) -> dict:
     """Run the FSM-Stackelberg optimization workflow.
 
@@ -361,7 +363,10 @@ def run_mako(
         log_prompts: When True, dump full prompts under ``prompts/``
         temperature: LLM temperature (logged for reproducibility)
         probe_seed: Optional RNG seed for probe_order=random
-        inject_id: Optional fault-plant id (logged when injection is used)
+        inject_id: Optional fault-plant id (Exp-I). When set, applies once on
+            the ME→PD boundary; seeds true_root_cause from the plant if unset.
+        omega_source: "evidence_rank" (default) or legacy "status_prior".
+        rank_method: "llm_rank" | "heuristic" | "hybrid" for evidence ranking.
 
     Returns:
         Final state with results (includes episode_payoff)
@@ -386,6 +391,8 @@ def run_mako(
         knowledge_mode=knowledge_mode,
         diagnosis_mode=diagnosis_mode,
         probe_order=probe_order,
+        omega_source=omega_source,
+        rank_method=rank_method,
     )
     feature_state = features.bootstrap_state()
 
@@ -432,12 +439,15 @@ def run_mako(
     episode_payoff = finalize_episode_payoffs(final_state)
     final_state["attributed_layer"] = episode_payoff.get("attributed_layer")
     final_state["episode_payoff"] = episode_payoff
+    final_state["refutation_log"] = final_state.get("refutation_log") or []
     logger.info(
-        "Episode payoff: S=%s u_L=%s u_F=%s attributed=%s true_root=%s K=%s tokens=%s",
+        "Episode payoff: S=%s u_L=%s u_F=%s attributed=%s verified=%s "
+        "true_root=%s K=%s tokens=%s",
         episode_payoff.get("S"),
         episode_payoff.get("u_L"),
         episode_payoff.get("u_F"),
         episode_payoff.get("attributed_layer"),
+        episode_payoff.get("verified_attributed_layer"),
         episode_payoff.get("true_root_cause"),
         episode_payoff.get("probe_rounds"),
         episode_payoff.get("tokens"),
