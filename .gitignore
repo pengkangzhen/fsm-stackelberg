@@ -28,7 +28,12 @@ ENV/
 
 # Experiment outputs
 results/
+logs/
 *.log
+*.pid
+
+# Local WSL→Windows proxy helper (contains LAN host IP, not for commit)
+.gh-proxy.env
 
 # Gurobi
 gurobi.log
