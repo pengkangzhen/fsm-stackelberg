@@ -423,11 +423,25 @@ Debate design note (agreed): debaters output `{suspected_agent, argument}`
 only; aggregate by majority vote; tie-break via status prior — **do not**
 trust LLM-reported confidence.
 
-### Phase 4 — Attribution grid — OPEN
+### Phase 4 — Attribution grid — OFFLINE HALF DONE (2026-08-29)
 
-Primary metric already fixed in manuscript. Port / rebuild injection +
-analysis (mako had `scripts/experiment_phase4/analyze_2d_attribution.py` —
-adapt to TSLP + fsm-stackelberg).
+Primary metric already fixed in manuscript. Ported from mako's
+`analyze_2d_attribution.py`:
+
+- **Analysis:** `scripts/analyze_attribution_grid.py` auto-discovers runs
+  (reads `run_manifest.json` or legacy `experiment_result.json`), and emits
+  true-layer × attributed-layer confusion, surface × true matrices, and
+  per-method rates. Unlike mako (which *guessed* origin from the surface),
+  the true layer comes from the injected plant. Debugged on 85 historical
+  runs (`results/attribution_grid/`).
+- **Plants:** layer grid closed — `de_swap_demand_supply_source` (DE→ME
+  boundary; wrong catalog mapping under the value-free contract) and
+  `pd_comment_out_balance` (PD→solver boundary; relaxed DEP, correct ME).
+  `fault_injector` is now a layer-aware factory (`make_fault_injector_node`);
+  global one-shot `fault_injected` flag unchanged. Tests:
+  `tests/test_injection.py`.
+- **Remaining:** the grid *run* itself (plant × method × reps) — blocked on
+  LLM budget; run only after the no-plant E2E gate passes.
 
 ### Phase 5 — Proposition — PARTIAL
 
@@ -504,7 +518,8 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
 | Episode payoffs + kill / verified | `src/fsm_stackelberg/game/payoff.py`, `game/verified.py` |
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
-| Fault plants (Exp-I) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` |
+| Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
+| Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |

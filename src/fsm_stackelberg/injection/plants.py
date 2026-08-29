@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Sequence
 
-from ..schemas import Constraint, ModelExpertOutput
+from ..schemas import Constraint, DataEngineerOutput, ModelExpertOutput
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ class PlantSpec:
     true_root_cause: str  # data_engineer | model_expert | python_developer
     description: str
     apply: Callable[[Dict[str, Any]], Dict[str, Any]]
+    target_layer: str = "model_expert"  # injector boundary that applies this plant
 
 
 def _as_me(state: Dict[str, Any]) -> ModelExpertOutput:
@@ -41,6 +42,30 @@ def _as_me(state: Dict[str, Any]) -> ModelExpertOutput:
     if isinstance(me, dict):
         return ModelExpertOutput.model_validate(me)
     return me
+
+
+def _as_de(state: Dict[str, Any]) -> DataEngineerOutput:
+    de = state.get("data_engineer_output")
+    if de is None:
+        raise ValueError("plant requires data_engineer_output")
+    if isinstance(de, dict):
+        return DataEngineerOutput.model_validate(de)
+    return de
+
+
+_DEMAND_RE = re.compile(r"demand", re.IGNORECASE)
+_SUPPLY_RE = re.compile(r"supply", re.IGNORECASE)
+_ADD_CONSTR_RE = re.compile(r"addConstr|add_constr", re.IGNORECASE)
+_BALANCE_TOKEN_RE = re.compile(r"balance", re.IGNORECASE)
+
+
+def _find_param_index(params, pattern) -> Optional[int]:
+    """Index of the first parameter whose symbol/description matches and has a source."""
+    for i, p in enumerate(params):
+        blob = f"{p.symbol} {p.description}"
+        if pattern.search(blob) and (p.source or "").strip():
+            return i
+    return None
 
 
 def _is_stage2_balance(constraint: Constraint) -> bool:
@@ -152,6 +177,97 @@ def _me_force_zero_sea(state: Dict[str, Any]) -> Dict[str, Any]:
     return _strip_recovery_context(updated)
 
 
+def _de_swap_demand_supply_source(state: Dict[str, Any]) -> Dict[str, Any]:
+    """DE plant: swap the catalog sources of demand-like and supply-like params.
+
+    Under the deterministic data contract DE output is value-free, so the
+    data-layer fault class is a wrong semantic mapping: ME/PD code against the
+    swapped physical tables, producing a feasible-but-wrong DEP (Spurious
+    Optimal) whose surface looks like a modeling/code issue.
+    """
+    de = _as_de(state)
+    params = list(de.model_inputs.parameters)
+    di = _find_param_index(params, _DEMAND_RE)
+    si = _find_param_index(params, _SUPPLY_RE)
+    if di is None or si is None:
+        raise ValueError(
+            "de_swap_demand_supply_source: no sourced demand/supply parameters "
+            "found — plant cannot guarantee a labeled data_engineer fault"
+        )
+    src_d, src_s = params[di].source, params[si].source
+    if src_d == src_s:
+        raise ValueError(
+            "de_swap_demand_supply_source: demand and supply share source "
+            f"{src_d!r} — swap would be a no-op"
+        )
+    params[di] = params[di].model_copy(update={"source": src_s})
+    params[si] = params[si].model_copy(update={"source": src_d})
+    new_inputs = de.model_inputs.model_copy(update={"parameters": params})
+    new_de = de.model_copy(update={"model_inputs": new_inputs})
+    logger.warning(
+        "Fault plant de_swap_demand_supply_source: swapped sources of %s <-> %s "
+        "(%s <-> %s)",
+        params[di].symbol,
+        params[si].symbol,
+        src_s,
+        src_d,
+    )
+    return {
+        **state,
+        "data_engineer_output": new_de,
+        "fault_plant_id": "de_swap_demand_supply_source",
+        "fault_injected": True,
+        "true_root_cause": state.get("true_root_cause") or "data_engineer",
+    }
+
+
+def _pd_comment_out_balance(state: Dict[str, Any]) -> Dict[str, Any]:
+    """PD plant: comment out addConstr lines that register balance constraints.
+
+    The solver then sees a relaxed DEP (Spurious Optimal / large gap) while the
+    ME formulation on the blackboard is correct — a code-layer translation
+    fault. Guarded: refuses (raises) when no matching line exists, so a run can
+    never be silently mislabeled.
+
+    Caveat (shared with ME plants under regeneration): if diagnosis probes ME
+    first and ME regenerates, PD re-codes from the clean ME output and the
+    fault vanishes without PD ever being probed. That dynamic is itself grid
+    evidence, not a plant bug.
+    """
+    code = state.get("python_code") or ""
+    if not code.strip():
+        raise ValueError("pd_comment_out_balance: python_code missing/empty")
+    lines = code.splitlines()
+    hit = [
+        i
+        for i, ln in enumerate(lines)
+        if _ADD_CONSTR_RE.search(ln) and _BALANCE_TOKEN_RE.search(ln) and not ln.lstrip().startswith("#")
+    ]
+    if not hit:
+        raise ValueError(
+            "pd_comment_out_balance: no addConstr balance lines found — "
+            "plant cannot guarantee a labeled python_developer fault"
+        )
+    for i in hit:
+        indent = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
+        lines[i] = f"{indent}# {lines[i].lstrip()}"
+    logger.warning(
+        "Fault plant pd_comment_out_balance: commented %d balance addConstr line(s): %s",
+        len(hit),
+        [lines[i].strip()[:60] for i in hit],
+    )
+    new_code = "\n".join(lines)
+    if code.endswith("\n"):
+        new_code += "\n"
+    return {
+        **state,
+        "python_code": new_code,
+        "fault_plant_id": "pd_comment_out_balance",
+        "fault_injected": True,
+        "true_root_cause": state.get("true_root_cause") or "python_developer",
+    }
+
+
 PLANTS: Dict[str, PlantSpec] = {
     "me_drop_stage2_balance": PlantSpec(
         plant_id="me_drop_stage2_balance",
@@ -171,6 +287,28 @@ PLANTS: Dict[str, PlantSpec] = {
             "undo the forced-zero from docs."
         ),
         apply=_me_force_zero_sea,
+    ),
+    "de_swap_demand_supply_source": PlantSpec(
+        plant_id="de_swap_demand_supply_source",
+        true_root_cause="data_engineer",
+        description=(
+            "DE plant: swap the catalog sources of demand-like and supply-like "
+            "parameters so downstream agents code against the wrong physical "
+            "tables (upstream data-mapping fault under the value-free contract)."
+        ),
+        apply=_de_swap_demand_supply_source,
+        target_layer="data_engineer",
+    ),
+    "pd_comment_out_balance": PlantSpec(
+        plant_id="pd_comment_out_balance",
+        true_root_cause="python_developer",
+        description=(
+            "PD plant: comment out addConstr lines registering balance "
+            "constraints — solver sees a relaxed DEP while the ME formulation "
+            "stays correct (code-layer translation fault)."
+        ),
+        apply=_pd_comment_out_balance,
+        target_layer="python_developer",
     ),
 }
 
