@@ -28,181 +28,63 @@ Write a single Python function `def optimize(data) -> dict` that faithfully impl
 
 ## Data Access Contract
 
-The `data_access_guide` is **keyed by symbol name**. When you see a symbol in constraints:
-
-1. Look up the symbol directly in `data_access_guide.parameters` or `data_access_guide.sets`
-2. Use the `access_pattern` field for correct Python code
-
-**Example**:
-- Constraint uses: `C_transport[i,j,k,t]`
-- Look up: `data_access_guide["parameters"]["C_transport[i,j,k,t]"]`
-- Result: `{{"source": "transport_cost", "access_pattern": "data['transport_cost']"}}`
-- Write: `data['transport_cost']`
+The authoritative resolved JSON guide is keyed by the exact DE symbol in
+`sets`, `parameters`, or `derived_parameters`. The physical schema text that
+follows it is supplementary context, not a symbol-to-key mapping.
 
 ### Access Rules
 
-1. **Sets**: Look up by symbol in `data_access_guide.sets`, then use the `source` field
-2. **Parameters**: Look up by symbol in `data_access_guide.parameters`, then use the `access_pattern` field
-3. Do NOT hardcode data values — only use what's in `data_access_guide`
-4. Do NOT use symbol names directly as dictionary keys
-
-## ⚠️ Period Indexing Convention (CRITICAL)
-
-**Read `data_access_guide.sets.periods.description` for the exact convention.**
-
-Default convention for MAKO datasets:
-- `periods` = `[1, 2, ..., T]` — planning periods start from **1**
-- `t=0` is NOT a valid period — it represents the **initial state** (before planning horizon)
-- `initial_inventory` has `time_reference: 0` — use this for `I_i^0`
-
-### Correct Boundary Handling
+1. Look up each mathematical symbol in the resolved JSON and copy its
+   `access_pattern` exactly. `source` is the exact catalog `data_id`; never
+   derive a data key from the symbol or split the dotted `source` yourself.
+2. For `kind: "set"`, `"list"`, `"mapping"`, or `"scalar"`,
+   `access_pattern` points to the runtime object directly.
+3. For `kind: "records"` or `"record_value"`, `access_pattern` points to a
+   **list of record dictionaries**, not an already-built tuple dictionary.
+   Build keys in the exact order given by `index_fields`:
 
 ```python
-# Inventory balance: correct handling for t=1
-T = data['periods']  # e.g., [1, 2, 3, 4, 5]
-for i in storage_nodes:
-    for t in T:
-        if t == T[0]:  # t == 1, first planning period
-            prev_inv = data['initial_inventory'][i]  # I_i^0
-        else:
-            prev_inv = I[(i, t-1)]  # I_i^{{{{t-1}}}}
-
-# Transit time: handle arrivals from before planning horizon
-for (j, i, k), tau in data['transit_time_matrix'].items():
-    arrival_period = t - tau
-    if arrival_period >= T[0]:  # Only count arrivals within planning horizon
-        arrivals += x[(j, i, k, arrival_period)]
-    # else: arrival from before t=1, ignore (treat as 0)
+records = <access_pattern>
+tuple_keys = [tuple(record[field] for field in index_fields) for record in records]
 ```
 
-### Inventory Balance Rule For ECR Models
-
-If the model blueprint defines inventory on `storage_nodes`, and those nodes may also appear in
-`supply_nodes` and/or `demand_nodes`, the inventory balance MUST include the node-local net supply:
-
-```python
-local_supply = data['supply'].get((i, t), 0) if i in supply_nodes else 0
-local_demand = data['demand'].get((i, t), 0) if i in demand_nodes else 0
-
-model.addConstr(
-    I[(i, t)] == prev_inv + arrivals + local_supply + R[(i, t)] - outflow - local_demand
-)
-```
-
-Do NOT omit `local_supply` / `local_demand` for storage nodes when the blueprint uses
-`storage_nodes`, `supply_nodes`, and `demand_nodes` together.
-
-### Common Mistakes
-
-```python
-# WRONG: Assuming t=0 is a valid period
-for t in range(0, len(T)):  # This creates t=0, which doesn't exist in data!
-    ...
-
-# WRONG: Accessing supply/demand with period 0
-supply = data['supply'].get((i, 0), 0)  # period 0 doesn't exist in supply/demand!
-
-# CORRECT: Use actual period values from data
-for t in T:  # T = [1, 2, 3, 4, 5]
-    supply = data['supply'].get((i, t), 0)
-```
+4. For `kind: "records"`, use those tuple keys as the represented set or map
+   each key to an indicator. For `kind: "record_value"`, build
+   `{tuple(record[field] for field in index_fields): record[value_field]
+   for record in records}`. Never append `value_field` to `access_pattern`;
+   it is a field inside each record.
+5. `indices` gives the mathematical index symbols and sets. The catalog-backed
+   `index_fields` and `index_sources` give the corresponding physical record
+   columns and set sources.
+6. Respect `sparse` and `access_hint`; do not assume absent index combinations
+   exist.
+7. Entries under `derived_parameters` have no physical source. Implement only
+   their declared `derivation_logic`/`source_parameters` and supplied domain
+   knowledge.
+8. Do NOT hardcode values or use symbol aliases directly as dictionary keys.
 
 ## Sparse Data Access (CRITICAL)
 
-Several parameters in `data_access_guide` are **sparse dictionaries** — not all index combinations exist. Direct access without checking causes `KeyError`.
+When an entry has `sparse: true`, iterate only the tuple keys constructed from
+the available records, or check membership before lookup. Do not generate the
+Cartesian product and assume every combination has a value. Apply
+`access_hint` when it is present.
 
-## ⚠️ Derived Parameters (CRITICAL — read first!)
+## Derived Parameters
 
-Some datasets provide only **fundamental data** (node coordinates, supply, demand, cost rates).
-Parameters like `transport_cost`, `distance_matrix`, `allowed_transport`, `transit_time_matrix`,
-`hinterland_consignee`, `hinterland_shipper`, `street_turn` are **NOT in `data`** and must be
-**derived** from the fundamental data.
-
-**Before accessing any transport/distance/arc parameter, CHECK if it exists:**
-
-```python
-if 'transport_cost' not in data:
-    # Fundamental data — must derive from coordinates using Domain Knowledge
-    derived = derive_all(data)
-    allowed_arcs = derived['allowed_arcs']       # [(from, to, mode), ...]
-    transport_cost = derived['transport_cost']   # {(from, to, mode): cost}
-    transit_time = derived['transit_time']        # {(from, to, mode): periods}
-    # ...
-else:
-    # Full data — parameters already exist
-    allowed_arcs = list(data['allowed_transport'].keys())
-    transport_cost = data['transport_cost']
-    transit_time = data.get('transit_time_matrix', {})
-```
-
-**The `derive_all()` function and its helper `haversine()` are provided in the Domain Knowledge
-section above. Copy them verbatim into your code, then call `derive_all(data)` at the start of
-`optimize()` when derived parameters are missing.** Do NOT attempt to access `data['transport_cost']`
-or `data['distance_matrix']` directly if they don't exist — always check first.
-
-### Sparse Parameters
-
-The following parameters are sparse (from `_meta.json` `"format": "records"`):
-
-| Parameter | Key Format | Description |
-|-----------|------------|-------------|
-| `transport_cost` | `(from, to, mode)` | Only allowed arcs exist |
-| `transit_time_matrix` | `(from, to, mode)` | Only allowed arcs exist |
-| `allowed_transport` | `(from, to, mode)` | Binary indicator (value=1) |
-| `arc_set` | `(from, to)` | Binary indicator (value=1) |
-| `hinterland_consignee` | `(dryport, consignee)` | Binary indicator (value=1) |
-| `hinterland_shipper` | `(dryport, shipper)` | Binary indicator (value=1) |
-| `distance_matrix` | `(from, to)` | Only non-zero distances |
-| `supply` | `(node, period)` | Only nodes with supply > 0 |
-| `demand` | `(node, period)` | Only nodes with demand > 0 |
-
-### Correct Access Patterns
-
-**Pattern 1: Iterate over dictionary keys directly (RECOMMENDED)**
-```python
-# Only iterate existing arcs — efficient and safe
-for (i, j, k), cost in data['transport_cost'].items():
-    m.addConstr(x[i, j, k, t] * cost, ...)
-```
-
-**Pattern 2: Use allowed_transport as primary index**
-```python
-# allowed_transport defines the valid arc set
-allowed = data['allowed_transport']  # {{(i, j, k): 1, ...}}
-for (i, j, k) in allowed:
-    cost = data['transport_cost'].get((i, j, k), 0)
-    transit = data['transit_time_matrix'].get((i, j, k), 0)  # missing allowed arc => zero-transit arc
-    m.addConstr(x[i, j, k, t] * cost, ...)
-```
-
-**Pattern 3: Check key existence before access**
-```python
-if (i, j, k) in data['transport_cost']:
-    cost = data['transport_cost'][(i, j, k)]
-```
-
-### Forbidden Patterns
-
-NEVER assume all index combinations exist:
-
-```python
-# WRONG: KeyError if (i, j, k) not in sparse dict
-cost = data['transport_cost'][(i, j, k)]
-
-# WRONG: Inefficient iteration over all combinations
-for i in all_nodes:
-    for j in all_nodes:
-        for k in modes:
-            cost = data['transport_cost'].get((i, j, k), 0)  # many misses!
-```
+Only entries under `derived_parameters` are derived. They deliberately have
+`source: null` and `access_pattern: null`; never probe or invent a physical key
+for them. Compute them from their `source_parameters`, `derivation_logic`, and
+the supplied Domain Knowledge. Parameters listed under `parameters` are
+physical and must use their resolved catalog access metadata.
 
 ---
 
 ## ⚠️ Critical Rules (MANDATORY)
 
-1. **NEVER use symbol names directly as data keys** — always use the `source` from the lookup
+1. **NEVER use symbol names directly as data keys** — always copy the resolved `access_pattern`
 2. **NEVER invent data keys** — only use keys that exist in `data_access_guide`
-3. **If a symbol is NOT in data_access_guide**, it's a derived/decision variable, not a data parameter
+3. **Derived parameters** must appear in `derived_parameters`; symbols absent from the guide are not authorized data inputs
 4. **Decision variables**: names MUST match `symbol` from `model_blueprint.model_components.decision_variables`
 5. **NEVER use `try...except`** — the sandbox handles all errors. Using `except Exception` hides real errors and makes diagnosis impossible.
 6. **ONLY use `import gurobipy as gp`** — the sandbox pre-injects `gp` and `GRB` into the global namespace. Do NOT use any other alias (like `grb`).

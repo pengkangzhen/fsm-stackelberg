@@ -11,13 +11,34 @@ This replaces the mako-era deterministic shipper–consignee MCNF instances
 
 ```
 prob_tslp_ecr_demand/
-├── description.txt          # Slim NL task (business + stages + objective categories)
+├── description.txt              # Slim NL task (business + stages + objective categories)
+├── base/                        # problem-level shared config (generation defaults)
+│   ├── costs_base.json          #   base cost scalars + mode unit rates
+│   └── candidate_nodes.json     #   candidate hub/spoke/dry_port pool
+├── config/
+│   └── scenarios.yaml           # batch generation recipes
 └── instances/
-    └── smoke_H4_Omega5/     # default smoke window (H=T=4, |Ω|=5, seed=42)
-        ├── sample.json
-        ├── optimal.json     # expert DEP objective (PuLP/CBC)
-        └── metadata.json
+    └── smoke_H4_Omega5/         # default smoke window (H=T=4, |Ω|=5, seed=42)
+        ├── nodes.csv            # node_name, type(hub/spoke/dry_port)
+        ├── arcs.csv             # from, to, mode, distance_km, transit_time, capacity, unit_cost
+        ├── lambda_hl.csv        # sea↔dryport linkage
+        ├── vessel_calls.csv     # first-stage班轮挂靠 V
+        ├── supply_demand.csv    # deterministic xi / eta_bar / E (outer-joined)
+        ├── scenarios.csv        # stochastic demand realisation η(ω)
+        ├── scenario_probability.csv
+        ├── inventory.csv        # I0, U_cap, c_hold, c_lease (per node)
+        ├── transport_modes.csv  # mode + derived base unit cost
+        ├── first_stage.json     # B_in/B_out/D_ext_eff, c_sea_in/out, c_spill
+        ├── metadata.json        # authoritative sets + _meta
+        ├── sample.json          # consolidated fallback (structurally identical)
+        └── optimal.json         # expert DEP objective (PuLP/CBC)
 ```
+
+The loader (`_load_multi_source`) reads the per-instance CSV/JSON files and
+reconstructs a dict identical to `sample.json`; the latter is kept only as a
+fallback.  Two-stage-specific files (vs. the single-stage MAKO layout) are
+`scenarios.csv`, `scenario_probability.csv`, `vessel_calls.csv`, and
+`first_stage.json`.
 
 Formulation details and JSON field maps live in progressive knowledge modules
 under `src/fsm_stackelberg/knowledge/domains/tslp/` (e.g. `tslp-data-access`,

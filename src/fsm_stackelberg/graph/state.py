@@ -28,6 +28,7 @@ class AgentState(TypedDict, total=False):
     # Deterministic preprocessing (set before any LLM agent runs)
     preprocessed_data: Optional[Dict[str, Any]]  # Auto-preprocessed data dict for sandbox
     data_access_guide: Optional[str]  # Compact text guide for LLM agents
+    data_catalog: Optional[Dict[str, Dict[str, Any]]]  # Allowed DE source IDs + index domains
 
     # Agent outputs
     data_engineer_output: Optional[DataEngineerOutput]

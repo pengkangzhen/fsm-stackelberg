@@ -24,8 +24,14 @@ from ..utils.llm_config import get_llm
 from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
 from ..utils.run_log import record_step_event, save_backward_artifact
+from ..data.data_contract import (
+    format_contract_feedback,
+    validate_data_engineer_output,
+)
 
 logger = logging.getLogger(__name__)
+
+_MAX_CONTRACT_ATTEMPTS = 2
 
 
 def create_data_engineer(provider: str = DEFAULT_PROVIDER, model: str = DEFAULT_MODEL) -> ChatOpenAI:
@@ -70,19 +76,61 @@ def data_engineer_node(state: Dict) -> Dict:
     )
 
     # Format the prompt — DE now receives data_access_guide instead of raw schema
-    task = DATA_ENGINEER_FORWARD.format(
+    base_task = DATA_ENGINEER_FORWARD.format(
         problem_description=problem_description,
         data_access_guide=data_access_guide,
     )
 
-    # Execute with metrics tracking
+    # Execute with a bounded, deterministic contract-repair loop.  The retry
+    # feedback contains only validator findings; it does not add
+    # experiment-specific modeling hints.
     cb = None
+    result = None
+    task = base_task
+    contract_attempts = 0
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
+    total_tokens = 0
+    data_catalog = state.get("data_catalog") or {}
     try:
-        with get_openai_callback() as cb:
-            result: DataEngineerOutput = chain.invoke({
-                "role": DATA_ENGINEER_ROLE,
-                "task": task,
-            })
+        for contract_attempts in range(1, _MAX_CONTRACT_ATTEMPTS + 1):
+            with get_openai_callback() as cb:
+                result = chain.invoke({
+                    "role": DATA_ENGINEER_ROLE,
+                    "task": task,
+                })
+            total_prompt_tokens += cb.prompt_tokens
+            total_completion_tokens += cb.completion_tokens
+            total_tokens += cb.total_tokens
+
+            violations = (
+                validate_data_engineer_output(result, data_catalog)
+                if data_catalog
+                else []
+            )
+            if not violations:
+                break
+
+            feedback = format_contract_feedback(violations)
+            logger.warning(
+                "DataEngineer contract rejected attempt %d/%d:\n%s",
+                contract_attempts,
+                _MAX_CONTRACT_ATTEMPTS,
+                feedback,
+            )
+            if contract_attempts >= _MAX_CONTRACT_ATTEMPTS:
+                raise ValueError(
+                    "DataEngineer output violates deterministic data "
+                    f"contract after {contract_attempts} attempts:\n{feedback}"
+                )
+            task = (
+                f"{base_task}\n\n"
+                "## Deterministic Contract Validation Feedback\n"
+                "Your previous output was rejected by code. Return a complete "
+                "replacement output that fixes every violation below. Do not "
+                "change the mathematical problem.\n\n"
+                f"{feedback}"
+            )
     except Exception as exc:
         logger.exception("DataEngineer failed during forward step.")
         raise WorkflowNodeError(
@@ -92,17 +140,23 @@ def data_engineer_node(state: Dict) -> Dict:
                 "data_engineer",
                 exc,
                 start_time,
-                prompt_tokens=cb.prompt_tokens if cb else 0,
-                completion_tokens=cb.completion_tokens if cb else 0,
-                total_tokens=cb.total_tokens if cb else 0,
+                prompt_tokens=total_prompt_tokens,
+                completion_tokens=total_completion_tokens,
+                total_tokens=total_tokens,
             ),
         ) from exc
 
     duration = time.time() - start_time
+    assert result is not None
 
     logger.info(f"DataEngineer: Produced {len(result.model_inputs.sets)} sets, "
                 f"{len(result.model_inputs.parameters)} parameters")
-    logger.info(f"DataEngineer: tokens={cb.total_tokens}, duration={duration:.2f}s")
+    logger.info(
+        "DataEngineer: tokens=%d, duration=%.2fs, contract_attempts=%d",
+        total_tokens,
+        duration,
+        contract_attempts,
+    )
 
     # Update metrics
     step_metrics = record_step_event(
@@ -110,13 +164,16 @@ def data_engineer_node(state: Dict) -> Dict:
         node="data_engineer",
         step_type="forward",
         duration_s=duration,
-        prompt_tokens=cb.prompt_tokens,
-        completion_tokens=cb.completion_tokens,
-        total_tokens=cb.total_tokens,
+        prompt_tokens=total_prompt_tokens,
+        completion_tokens=total_completion_tokens,
+        total_tokens=total_tokens,
         prompt_text=task,
         artifact=result,
         artifact_name=f"data_engineer_forward_r{state.get('current_round', 1)}",
+        extra={"contract_attempts": contract_attempts},
     )
+    if step_metrics:
+        step_metrics[-1]["contract_attempts"] = contract_attempts
 
     node_metrics = state.get("node_metrics", {})
     if "data_engineer" not in node_metrics:
@@ -126,8 +183,8 @@ def data_engineer_node(state: Dict) -> Dict:
             "num_calls": 0,
         }
     node_metrics["data_engineer"]["total_duration_s"] += duration
-    node_metrics["data_engineer"]["total_tokens"] += cb.total_tokens
-    node_metrics["data_engineer"]["num_calls"] += 1
+    node_metrics["data_engineer"]["total_tokens"] += total_tokens
+    node_metrics["data_engineer"]["num_calls"] += contract_attempts
 
     agent_metrics = state.get("agent_metrics", {})
     if "data_engineer" not in agent_metrics:
@@ -137,8 +194,8 @@ def data_engineer_node(state: Dict) -> Dict:
             "num_calls": 0,
         }
     agent_metrics["data_engineer"]["total_duration_s"] += duration
-    agent_metrics["data_engineer"]["total_tokens"] += cb.total_tokens
-    agent_metrics["data_engineer"]["num_calls"] += 1
+    agent_metrics["data_engineer"]["total_tokens"] += total_tokens
+    agent_metrics["data_engineer"]["num_calls"] += contract_attempts
 
     # Record output to history
     current_round = state.get("current_round", 1)
@@ -156,7 +213,7 @@ def data_engineer_node(state: Dict) -> Dict:
         "step_metrics": step_metrics,
         "node_metrics": node_metrics,
         "agent_metrics": agent_metrics,
-        "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
+        "total_tokens": state.get("total_tokens", 0) + total_tokens,
         "total_duration_s": state.get("total_duration_s", 0.0) + duration,
         "retry_count": state.get("retry_count", 0),
         "current_round": current_round,
@@ -190,6 +247,13 @@ def data_engineer_backward_step(state: Dict) -> Dict:
     # Get previous outputs
     problem_description = state.get("problem_description", "")
     schema = state.get("schema", state.get("sample", {}))
+    contract_context = state.get("data_access_guide")
+    if not contract_context:
+        contract_context = (
+            json.dumps(schema, indent=2, ensure_ascii=False)
+            if isinstance(schema, dict)
+            else str(schema)
+        )
 
     output_history = state.get("output_history", [])
     previous_output = get_last_forward_output(output_history, "data_engineer")
@@ -205,7 +269,7 @@ def data_engineer_backward_step(state: Dict) -> Dict:
     # Format the prompt
     task = DATA_ENGINEER_BACKWARD_STEP.format(
         problem_description=problem_description,
-        schema=json.dumps(schema, indent=2, ensure_ascii=False) if isinstance(schema, dict) else str(schema),
+        schema=contract_context,
         error_info=full_error,
         previous_output=previous_output,
     )
@@ -286,6 +350,32 @@ def data_engineer_backward_step(state: Dict) -> Dict:
                 }
         else:
             refined_output = result.refined_result
+
+        data_catalog = state.get("data_catalog") or {}
+        violations = (
+            validate_data_engineer_output(refined_output, data_catalog)
+            if data_catalog
+            else []
+        )
+        if violations:
+            feedback = format_contract_feedback(violations)
+            logger.warning(
+                "DataEngineer backward correction rejected by deterministic "
+                "contract:\n%s",
+                feedback,
+            )
+            return {
+                "error_resolved": False,
+                "backward_reason": (
+                    f"{result.reason} Deterministic contract rejected the "
+                    f"correction:\n{feedback}"
+                ),
+                "step_metrics": step_metrics,
+                "node_metrics": node_metrics,
+                "agent_metrics": agent_metrics,
+                "total_tokens": state.get("total_tokens", 0) + cb.total_tokens,
+                "total_duration_s": state.get("total_duration_s", 0.0) + duration,
+            }
 
         # Record the correction
         current_round = state.get("current_round", 1)

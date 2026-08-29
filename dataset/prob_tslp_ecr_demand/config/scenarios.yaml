@@ -1,0 +1,19 @@
+# Two-stage ECR (tslp_ecr_demand) instance generation scenarios.
+#
+# Run with:
+#   PYTHONPATH=src python -m generator.cli \
+#     --output dataset/prob_tslp_ecr_demand/instances/<name> \
+#     --T <H> --scenarios <Omega> --seed <s> --sdr <ratio>
+#
+# Parameters
+#   T          planning-window length H (number of periods)
+#   scenarios  |Omega| — number of demand-realisation scenarios
+#   seed       RNG seed for reproducibility
+#   sdr        supply-demand ratio scale (higher = tighter supply)
+
+scenarios:
+  smoke_H4_Omega5:
+    T: 4
+    scenarios: 5
+    seed: 42
+    sdr: 1.0

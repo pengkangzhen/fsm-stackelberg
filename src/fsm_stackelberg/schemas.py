@@ -86,7 +86,10 @@ class SetDefinition(BaseModel):
     symbol: str
     index: str
     description: str
-    source: Optional[str] = None
+    source: Optional[str] = Field(
+        default=None,
+        description="Exact set data_id from the deterministic data catalog.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -116,7 +119,13 @@ class ParameterDefinition(BaseModel):
     symbol: str
     indices: List[IndexInfo]
     description: str
-    source: Optional[str] = None
+    source: Optional[str] = Field(
+        default=None,
+        description=(
+            "Exact parameter data_id from the deterministic data catalog. "
+            "Use derived_parameters, not source=null, for computed values."
+        ),
+    )
     sparse: bool = False  # True if parameter is a sparse dictionary (records format)
     access_hint: Optional[str] = None  # Guidance for sparse parameter access
 

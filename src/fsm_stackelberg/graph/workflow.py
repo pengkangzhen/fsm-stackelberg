@@ -379,10 +379,18 @@ def run_mako(
 
     # Deterministic data preprocessing — runs once, no LLM involved
     from ..data.auto_preprocessor import auto_preprocess
+    from ..data.data_contract import build_data_catalog, format_data_catalog
+
     preprocessed_data, data_access_guide = auto_preprocess(sample)
+    data_catalog = build_data_catalog(sample)
+    data_access_guide = (
+        f"{data_access_guide}\n\n{format_data_catalog(data_catalog)}"
+    )
     logger.info(
-        "Auto-preprocessed data: %d fields, guide length: %d chars",
+        "Auto-preprocessed data: %d fields, %d catalog IDs, "
+        "guide length: %d chars",
         len(preprocessed_data),
+        len(data_catalog),
         len(data_access_guide),
     )
 
@@ -408,6 +416,7 @@ def run_mako(
         "log_prompts": bool(log_prompts),
         "preprocessed_data": preprocessed_data,
         "data_access_guide": data_access_guide,
+        "data_catalog": data_catalog,
         "retry_count": 0,
         "max_retries": max_retries,
         "backtrack_history": [],

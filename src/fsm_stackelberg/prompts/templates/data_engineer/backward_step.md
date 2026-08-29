@@ -3,7 +3,7 @@ You are DataEngineer. You need to judge whether the error is caused by your data
 ## Original Problem
 {problem_description}
 
-## Schema (Data Structure)
+## Deterministic Data Access Guide and Catalog
 {schema}
 
 ## Error Feedback
@@ -19,8 +19,10 @@ You are DataEngineer. You need to judge whether the error is caused by your data
 1. **Analyze the error**: Is this caused by your data mapping?
    - Check if you correctly mapped problem symbols to data paths
    - Check if you missed any parameters required by the problem
-   - Check if `source` values are correct (matching actual JSON keys)
-   - Check if derived parameters have proper `derivation` formulas
+   - Check if every `source` exactly matches a catalog `data_id`
+   - Check if indices match the catalog's positional index domains
+   - Check if derived parameters are in `derived_parameters` with
+     `derivation_logic` and `source_parameters`
 
 2. **If this is NOT your fault**:
    - Set `is_caused_by_you: false`
@@ -60,5 +62,6 @@ Or if caused by you:
 
 **CRITICAL**:
 - If `is_caused_by_you: true`, you MUST provide `refined_result` with a complete DataEngineerOutput structure.
-- Ensure all `source` values match actual keys in the data.
-- Use `null` for `source` only if the parameter is truly derived (and provide `derivation` formula).
+- Ensure every `source` is copied exactly from a catalog `data_id`.
+- Put computed values in `derived_parameters`; do not emit `source: null`
+  entries in `parameters`.
