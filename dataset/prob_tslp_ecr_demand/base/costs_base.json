@@ -1,0 +1,10 @@
+{
+  "_comment": "Base cost parameters for two-stage ECR (tslp_ecr_demand) instance generation. Per-instance costs in instances/*/first_stage.json may deviate from these defaults.",
+  "c_sea_in": 800.0,
+  "c_sea_out": 600.0,
+  "c_spill": 100000.0,
+  "unit_transport_cost_per_km": {
+    "road": 4.5,
+    "rail": 1.8
+  }
+}

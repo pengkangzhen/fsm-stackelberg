@@ -1,9 +1,58 @@
 {
+  "instance_name": "smoke_H4_Omega5",
   "problem": "tslp_ecr_demand",
-  "formulation": "two_stage_DEP",
-  "optimal_status": "Optimal",
-  "objective": 1389581.084067007,
-  "instance_meta": {
+  "formulation": "two_stage_DEP_D1_D2",
+  "sets": {
+    "hubs": [
+      "dalian"
+    ],
+    "spokes": [
+      "yingkou",
+      "dandong"
+    ],
+    "dry_ports": [
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "seas": [
+      "dalian",
+      "yingkou",
+      "dandong"
+    ],
+    "nodes": [
+      "dalian",
+      "yingkou",
+      "dandong",
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "periods": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "modes": [
+      "road",
+      "rail"
+    ],
+    "scenarios": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "_meta": {
     "problem": "tslp_ecr_demand",
     "formulation": "two_stage_DEP_D1_D2",
     "variable_domain": "continuous_nonnegative_TEU",

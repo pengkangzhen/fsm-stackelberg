@@ -166,49 +166,77 @@
       → gate **`pass`** (thin; SB win is 1/3 vs 0/3).
     - Caveats: `eb_seq_r1` tokens=0 (KeyError `solver_executor`); adv grid
       0/3 verified despite earlier smoke adv hit (high variance / PD regen).
+  - **Offline consolidation (2026-08-29; LLM budget empty — no API runs).**
+    Fixed the clear-policy test breakage shipped in `b465b62`
+    (`ranking.has_force_zero_sea_smell` now public + normalizes dict/pydantic
+    ME output via `_text_blob`); full suite **65 passed**. Documented the
+    provenance of `results/pd_regen_audit/de_contract_{smoke,e2e}_20260730.json`
+    in that SUMMARY: the "e2e" objective matches v4-replay leg A to 12
+    significant digits → **v4-seed replay, not the no-plant gate**; do not
+    cite it as a no-plant result. All API-calling work (no-plant E2E smoke,
+    expand-n, Debate, Exp-C) is **blocked until tokens are recharged**.
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
-    2. Decide: expand n (cost) vs audit PD-regen after ME strip (why causal
-       verified only 1/3; why adv grid ≠ smoke).
-    3. Exp-B external (Debate/Reflexion) + Exp-C — freeze until SB verified
-       rate is stabler / n larger.
-    4. ~~Manuscript tables: replace mock with hybrid Exp-A/B numbers~~ **done**
+    2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
+       partially localized**. Healthy-seed forward PD is stable (gap 0%).
+       The v4 replay's 55%/62%/930% gaps are retained as evidence that the
+       legacy DE-derived guide is unsafe, **not** as proof that DE caused the
+       original v4/v5 gap: that replay manually used
+       `_build_data_access_guide(DE)`, whereas the real PD-forward path uses
+       `auto_preprocess()`'s deterministic `state["data_access_guide"]`.
+       Also, aliases (`V`, `A`) and v4's `p` index are not inherently invalid.
+       Correction: `results/pd_regen_audit/SUMMARY.md` § "v4 trajectory
+       replay — correction".
+    3. ~~Deterministic DE schema validation~~ **implemented 2026-07-30**
+       (mechanism, not experiment-specific prompt tips):
+       `data/data_contract.py` derives exact catalog IDs and index domains
+       from `sample.json`; DE selects IDs while retaining mathematical
+       aliases; validator rejects unknown sources/domain mismatches and gives
+       one bounded retry; derived values use `derived_parameters`. PD backward
+       now uses the same deterministic guide as PD forward. Tests:
+       `tests/test_data_contract.py`.
+    4. **PRIORITY (blocked on LLM budget since 2026-08-29):** DE-only smoke
+       is structurally done (`de_contract_smoke_20260730.json`); still owed a
+       no-plant E2E smoke confirming the new contract reaches Practical
+       Optimal before any re-Exp-A or expanded \(n\). **Run first after
+       recharge.**
+    5. Exp-B external (Debate/Reflexion) + Exp-C — freeze until SB verified
+       rate is stabler / PD-regen stability bounded by DE validation.
+    6. ~~Manuscript tables: replace mock with hybrid Exp-A/B numbers~~ **done**
        (`els-cas-templates/manuscript.tex`: `tab:exp_ablation`,
        `tab:exp_baselines`; thin-$n$ caveat; Exp-C still mock; Debate not run).
-    5. Decide: expand $n$ / audit PD-regen vs draft Results prose around the
-       measured tables. Debate still frozen.
 
 ### Next-agent prompt (copy-paste)
 
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：稳住 SB verified 率 / 决定是否扩 n（Exp-A/B hybrid 已跑完）
+# 任务：充值后先跑 no-plant E2E smoke（预算空时勿调任何 API）
 
-Verified 已打通；hybrid Exp-A/B internal **gate pass**（薄样本）。
+DE 数据契约已落地（单测绿）；clear-policy 测试断裂已修（65 passed）。
 先读：
 
-1. `HANDOVER.md` TL;DR（Re-Exp-A / Exp-B hybrid DONE）
-2. `results/exp_a_evidence_hybrid/summary.md`
-3. `results/exp_b_internal_evidence_hybrid/summary.md`
-4. `results/evidence_informed_smoke_v2/SUMMARY.md`
+1. `HANDOVER.md` TL;DR（DE contract + 2026-08-29 离线收尾）
+2. `results/pd_regen_audit/SUMMARY.md`（含 `de_contract_*` 定性：e2e=v4-seed replay，非 no-plant）
+3. `results/exp_a_evidence_hybrid/summary.md`
+4. `results/exp_b_internal_evidence_hybrid/summary.md`
 
 ## 硬约束
 
 - **不要**跑 Debate/Reflexion，除非用户明确要求。
+- **预算空（2026-08-29）**：未确认充值前勿调任何 LLM API。
 - Provider：**DashScope / deepseek-v4-flash**；控制预算。
 - 主指标：`verified_attribution_hit`。
 
-## 立刻做（择一，先问用户）
+## 立刻做（先问用户是否已充值）
 
-A. 审计 PD regen after ME strip（对照 `ea_causal_r3` 成功 vs `r1`/`r2` 失败）
-B. 小扩 n（如 causal n→5）cost-gated
-C. 更新 manuscript 实验表（标 thin-n）
+A. 已充值 → no-plant E2E smoke（唯一 gate；PASS 才能扩 n / 重跑 Exp-A）
+B. 未充值 → 离线：Results prose / Phase 4 网格脚本移植
 
 ## 验收
 
 - [ ] 有明确下一步决策 + HANDOVER 更新
-- [ ] 未盲开 Debate
+- [ ] 未盲开 Debate / 未在预算空时调 API
 ```
 
 
@@ -395,11 +423,25 @@ Debate design note (agreed): debaters output `{suspected_agent, argument}`
 only; aggregate by majority vote; tie-break via status prior — **do not**
 trust LLM-reported confidence.
 
-### Phase 4 — Attribution grid — OPEN
+### Phase 4 — Attribution grid — OFFLINE HALF DONE (2026-08-29)
 
-Primary metric already fixed in manuscript. Port / rebuild injection +
-analysis (mako had `scripts/experiment_phase4/analyze_2d_attribution.py` —
-adapt to TSLP + fsm-stackelberg).
+Primary metric already fixed in manuscript. Ported from mako's
+`analyze_2d_attribution.py`:
+
+- **Analysis:** `scripts/analyze_attribution_grid.py` auto-discovers runs
+  (reads `run_manifest.json` or legacy `experiment_result.json`), and emits
+  true-layer × attributed-layer confusion, surface × true matrices, and
+  per-method rates. Unlike mako (which *guessed* origin from the surface),
+  the true layer comes from the injected plant. Debugged on 85 historical
+  runs (`results/attribution_grid/`).
+- **Plants:** layer grid closed — `de_swap_demand_supply_source` (DE→ME
+  boundary; wrong catalog mapping under the value-free contract) and
+  `pd_comment_out_balance` (PD→solver boundary; relaxed DEP, correct ME).
+  `fault_injector` is now a layer-aware factory (`make_fault_injector_node`);
+  global one-shot `fault_injected` flag unchanged. Tests:
+  `tests/test_injection.py`.
+- **Remaining:** the grid *run* itself (plant × method × reps) — blocked on
+  LLM budget; run only after the no-plant E2E gate passes.
 
 ### Phase 5 — Proposition — PARTIAL
 
@@ -427,6 +469,10 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 2. **Commitment-order ablation is the experiment** — `causal ≈ random` kills the thesis; run Exp-I pilot early.
 3. **Strong LLM / Debate ceiling** — may match attribution; then defend cost, verifiability, and ablation — or narrow the claim.
 4. **Verification cost** — show accuracy (or auditability) justifies extra calls.
+   Healthy-seed PD-forward is stable, but the v4 replay did not faithfully
+   reproduce the real guide path and cannot assign causality to DE. A
+   deterministic DE catalog/validator now removes one contract ambiguity;
+   original post-strip variance remains a residual threat until an E2E smoke.
 5. **"FSM = just LangGraph"** — preempt via game-on-FSM formalization in the paper.
 
 ---
@@ -440,6 +486,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Prune CoE/OptiMUS under `baselines/` | defer | different family; not Exp-III head-to-head |
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
+| Next experiment priority | **DE contract E2E smoke** | Catalog/validator implemented; first verify one no-plant run is Practical Optimal. Do not claim the corrected v4 replay localized the original gap. |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
@@ -467,13 +514,18 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Stackelberg inspector | `src/fsm_stackelberg/agents/diagnosis_agent.py` (`build_probe_order`) |
 | Progressive knowledge | `src/fsm_stackelberg/knowledge/progressive.py` |
 | Feature plug-ins | `src/fsm_stackelberg/plugins/features.py` |
+| Deterministic DE data catalog / validator | `src/fsm_stackelberg/data/data_contract.py`, `tests/test_data_contract.py` |
 | Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
 | Episode payoffs + kill / verified | `src/fsm_stackelberg/game/payoff.py`, `game/verified.py` |
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
-| Fault plants (Exp-I) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` |
+| Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
+| Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |
+| PD-regen audit + deterministic regressions | `results/pd_regen_audit/SUMMARY.md` (v3–v5 audit, healthy-seed regression GREEN, v4-seed replay REPRODUCED → DE defect table) |
+| PD-regen stability regression (healthy seed) | `scripts/regress_pd_regen_stability.py` |
+| PD-regen replay regression (v4 seed) | `scripts/regress_pd_replay_v4.py` |
 | Redesigned Exp-A (evidence_rank) | `results/exp_a_evidence/summary.md` + runners `scripts/launch_exp_a_evidence.sh`, `run_exp_a_evidence.sh`, `summarize_exp_a_evidence.py` |
 | Redesigned Exp-B internal (ready, not run) | `scripts/run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py` |
 | LLM providers | `src/fsm_stackelberg/utils/llm_config.py` (DashScope + `deepseek-v4-flash`) |

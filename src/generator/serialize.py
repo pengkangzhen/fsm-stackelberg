@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import csv
 import json
+from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from statistics import median
+from typing import Any, Sequence
 
 from tslp_ecr_demand.dep import solve_dep
 from tslp_ecr_demand.instance import (
@@ -213,6 +216,174 @@ def sample_to_instance(
     return inst, scenarios, probs
 
 
+def _write_csv(path: Path, fieldnames: Sequence[str], rows: list[dict]) -> None:
+    """Write a list of dict rows to *path* as a CSV with the given header."""
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+# ---------------------------------------------------------------------------
+# Multi-source export (MAKO-style layout for the two-stage ECR problem)
+# ---------------------------------------------------------------------------
+#
+# File → sample-block mapping
+#   nodes.csv                 sets.hubs/spokes/dry_ports (+ node type)
+#   arcs.csv                  topology.arcs
+#   lambda_hl.csv             topology.lambda_hl
+#   vessel_calls.csv          first_stage.vessel_calls
+#   supply_demand.csv         supply_demand.xi / eta_bar / E  (outer-joined)
+#   scenarios.csv             supply_demand.eta
+#   scenario_probability.csv  supply_demand.scenario_probability
+#   inventory.csv             inventory.I0 / U_cap / c_hold / c_lease
+#   transport_modes.csv       sets.modes (+ derived base unit cost)
+#   first_stage.json          first_stage scalars & B_in/B_out/D_ext_eff
+#   metadata.json             sets, _meta, instance identity
+#
+# ``_load_multi_source`` (utils.py) reads these back into a structurally
+# identical dict, so auto_preprocess / build_data_catalog are untouched.
+
+# Node-type tag per set membership (for the ``type`` column of nodes.csv).
+_NODE_TYPE_BY_SET = [
+    ("hubs", "hub"),
+    ("spokes", "spoke"),
+    ("dry_ports", "dry_port"),
+]
+
+
+def sample_to_multi_source_files(sample: dict[str, Any], output_dir: str | Path) -> Path:
+    """Write a sample dict as MAKO-style multi-source CSV + JSON files.
+
+    Produces the per-instance files that ``_load_multi_source`` reads back.
+    The reconstructed dict is structurally identical to *sample*.
+
+    Returns the output directory.
+    """
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    sets = sample["sets"]
+    topology = sample["topology"]
+    first_stage = sample["first_stage"]
+    supply_demand = sample["supply_demand"]
+    inventory = sample["inventory"]
+
+    # --- nodes.csv -----------------------------------------------------------
+    type_of: dict[str, str] = {}
+    for set_name, tag in _NODE_TYPE_BY_SET:
+        for n in sets.get(set_name, []):
+            type_of[n] = tag
+    node_rows = [{"node_name": n, "type": type_of.get(n, "node")} for n in sets["nodes"]]
+    _write_csv(out / "nodes.csv", ["node_name", "type"], node_rows)
+
+    # --- arcs.csv ------------------------------------------------------------
+    _write_csv(
+        out / "arcs.csv",
+        ["from", "to", "mode", "distance_km", "transit_time", "capacity", "unit_cost"],
+        topology["arcs"],
+    )
+
+    # --- lambda_hl.csv -------------------------------------------------------
+    _write_csv(out / "lambda_hl.csv", ["sea", "dry", "linked"], topology["lambda_hl"])
+
+    # --- vessel_calls.csv ----------------------------------------------------
+    _write_csv(
+        out / "vessel_calls.csv",
+        ["hub", "period", "calls"],
+        first_stage["vessel_calls"],
+    )
+
+    # --- supply_demand.csv (outer join xi / eta_bar / E on node×period) ------
+    def _index_kv(records: list[dict], key_fields: Sequence[str]) -> dict[tuple, float]:
+        return {
+            tuple(r[f] for f in key_fields): r["value"] for r in records
+        }
+
+    xi = _index_kv(supply_demand["xi"], ("node", "period"))
+    eta_bar = _index_kv(supply_demand["eta_bar"], ("node", "period"))
+    e_map = _index_kv(supply_demand.get("E", []), ("node", "period"))
+    all_keys = sorted(xi.keys() | eta_bar.keys() | e_map.keys(), key=lambda k: (str(k[0]), k[1]))
+    sd_rows = []
+    for node, period in all_keys:
+        sd_rows.append(
+            {
+                "node": node,
+                "period": period,
+                "xi": xi.get((node, period), ""),
+                "eta_bar": eta_bar.get((node, period), ""),
+                "E": e_map.get((node, period), ""),
+            }
+        )
+    _write_csv(out / "supply_demand.csv", ["node", "period", "xi", "eta_bar", "E"], sd_rows)
+
+    # --- scenarios.csv -------------------------------------------------------
+    eta_rows = [
+        {"scenario": r["scenario"], "node": r["node"], "period": r["period"], "eta": r["value"]}
+        for r in supply_demand["eta"]
+    ]
+    _write_csv(out / "scenarios.csv", ["scenario", "node", "period", "eta"], eta_rows)
+
+    # --- scenario_probability.csv -------------------------------------------
+    _write_csv(
+        out / "scenario_probability.csv",
+        ["scenario", "probability"],
+        supply_demand["scenario_probability"],
+    )
+
+    # --- inventory.csv (outer join I0 / U_cap / c_hold / c_lease on node) ----
+    inv_fields = ["I0", "U_cap", "c_hold", "c_lease"]
+    inv_maps = {f: {r["node"]: r["value"] for r in inventory[f]} for f in inv_fields}
+    all_nodes = sorted(set().union(*(m.keys() for m in inv_maps.values())), key=str)
+    inv_rows = []
+    for node in all_nodes:
+        row = {"node": node}
+        for f in inv_fields:
+            row[f] = inv_maps[f].get(node, "")
+        inv_rows.append(row)
+    _write_csv(out / "inventory.csv", ["node"] + inv_fields, inv_rows)
+
+    # --- transport_modes.csv (mode + derived median unit cost per km) -------
+    mode_costs: dict[str, list[float]] = defaultdict(list)
+    for arc in topology["arcs"]:
+        dist = arc["distance_km"]
+        if dist:
+            mode_costs[arc["mode"]].append(arc["unit_cost"] / dist)
+    tm_rows = []
+    for m in sets.get("modes", []):
+        costs = mode_costs.get(m, [])
+        tm_rows.append({"mode": m, "unit_cost_per_km": median(costs) if costs else ""})
+    _write_csv(out / "transport_modes.csv", ["mode", "unit_cost_per_km"], tm_rows)
+
+    # --- first_stage.json (scalars + structured params) ---------------------
+    # ``c_spill`` is an inventory scalar but has no natural CSV home, so it is
+    # co-located here alongside the other cost scalars (c_sea_in / c_sea_out).
+    first_stage_payload = {
+        "B_in": first_stage["B_in"],
+        "B_out": first_stage["B_out"],
+        "D_ext_eff": first_stage["D_ext_eff"],
+        "c_sea_in": first_stage["c_sea_in"],
+        "c_sea_out": first_stage["c_sea_out"],
+        "c_spill": inventory["c_spill"],
+    }
+    with open(out / "first_stage.json", "w", encoding="utf-8") as f:
+        json.dump(first_stage_payload, f, indent=2, ensure_ascii=False)
+
+    # --- metadata.json (sets + _meta — authoritative structure) -------------
+    meta_block = sample.get("_meta", {})
+    metadata = {
+        "instance_name": out.name,
+        "problem": meta_block.get("problem", "tslp_ecr_demand"),
+        "formulation": meta_block.get("formulation", ""),
+        "sets": sets,
+        "_meta": meta_block,
+    }
+    with open(out / "metadata.json", "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+    return out
+
+
 def build_smoke_export(
     *,
     T: int = 4,
@@ -245,24 +416,41 @@ def build_smoke_export(
     return sample, optimal
 
 
-def write_instance(output_dir: str | Path, sample: dict, optimal: dict) -> Path:
+def write_instance(
+    output_dir: str | Path,
+    sample: dict,
+    optimal: dict,
+    *,
+    multi_source: bool = True,
+) -> Path:
+    """Write an instance to *output_dir*.
+
+    Always writes the consolidated ``sample.json`` + ``optimal.json`` fallback.
+    When *multi_source* is True (default) also writes the MAKO-style
+    per-instance CSV/JSON files via :func:`sample_to_multi_source_files` and a
+    ``metadata.json`` carrying the authoritative sets + _meta.
+    """
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     with open(out / "sample.json", "w", encoding="utf-8") as f:
         json.dump(sample, f, indent=2, ensure_ascii=False)
     with open(out / "optimal.json", "w", encoding="utf-8") as f:
         json.dump(optimal, f, indent=2, ensure_ascii=False)
-    with open(out / "metadata.json", "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "problem": "tslp_ecr_demand",
-                "formulation": "two_stage_DEP",
-                "optimal_status": optimal.get("status"),
-                "objective": optimal.get("objective"),
-                "instance_meta": sample.get("_meta", {}),
-            },
-            f,
-            indent=2,
-            ensure_ascii=False,
-        )
+
+    if multi_source:
+        sample_to_multi_source_files(sample, out)
+    else:
+        with open(out / "metadata.json", "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "problem": "tslp_ecr_demand",
+                    "formulation": "two_stage_DEP",
+                    "optimal_status": optimal.get("status"),
+                    "objective": optimal.get("objective"),
+                    "instance_meta": sample.get("_meta", {}),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
     return out

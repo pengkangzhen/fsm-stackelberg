@@ -140,9 +140,13 @@ def _text_blob(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, default=str)
 
 
-def _force_zero_sea_smell(text: str) -> bool:
-    """True if text encodes forced y_in/y_out = 0 (plant or coded symptom)."""
-    t = (text or "").lower()
+def has_force_zero_sea_smell(value: Any) -> bool:
+    """True if text encodes forced y_in/y_out = 0 (plant or coded symptom).
+
+    Public: shared by ranking heuristic and the symptom-scoped clear policy.
+    Accepts str / dict / pydantic ME output (normalized via ``_text_blob``).
+    """
+    t = _text_blob(value).lower()
     if not t:
         return False
     if "injected_force_zero" in t or "force_zero_sea" in t:
@@ -167,7 +171,7 @@ def _heuristic_rank(state: dict) -> RankResult:
     stack_l = stack.lower()
     me_text = _text_blob(state.get("model_expert_output"))
     code_text = state.get("python_code") or ""
-    force_zero = _force_zero_sea_smell(me_text) or _force_zero_sea_smell(code_text)
+    force_zero = has_force_zero_sea_smell(me_text) or has_force_zero_sea_smell(code_text)
 
     # Status prior: tip gets +3, second +1 — but do not let CRASH prior
     # overpower force-zero / WRONG_OBJ modeling evidence (below).

@@ -1,0 +1,6 @@
+{
+  "_comment": "Candidate node pool for two-stage ECR instance generation. A sea-side hub anchors the hinterland network; spokes are secondary seaports; dry_ports are inland transfer nodes.",
+  "hubs": ["dalian"],
+  "spokes": ["yingkou", "dandong"],
+  "dry_ports": ["shenyang", "anshan", "changchun", "jilin", "tonghua", "harbin"]
+}

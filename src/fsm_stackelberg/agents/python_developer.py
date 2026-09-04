@@ -3,7 +3,6 @@
 Generates Gurobi optimization code from mathematical model specifications.
 """
 
-import json
 import logging
 import time
 from typing import Dict
@@ -24,83 +23,56 @@ from ..utils.llm_config import get_llm
 from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
 from ..utils.run_log import record_step_event, save_backward_artifact
+from ..utils.code_sanitize import unshadow_gurobi_model_m
+from ..data.data_contract import (
+    build_data_catalog,
+    build_pd_data_access_context,
+    build_symbol_access_guide,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def _build_data_access_guide(data_engineer_output: DataEngineerOutput, schema: Dict = None) -> Dict:
-    """Build the data access guide from DataEngineer output.
+def _sanitize_python_code(python_code: str) -> str:
+    """Apply deterministic fixes to LLM-generated Gurobi code."""
+    fixed, rewritten = unshadow_gurobi_model_m(python_code)
+    if rewritten:
+        logger.warning(
+            "PythonDeveloper: rewrote shadowed Gurobi model `m` → `model` "
+            "(mode index `m` in for-loop would otherwise break addVar/dispose)"
+        )
+    return fixed
 
-    Key change: Use symbol as the key for direct lookup by PythonDeveloper.
 
-    This guide tells the Python developer how to access data without
-    exposing actual data values.
-    """
-    guide = {
-        "sets": {},
-        "parameters": {},
-        "indexing_convention": {},  # NEW: Pass through _meta indexing info
-    }
+def _build_data_access_guide(
+    data_engineer_output: DataEngineerOutput,
+    schema: Dict = None,
+    catalog: Dict = None,
+) -> Dict:
+    """Compatibility wrapper for the deterministic symbol access guide."""
+    resolved_catalog = catalog or build_data_catalog(schema or {})
+    return build_symbol_access_guide(data_engineer_output, resolved_catalog)
 
-    # Extract indexing convention from schema._meta if available
-    if schema and "_meta" in schema:
-        meta = schema["_meta"]
-        # Extract period indexing info
-        if "sets" in meta and "periods" in meta["sets"]:
-            periods_meta = meta["sets"]["periods"]
-            guide["indexing_convention"]["periods"] = {
-                "start": periods_meta.get("start", 1),
-                "description": periods_meta.get("desc", ""),
-            }
-        # Extract initial_inventory time reference
-        if "parameters" in meta and "initial_inventory" in meta["parameters"]:
-            inv_meta = meta["parameters"]["initial_inventory"]
-            guide["indexing_convention"]["initial_inventory"] = {
-                "time_reference": inv_meta.get("time_reference", 0),
-                "description": inv_meta.get("desc", ""),
-            }
-        # Extract transit_time boundary rule
-        if "parameters" in meta and "transit_time_matrix" in meta["parameters"]:
-            tt_meta = meta["parameters"]["transit_time_matrix"]
-            guide["indexing_convention"]["transit_time_matrix"] = {
-                "description": tt_meta.get("desc", ""),
-            }
 
-    # Add sets - use symbol as key for direct lookup
-    for set_def in data_engineer_output.model_inputs.sets:
-        guide["sets"][set_def.symbol] = {
-            "source": set_def.source,
-            "description": set_def.description,
-            "access_pattern": f"data['{set_def.source}']",
-            "index": set_def.index,
-        }
+def _resolved_pd_data_access_context(state: Dict) -> str:
+    """Build the shared resolved data contract for PD forward and backward."""
+    data_engineer_output = state.get("data_engineer_output")
+    physical_context = state.get("data_access_guide") or ""
+    if not data_engineer_output:
+        return physical_context or "No data access guide available"
 
-    # Add parameters - use symbol as key for direct lookup
-    for param_def in data_engineer_output.model_inputs.parameters:
-        source_key = param_def.source or param_def.symbol
-        indices = param_def.indices
+    catalog = state.get("data_catalog") or {}
+    if not catalog:
+        raw_sample = state.get("sample") or state.get("schema") or {}
+        catalog = build_data_catalog(raw_sample)
+    if not catalog:
+        return physical_context or "No data access guide available"
 
-        # Build access pattern with tuple key format for multi-dimensional data
-        if len(indices) == 0:
-            access_pattern = f"data['{source_key}']"
-        elif len(indices) == 1:
-            idx_var = indices[0].symbol
-            access_pattern = f"data['{source_key}'][{idx_var}]"
-        else:
-            # Multi-dimensional: use tuple key format data[key][(i, j, k)]
-            idx_vars = ", ".join(idx.symbol for idx in indices)
-            access_pattern = f"data['{source_key}'][({idx_vars})]"
-
-        guide["parameters"][param_def.symbol] = {
-            "source": source_key,
-            "description": param_def.description,
-            "indices": [{"symbol": idx.symbol, "set": idx.set} for idx in indices],
-            "access_pattern": access_pattern,
-            "sparse": param_def.sparse,
-            "access_hint": param_def.access_hint,
-        }
-
-    return guide
+    return build_pd_data_access_context(
+        data_engineer_output,
+        catalog,
+        physical_context,
+    )
 
 
 def create_python_developer(provider: str = DEFAULT_PROVIDER, model: str = DEFAULT_MODEL) -> ChatOpenAI:
@@ -139,19 +111,12 @@ def python_developer_node(state: Dict) -> Dict:
     # Extract inputs from state
     data_engineer_output = state.get("data_engineer_output")
     model_expert_output = state.get("model_expert_output")
-    schema = state.get("schema", {})  # Get schema for _meta info
-
     if not model_expert_output:
         raise ValueError("Missing required output from ModelExpert")
 
-    # Use auto-generated data_access_guide from state (preferred),
-    # fall back to DE-derived guide for backward compatibility
-    data_access_guide = state.get("data_access_guide")
-    if not data_access_guide:
-        if data_engineer_output:
-            data_access_guide = json.dumps(_build_data_access_guide(data_engineer_output, schema), indent=2)
-        else:
-            data_access_guide = "No data access guide available"
+    # Resolve DE aliases through the deterministic catalog. Schema+Compact is
+    # retained only as supplementary physical context.
+    data_access_guide = _resolved_pd_data_access_context(state)
 
     # Format model blueprint
     model_blueprint = model_expert_output.model_dump_json(indent=2)
@@ -213,6 +178,8 @@ def python_developer_node(state: Dict) -> Dict:
     elif "```" in python_code:
         python_code = python_code.split("```")[1].split("```")[0].strip()
 
+    python_code = _sanitize_python_code(python_code)
+
     logger.info(f"PythonDeveloper: Generated code ({len(python_code)} chars)")
     logger.info(f"PythonDeveloper: tokens={cb.total_tokens}, duration={duration:.2f}s")
 
@@ -265,7 +232,9 @@ def python_developer_node(state: Dict) -> Dict:
     return {
         "python_code": python_code,
         "data_engineer_output": data_engineer_output,
-        "data_access_guide": data_access_guide,  # 传递给后续节点
+        # Preserve the original Schema+Compact context in state. Both PD paths
+        # reconstruct the same resolved symbol guide from DE + catalog.
+        "data_access_guide": state.get("data_access_guide"),
         "model_expert_output": model_expert_output,
         "output_history": output_history,
         "step_metrics": step_metrics,
@@ -306,10 +275,8 @@ def python_developer_backward_step(state: Dict) -> Dict:
     problem_description = state.get("problem_description", "")
     model_expert_output = state.get("model_expert_output")
     data_engineer_output = state.get("data_engineer_output")
-    schema = state.get("schema", {})  # Get schema for _meta info
-
     model_blueprint = model_expert_output.model_dump_json(indent=2) if model_expert_output else "N/A"
-    data_access_guide = _build_data_access_guide(data_engineer_output, schema) if data_engineer_output else {}
+    data_access_guide_text = _resolved_pd_data_access_context(state)
 
     output_history = state.get("output_history", [])
     previous_output = get_last_forward_output(output_history, "python_developer")
@@ -326,7 +293,7 @@ def python_developer_backward_step(state: Dict) -> Dict:
     task = PYTHON_DEVELOPER_BACKWARD_STEP.format(
         problem_description=problem_description,
         model_expert_output=model_blueprint,
-        data_access_guide=json.dumps(data_access_guide, indent=2),
+        data_access_guide=data_access_guide_text,
         error_info=full_error,
         previous_output=previous_output,
     )

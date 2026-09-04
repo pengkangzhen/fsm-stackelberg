@@ -205,155 +205,133 @@ def save_workflow_result_with_history(state: dict, filepath: str):
     print(f"workflow result saved with {len(rounds)} round(s) history")
 
 
-def _load_csv_data(instance_dir: str) -> dict | None:
-    """Load fundamental data from CSV files if they exist.
+def _load_multi_source(instance_dir: str) -> dict | None:
+    """Load two-stage ECR multi-source files into a sample-equivalent dict.
 
-    Returns a dict with the same structure as sample.json but containing
-    only fundamental data (no derived parameters like distances, allowed_arcs, etc.)
+    Reads the MAKO-style per-instance layout produced by
+    ``sample_to_multi_source_files`` and reconstructs a dict structurally
+    identical to ``sample.json``.  Returns ``None`` when the directory does
+    not contain the multi-source layout so the caller can fall back to the
+    consolidated ``sample.json``.
     """
     import csv as _csv
 
-    nodes_csv = os.path.join(instance_dir, "nodes.csv")
-    sd_csv = os.path.join(instance_dir, "supply_demand.csv")
-    tm_csv = os.path.join(instance_dir, "transport_modes.csv")
-
-    # Only use CSV if all three files exist
-    if not all(os.path.exists(p) for p in [nodes_csv, sd_csv, tm_csv]):
+    meta_path = os.path.join(instance_dir, "metadata.json")
+    if not os.path.exists(meta_path):
+        return None
+    with open(meta_path, encoding="utf-8") as f:
+        meta = json.load(f)
+    sets = meta.get("sets")
+    if not sets:  # legacy metadata.json without the multi-source contract
         return None
 
-    logger.info("Loading fundamental data from CSV files (no derived parameters)")
+    logger.info("Loading two-stage ECR instance from multi-source files")
 
-    # Parse nodes.csv
-    nodes_list = []
-    storage_cap = {}
-    init_inv = {}
-    holding_cost = {}
-    renting_cost = {}
+    def _read_csv(name: str) -> list[dict]:
+        path = os.path.join(instance_dir, name)
+        if not os.path.exists(path):
+            return []
+        with open(path, encoding="utf-8") as fh:
+            return list(_csv.DictReader(fh))
 
-    with open(nodes_csv, encoding="utf-8") as f:
-        reader = _csv.DictReader(f)
-        for row in reader:
-            name = row["node_name"]
-            ntype = row["type"]
-            lng = float(row["lng"]) if row["lng"] else None
-            lat = float(row["lat"]) if row["lat"] else None
-            nodes_list.append({"name": name, "type": ntype, "lng": lng, "lat": lat})
+    def _num(val: Any) -> float | None:
+        return float(val) if val not in (None, "") else None
 
-            # Storage parameters — only filled for seaports/dryports
-            if row["storage_capacity"]:
-                storage_cap[name] = int(float(row["storage_capacity"]))
-                init_inv[name] = int(float(row["initial_inventory"]))
-                holding_cost[name] = int(float(row["holding_cost"]))
-                renting_cost[name] = int(float(row["renting_cost"]))
+    def _int(val: Any) -> int | None:
+        return int(float(val)) if val not in (None, "") else None
 
-    # Parse supply_demand.csv (optional "commodity" column → multi-commodity data;
-    # backward-compatible: absent column keeps the single-commodity behaviour)
-    supply_records = []
-    demand_records = []
-    multi_commodity = False
-    with open(sd_csv, encoding="utf-8") as f:
-        reader = _csv.DictReader(f)
-        multi_commodity = "commodity" in (reader.fieldnames or [])
-        for row in reader:
-            rec = {"node": row["node"], "period": int(row["period"]), "value": int(float(row["quantity"]))}
-            if multi_commodity and row.get("commodity"):
-                # supply: commodity is a type g (e.g. 20S/40S/20F/40F);
-                # demand: commodity is a size σ (e.g. 20/40), pooled and substitutable.
-                rec["commodity"] = row["commodity"]
-            if row["type"] == "supply":
-                supply_records.append(rec)
-            else:
-                demand_records.append(rec)
+    # --- topology ------------------------------------------------------------
+    arcs = [
+        {
+            "from": r["from"],
+            "to": r["to"],
+            "mode": r["mode"],
+            "distance_km": _num(r.get("distance_km")),
+            "transit_time": _int(r.get("transit_time")),
+            "capacity": _num(r.get("capacity")),
+            "unit_cost": _num(r.get("unit_cost")),
+        }
+        for r in _read_csv("arcs.csv")
+    ]
+    lambda_hl = [
+        {"sea": r["sea"], "dry": r["dry"], "linked": _int(r.get("linked"))}
+        for r in _read_csv("lambda_hl.csv")
+    ]
 
-    # Parse transport_modes.csv
-    mode_records = []
-    utc_list = []
-    with open(tm_csv, encoding="utf-8") as f:
-        reader = _csv.DictReader(f)
-        for row in reader:
-            mode_records.append(row["mode"])
-            utc_list.append(float(row["unit_cost_per_km"]))
+    # --- first_stage ---------------------------------------------------------
+    fs_path = os.path.join(instance_dir, "first_stage.json")
+    fs: dict = {}
+    if os.path.exists(fs_path):
+        with open(fs_path, encoding="utf-8") as f:
+            fs = json.load(f)
+    vessel_calls = [
+        {"hub": r["hub"], "period": _int(r["period"]), "calls": float(r["calls"])}
+        for r in _read_csv("vessel_calls.csv")
+    ]
 
-    # Parse arcs.csv if present (pre-derived feasible arcs + distances + transit;
-    # when present these are used directly and coordinate-based derivation skipped)
-    allowed_transport = None
-    transport_cost = None
-    transit_time_matrix = None
-    arcs_csv = os.path.join(instance_dir, "arcs.csv")
-    if os.path.exists(arcs_csv):
-        unit_cost_by_mode = dict(zip(mode_records, utc_list))
-        allowed_transport, transport_cost, transit_time_matrix = [], [], []
-        with open(arcs_csv, encoding="utf-8") as f:
-            for row in _csv.DictReader(f):
-                i, j, mode = row["from"], row["to"], row["mode"]
-                distance = float(row["distance"])
-                tau = int(float(row.get("transit_time") or 0))
-                allowed_transport.append({"from": i, "to": j, "mode": mode})
-                transport_cost.append({"from": i, "to": j, "mode": mode,
-                                       "cost": distance * unit_cost_by_mode.get(mode, 0.0)})
-                transit_time_matrix.append({"from": i, "to": j, "mode": mode, "time": tau})
+    # --- supply_demand (split the outer-joined table back out) --------------
+    xi: list[dict] = []
+    eta_bar: list[dict] = []
+    e_records: list[dict] = []
+    for r in _read_csv("supply_demand.csv"):
+        node = r["node"]
+        period = _int(r["period"])
+        if _num(r.get("xi")) is not None:
+            xi.append({"node": node, "period": period, "value": _num(r["xi"])})
+        if _num(r.get("eta_bar")) is not None:
+            eta_bar.append({"node": node, "period": period, "value": _num(r["eta_bar"])})
+        if _num(r.get("E")) is not None:
+            e_records.append({"node": node, "period": period, "value": _num(r["E"])})
+    eta = [
+        {
+            "scenario": _int(r["scenario"]),
+            "node": r["node"],
+            "period": _int(r["period"]),
+            "value": _num(r["eta"]),
+        }
+        for r in _read_csv("scenarios.csv")
+    ]
+    scenario_probability = [
+        {"scenario": _int(r["scenario"]), "probability": _num(r["probability"])}
+        for r in _read_csv("scenario_probability.csv")
+    ]
 
-    # Infer sets from nodes
-    seaports = [n["name"] for n in nodes_list if n["type"] == "seaport"]
-    dryports = [n["name"] for n in nodes_list if n["type"] == "dryport"]
-    shippers = [n["name"] for n in nodes_list if n["type"] == "shipper"]
-    consignees = [n["name"] for n in nodes_list if n["type"] == "consignee"]
-    all_nodes = [n["name"] for n in nodes_list]
+    # --- inventory -----------------------------------------------------------
+    inv_fields = ["I0", "U_cap", "c_hold", "c_lease"]
+    inv_blocks: dict[str, list[dict]] = {f: [] for f in inv_fields}
+    for r in _read_csv("inventory.csv"):
+        for f in inv_fields:
+            if _num(r.get(f)) is not None:
+                inv_blocks[f].append({"node": r["node"], "value": _num(r[f])})
 
-    # Infer periods from supply/demand data
-    periods = sorted(set(r["period"] for r in supply_records))
-
-    # Build nodes dict (with coordinates)
-    nodes_dict = {}
-    for n in nodes_list:
-        nodes_dict[n["name"]] = {"type": n["type"], "location": {"lng": n["lng"], "lat": n["lat"]}}
-
-    # Build sets (add multi-commodity metadata when a commodity column is present)
-    sets = {
-        "periods": periods,
-        "transport_modes": mode_records,
-        "node_types": ["seaport", "dryport", "shipper", "consignee"],
-        "seaports": seaports,
-        "dryports": dryports,
-        "shippers": shippers,
-        "consignees": consignees,
-        "all_nodes": all_nodes,
-    }
-    if multi_commodity:
-        sets["commodity_types"] = sorted({r["commodity"] for r in supply_records})
-        sets["demand_sizes"] = sorted({r["commodity"] for r in demand_records})
-
-    # Assemble result (same structure as sample.json). When arcs.csv is absent,
-    # derived data (distance_matrix, allowed_transport, transit_time_matrix,
-    # transport_cost, hinterland_*, street_turn) must be computed from domain
-    # knowledge; when present, the arcs/dists/transits are used directly.
-    result = {
+    return {
         "sets": sets,
-        "nodes": nodes_dict,
-        "supply": supply_records,
-        "demand": demand_records,
-        "storage_capacity": storage_cap,
-        "initial_inventory": init_inv,
-        "holding_cost": holding_cost,
-        "renting_cost": renting_cost,
-        "unit_transport_cost": utc_list,
+        "topology": {"lambda_hl": lambda_hl, "arcs": arcs},
+        "first_stage": {
+            "vessel_calls": vessel_calls,
+            "B_in": fs.get("B_in", []),
+            "B_out": fs.get("B_out", []),
+            "D_ext_eff": fs.get("D_ext_eff", []),
+            "c_sea_in": fs.get("c_sea_in"),
+            "c_sea_out": fs.get("c_sea_out"),
+        },
+        "supply_demand": {
+            "xi": xi,
+            "E": e_records,
+            "eta_bar": eta_bar,
+            "eta": eta,
+            "scenario_probability": scenario_probability,
+        },
+        "inventory": {
+            "I0": inv_blocks["I0"],
+            "U_cap": inv_blocks["U_cap"],
+            "c_hold": inv_blocks["c_hold"],
+            "c_lease": inv_blocks["c_lease"],
+            "c_spill": fs.get("c_spill"),
+        },
+        "Q_bar": [],
+        "_meta": meta.get("_meta", {}),
     }
-    if allowed_transport is not None:
-        result["allowed_transport"] = allowed_transport
-        result["transport_cost"] = transport_cost
-        result["transit_time_matrix"] = transit_time_matrix
-
-    # Merge extra model parameters from params.json if present (e.g. theta,
-    # c_fold, size_of mapping for multi-commodity instances)
-    params_json = os.path.join(instance_dir, "params.json")
-    if os.path.exists(params_json):
-        import json as _json
-        with open(params_json, encoding="utf-8") as f:
-            extra_params = _json.load(f)
-        result.update(extra_params)
-        logger.info("Merged %d extra model parameters from params.json", len(extra_params))
-
-    return result
 
 
 def dataset_loader(dataset: str, prob_name: str) -> dict:
@@ -369,8 +347,8 @@ def dataset_loader(dataset: str, prob_name: str) -> dict:
     # description.txt always from problem root
     description: str = read_file(root_dir, "description.txt")
 
-    # Try loading fundamental data from CSV files first
-    sample_data = _load_csv_data(sample_path)
+    # Try loading from multi-source CSV/JSON files first, fall back to sample.json
+    sample_data = _load_multi_source(sample_path)
 
     if sample_data is None:
         # Fallback to full sample.json

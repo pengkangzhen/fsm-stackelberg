@@ -15,7 +15,11 @@ from ..agents.model_expert import model_expert_node, model_expert_backward_step
 from ..agents.python_developer import python_developer_node, python_developer_backward_step
 from ..agents.solver_executor import solver_executor_node
 from ..agents.diagnosis_agent import diagnosis_agent_node
-from ..agents.fault_injector import fault_injector_node
+from ..agents.fault_injector import (
+    fault_injector_de_node,
+    fault_injector_node,
+    fault_injector_pd_node,
+)
 from ..plugins import build_feature_bundle
 from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
@@ -227,6 +231,8 @@ def create_mako_graph() -> StateGraph:
     workflow.add_node("model_expert", model_expert_node)
     workflow.add_node("knowledge_loader", knowledge_loader_node)
     workflow.add_node("fault_injector", fault_injector_node)
+    workflow.add_node("fault_injector_de", fault_injector_de_node)
+    workflow.add_node("fault_injector_pd", fault_injector_pd_node)
     workflow.add_node("python_developer", python_developer_node)
     workflow.add_node("solver_executor", solver_executor_node)
     workflow.add_node("diagnosis_agent", diagnosis_agent_node)
@@ -236,8 +242,10 @@ def create_mako_graph() -> StateGraph:
     workflow.add_node("model_expert_backward", model_expert_backward_step)
     workflow.add_node("python_developer_backward", python_developer_backward_step)
 
-    # Forward edges: linear flow (fault_injector is a no-op when inject_id unset)
-    workflow.add_edge("data_engineer", "model_expert")
+    # Forward edges: linear flow (fault_injector* are no-ops when inject_id
+    # unset or the plant targets another layer boundary)
+    workflow.add_edge("data_engineer", "fault_injector_de")
+    workflow.add_edge("fault_injector_de", "model_expert")
     workflow.add_conditional_edges(
         "model_expert",
         route_after_model_expert,
@@ -255,7 +263,8 @@ def create_mako_graph() -> StateGraph:
         }
     )
     workflow.add_edge("fault_injector", "python_developer")
-    workflow.add_edge("python_developer", "solver_executor")
+    workflow.add_edge("python_developer", "fault_injector_pd")
+    workflow.add_edge("fault_injector_pd", "solver_executor")
 
     # SolverExecutor → success or diagnose
     workflow.add_conditional_edges(
@@ -379,10 +388,18 @@ def run_mako(
 
     # Deterministic data preprocessing — runs once, no LLM involved
     from ..data.auto_preprocessor import auto_preprocess
+    from ..data.data_contract import build_data_catalog, format_data_catalog
+
     preprocessed_data, data_access_guide = auto_preprocess(sample)
+    data_catalog = build_data_catalog(sample)
+    data_access_guide = (
+        f"{data_access_guide}\n\n{format_data_catalog(data_catalog)}"
+    )
     logger.info(
-        "Auto-preprocessed data: %d fields, guide length: %d chars",
+        "Auto-preprocessed data: %d fields, %d catalog IDs, "
+        "guide length: %d chars",
         len(preprocessed_data),
+        len(data_catalog),
         len(data_access_guide),
     )
 
@@ -408,6 +425,7 @@ def run_mako(
         "log_prompts": bool(log_prompts),
         "preprocessed_data": preprocessed_data,
         "data_access_guide": data_access_guide,
+        "data_catalog": data_catalog,
         "retry_count": 0,
         "max_retries": max_retries,
         "backtrack_history": [],
