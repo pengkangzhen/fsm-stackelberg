@@ -1192,6 +1192,46 @@ Highest SSR alone is not a sufficient claim: under strong models many
 protocols may eventually repair; the scientific contrast is verifiable
 attribution under commitment at competitive naming accuracy.
 
+\subsection{Result interpretation and provenance}
+\label{sec:exp_reporting}
+
+\paragraph{Reading results against expectations.}
+Pre-registered expectations are the reading grid for every table that
+follows: an outcome \emph{supports}, \emph{does not support}, or
+\emph{falsifies} the registered expectation, and an unsupported
+expectation revises the design before further experimental spend rather
+than accumulating post-hoc explanations. The campaign has already exercised
+this rule once. The status-prior implementation failed its attribution
+expectations outright---last-comply attribution was $0/5$ for every method
+in the baseline comparison (Table~\ref{tab:exp_baselines_prelim}), and no
+order exceeded $1/5$ in the ablation
+(Table~\ref{tab:exp_ablation_prelim})---and the recorded response was a
+redesign of the commitment apparatus (evidence-informed ranking plus
+verified attribution accounting), not a re-labelling of the old runs; the
+status-prior tables are retained below only as preliminary context. Under
+thin replication ($n{=}3$ per cell) we restrict ourselves to
+\emph{directional} language---consistent sign and ordering patterns across
+cells---and reserve confirmatory claims for the expanded grid; SSR is never
+interpreted in isolation from attribution (Section~\ref{sec:exp_metrics}).
+
+\paragraph{Provenance and implementation versions.}
+Every measured cell is produced by a single frozen implementation. Each run
+writes a machine-readable manifest (configuration, provider and model,
+terminal metrics) and a per-node event log (tokens, durations,
+comply--deflect responses); tables aggregate these records, and the
+manifests and event logs---not any intermediate summary file---are the
+authority for every number reported. Implementation versions are declared
+rather than silently mixed: the measured hybrid tables below predate a
+later hardening of the data layer, a deterministic catalog and validator
+constraining the data-access guide used in forward and backward passes.
+Because that hardening touches the same paths the diagnosis loop
+exercises, post-hardening replications are not assumed poolable with the
+current cells: the expanded grid re-establishes its tables under the
+hardened implementation, preceded by a no-plant end-to-end gate confirming
+that the un-faulted pipeline still terminates in \emph{Practical Optimal};
+each table carries the campaign, and hence the implementation freeze, it
+was produced under.
+
 \subsection{Exp-A: Commitment-order ablation}
 \label{sec:exp_ablation}
 \label{sec:exp_i}
@@ -1248,8 +1288,18 @@ reverse & $0/3$ (0.00) & $0/3$ (0.00) & $0/3$ & $1.15{\times}10^{5}$ \\
 
 \paragraph{Preliminary results (status-prior $\omega$; real $n{=}5$).}
 Table~\ref{tab:exp_ablation_prelim} records the earlier status-prior run
-(last-comply attribution). Directional on first-probe only; superseded as the
-primary Exp-A table by Table~\ref{tab:exp_ablation}.
+(last-comply attribution). The first-probe ordering is already directional
+(causal $4/5$, random $3/5$, reverse $0/5$), but attribution collapses
+across all orders (at most $1/5$): probing a layer and observing its
+backward response does not by itself establish guilt, including for the
+order that named the guilty layer first most often. Two limits of that
+apparatus follow. First, last-comply credit is not an attribution
+mechanism---the single reverse-order hit is last-comply credit, not a
+verified identification. Second, the status prior reads the failure
+surface, and surfaces mark symptom loci: on crash surfaces it points at
+the code layer regardless of where the defect was planted. Both limits
+motivated the evidence-informed redesign; the table is superseded as the
+primary Exp-A result by Table~\ref{tab:exp_ablation}.
 
 \begin{table}[t]
 \centering
@@ -1337,8 +1387,15 @@ External & Debate / Reflexion
 
 \paragraph{Preliminary results (status-prior; real $n{=}5$, internal only).}
 Table~\ref{tab:exp_baselines_prelim}: last-comply attribution was $0/5$ for
-all three methods---motivating verified accounting and evidence-informed rank.
-External baselines were not run in that preliminary pass.
+all three methods, while SSR diverged (sequential repaired $2/5$ blind,
+stackelberg $1/5$, adversarial $0/5$). The attribution failure is uniform
+across protocol families---single-judge accusation, committed causal
+probing, blind reverse-chain repair---so no protocol's comply/deflect
+responses identified the planted layer under last-comply accounting;
+conversely, sequential's blind-repair SSR shows that eventual repair is
+likewise uninformative about root cause. These two observations motivated
+the verified attribution accounting and the evidence-informed rank of the
+redesign. External baselines were not run in that preliminary pass.
 
 \begin{table}[t]
 \centering
@@ -1397,6 +1454,56 @@ sequential         & 0.10 & 0.15 & 0.20 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Failure-mode analysis}
+\label{sec:exp_failure_modes}
+
+Table-level rates do not reveal where the mechanism breaks, so we
+additionally inspected the per-node event logs and repair artifacts of
+every measured cell above and of the intervening single-run smokes. Three
+recurrent failure families emerged; each is a property of the implemented
+pipeline under layered faults, and each motivated a specific element of
+the measured design or of the pending expanded grid.
+
+\paragraph{Traceback-as-oracle.}
+On crash surfaces the failure evidence points at the generated code, and
+ranking that trusts the surface tips the code layer. Under an
+intermediate evidence-informed variant with LLM-only ranking (same grid,
+$n{=}3$), two of three causal cells committed a code-first $\omega$, spent
+the budget on code- and data-layer overturns, and never reached the model
+layer; verified attribution was $0/9$ over that grid. This is the
+practical form of the symptom-locus ambiguity of
+Section~\ref{sec:layered}: the traceback marks where the pipeline broke,
+not where the defect was planted. The hybrid ranking of the measured
+tables counters it with an explicit symptom-signature rule---a
+forced-zero balance is model-layer evidence---while still ignoring
+LLM-reported confidence.
+
+\paragraph{Stale evidence at repair time.}
+A correct tip does not guarantee a verified attribution: in that same
+intermediate variant, the one cell that tipped the model layer still
+failed, because its backward step consumed the pre-fault forward output,
+in which the planted constraint was absent; the repair rewrote an
+unrelated model element and was overturned by the re-solve. The measured
+implementation presents the repairing agent with the current (post-fault)
+output and restricts the repair to a minimal strip of the implicated
+constraint rather than a free regeneration.
+
+\paragraph{Residual repair-path variance.}
+The measured campaigns retain a regeneration instability downstream of a
+correct model-layer repair: a code-layer regeneration can fail outright
+(in a single-run smoke it raised a key error and left a large objective
+gap despite a correct strip); one sequential grid cell terminated before
+any model call; and replicate variance remains high---the adversarial arm
+reached a verified attribution in a single-run smoke but $0/3$ on the
+grid. Success can also occur without attribution: one causal cell reached
+\emph{Practical Optimal} through a downstream repair while its attributed
+layer settled on the code layer. These residuals concentrate in the paths
+the deterministic data-layer contract now constrains; the no-plant gate
+and the re-established tables of Section~\ref{sec:exp_reporting} bound
+them before the expanded grid is interpreted, and the overturn and
+deflect diagnostics of Exp.~\ref{sec:exp_diag} will quantify them at
+scale.
 
 \paragraph{Claim boundary.}
 Comparisons are scoped to layered-error natural-language optimization on the
