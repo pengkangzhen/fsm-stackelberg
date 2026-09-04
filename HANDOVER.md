@@ -21,7 +21,9 @@
   **Independent codebase** — do not modify `mako` / do not sync back.
   Mako-era `prob_ecr_shipper_consignee` instances have been **removed**.
 - **Repo.** `git@github.com:pengkangzhen/fsm-stackelberg.git`, branch `main`
-  (local tip includes `bf0c849` Exp-I injection/pilot tooling; push if needed).
+  (all six `pr/*` branches merged 2026-09-05 in dependency order 1→6; only
+  conflict was binary `manuscript.pdf`, resolved to the pr/6 build; suite
+  72 passed on merged main).
 - **Current state (2026-07-27).**
   - Phase 0 skipped; Phase 1 Stackelberg PoC **done**; Phase 2 analysis-mode
     payoffs **done** (`src/fsm_stackelberg/game/payoff.py`), with Exp-I
@@ -175,6 +177,21 @@
     significant digits → **v4-seed replay, not the no-plant gate**; do not
     cite it as a no-plant result. All API-calling work (no-plant E2E smoke,
     expand-n, Debate, Exp-C) is **blocked until tokens are recharged**.
+  - **Offline writing + branch consolidation (2026-09-05; still no API
+    budget).** Manuscript (pr/6 line, now merged to main): new
+    §"Result interpretation and provenance" (`sec:exp_reporting` —
+    registered expectations as the reading grid, directional-only language
+    under thin n, manifest/events as number authority, DE-contract
+    provenance + non-poolability of pre/post-contract cells), expanded
+    status-prior preliminary narratives (Exp-A/B), new §"Failure-mode
+    analysis" (`sec:exp_failure_modes` — traceback-as-oracle, stale repair
+    evidence, residual regeneration variance; grounded in per-cell run
+    records). Methodology decision: **keep pre-registered expectations**
+    (respond to thin-n by expanding n after the gate; label exploratory
+    analyses; do NOT switch to exploratory "pick-the-winner" framing).
+    Stacked pr/1–pr/6 merged into main in dependency order and pushed;
+    compile clean at 17 pages; deferred writing: hybrid main-table
+    confirmatory prose (waits for expanded n) and Exp-C real table.
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
