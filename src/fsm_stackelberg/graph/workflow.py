@@ -15,6 +15,7 @@ from ..agents.model_expert import model_expert_node, model_expert_backward_step
 from ..agents.python_developer import python_developer_node, python_developer_backward_step
 from ..agents.solver_executor import solver_executor_node
 from ..agents.diagnosis_agent import diagnosis_agent_node
+from ..agents.fault_injector import fault_injector_node
 from ..plugins import build_feature_bundle
 from ..knowledge.progressive import ProgressiveKnowledgeInjection
 
@@ -139,7 +140,7 @@ def route_after_backward(state: AgentState) -> str:
         elif error_agent == "model_expert":
             if _has_pending_knowledge_requests(state):
                 return "knowledge_loader"
-            return "python_developer"
+            return "fault_injector"  # Plant already applied; node no-ops
         elif error_agent == "python_developer":
             return "solver_executor"  # Re-run SolverExecutor
         else:
@@ -165,7 +166,7 @@ def route_after_backward(state: AgentState) -> str:
         return "diagnosis_agent"
 
 
-def route_after_model_expert(state: AgentState) -> Literal["knowledge_loader", "python_developer"]:
+def route_after_model_expert(state: AgentState) -> Literal["knowledge_loader", "fault_injector"]:
     """Route based on whether ModelExpert requested new knowledge modules."""
     if _has_pending_knowledge_requests(state):
         pending_modules = [
@@ -177,16 +178,16 @@ def route_after_model_expert(state: AgentState) -> Literal["knowledge_loader", "
 
     if state.get("model_expert_output") and state["model_expert_output"].knowledge_requests:
         logger.info("ModelExpert requested only already-loaded knowledge; proceeding to code generation.")
-    return "python_developer"
+    return "fault_injector"
 
 
-def route_after_knowledge_loader(state: AgentState) -> Literal["model_expert", "python_developer"]:
+def route_after_knowledge_loader(state: AgentState) -> Literal["model_expert", "fault_injector"]:
     """Route after knowledge loading based on whether new knowledge was added."""
     if state.get("knowledge_loader_loaded", False):
         return "model_expert"
 
     logger.info("Knowledge loader added no new knowledge; proceeding to code generation.")
-    return "python_developer"
+    return "fault_injector"
 
 
 # =============================================================================
@@ -225,6 +226,7 @@ def create_mako_graph() -> StateGraph:
     workflow.add_node("data_engineer", data_engineer_node)
     workflow.add_node("model_expert", model_expert_node)
     workflow.add_node("knowledge_loader", knowledge_loader_node)
+    workflow.add_node("fault_injector", fault_injector_node)
     workflow.add_node("python_developer", python_developer_node)
     workflow.add_node("solver_executor", solver_executor_node)
     workflow.add_node("diagnosis_agent", diagnosis_agent_node)
@@ -234,14 +236,14 @@ def create_mako_graph() -> StateGraph:
     workflow.add_node("model_expert_backward", model_expert_backward_step)
     workflow.add_node("python_developer_backward", python_developer_backward_step)
 
-    # Forward edges: linear flow
+    # Forward edges: linear flow (fault_injector is a no-op when inject_id unset)
     workflow.add_edge("data_engineer", "model_expert")
     workflow.add_conditional_edges(
         "model_expert",
         route_after_model_expert,
         {
             "knowledge_loader": "knowledge_loader",
-            "python_developer": "python_developer",
+            "fault_injector": "fault_injector",
         }
     )
     workflow.add_conditional_edges(
@@ -249,9 +251,10 @@ def create_mako_graph() -> StateGraph:
         route_after_knowledge_loader,
         {
             "model_expert": "model_expert",
-            "python_developer": "python_developer",
+            "fault_injector": "fault_injector",
         }
     )
+    workflow.add_edge("fault_injector", "python_developer")
     workflow.add_edge("python_developer", "solver_executor")
 
     # SolverExecutor → success or diagnose
@@ -292,7 +295,7 @@ def create_mako_graph() -> StateGraph:
         route_after_backward,
         {
             "knowledge_loader": "knowledge_loader",
-            "python_developer": "python_developer",
+            "fault_injector": "fault_injector",
             "data_engineer_backward": "data_engineer_backward",
             "diagnosis_agent": "diagnosis_agent",
             "end": END,
@@ -363,6 +366,10 @@ def run_mako(
     Returns:
         Final state with results (includes episode_payoff)
     """
+    if inject_id and not true_root_cause:
+        from ..injection import get_plant
+        true_root_cause = get_plant(inject_id).true_root_cause
+
     graph = create_mako_graph()
 
     # Deterministic data preprocessing — runs once, no LLM involved

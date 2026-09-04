@@ -10,6 +10,10 @@ trajectories are comparable across diagnosis modes and probe-order ablations.
 where S is strict success, â is the attributed layer, a* is ground-truth
 root cause (optional until Phase 4 injection), K is probe rounds, and C is
 token spend. Coefficients are design parameters, not claimed LLM utilities.
+
+Exp-I kill criteria also records commitment-order diagnostics:
+``first_probe_hit`` = 1{first probed layer = a*} (order ablation signal),
+distinct from last-comply ``attribution_hit`` (which confounds cascade repairs).
 """
 
 from __future__ import annotations
@@ -57,7 +61,7 @@ def is_strict_success(
 
 
 def infer_attributed_layer(state: Dict[str, Any]) -> Optional[str]:
-    """Infer â from the inspection trajectory.
+    """Infer â from the inspection trajectory (last successful comply).
 
     Confirmed attribution: a layer complied (error_resolved) and the subsequent
     re-solve passed strict success — that layer is the mechanism's root-cause
