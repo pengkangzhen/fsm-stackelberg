@@ -24,6 +24,13 @@ You are ModelExpert. You need to judge whether the error is caused by your model
        - **Do use**: Existing `c_{{ijk}}^{{transport}}` where i=p, j=q, k=truck
        - Rationale: `transport_cost` matrix already contains costs for ALL node pairs
    - Check if constraints are missing (e.g., i≠j for transport flows)
+   - **OPTIMAL / large objective gap (WRONG_OBJ):** First scan **Your Previous Output** for
+     spurious constraints that force stage-1 sea repositioning to zero, e.g.
+     `y_in[h,t]=0` and `y_out[h,t]=0`, names containing `Force_Zero` /
+     `Injected_Force_Zero`, or descriptions like "force … sea … to zero".
+     If present, that is **your fault** — **delete those constraints** and keep
+     the rest of a sound min-cost DEP (do **not** invent unrelated fixes such as
+     rewriting `sea_outbound_floor` / `D_ext_eff` unless they are independently wrong).
 
 2. **If this is NOT your fault**:
    - Set `is_caused_by_you: false`
@@ -33,6 +40,8 @@ You are ModelExpert. You need to judge whether the error is caused by your model
    - Set `is_caused_by_you: true`
    - Explain the issue in `reason`
    - Provide `refined_result` with your corrected model definition (full ModelExpertOutput JSON)
+   - Prefer **minimal edits**: remove the bad constraint(s); avoid rewriting
+     unrelated balances/floors/capacities.
 
 ---
 

@@ -29,8 +29,8 @@ SUFFIXES = {
 def _parse_suffix(suffix: str) -> tuple[str, str]:
     if suffix in SUFFIXES:
         return SUFFIXES[suffix]
-    # v3_causal_r1 / v3_random_r2
-    m = re.match(r"^v\d+_(causal|random|reverse)(?:_r\d+)?$", suffix)
+    # v3_causal_r1 / full_random_r2 / full_reverse_r1
+    m = re.match(r"^(?:v\d+|full)_(causal|random|reverse)(?:_r\d+)?$", suffix)
     if m:
         return "stackelberg", m.group(1)
     if "causal" in suffix:
@@ -111,12 +111,18 @@ def _row(suffix: str, mode: str, order: str, data: dict[str, Any] | None, path: 
         "attributed_layer": data.get("attributed_layer") or payoff.get("attributed_layer"),
         "true_root_cause": data.get("true_root_cause") or payoff.get("true_root_cause"),
         "attribution_hit": payoff.get("attribution_hit"),
+        "verified_attribution_hit": payoff.get("verified_attribution_hit"),
+        "verified_attributed_layer": payoff.get("verified_attributed_layer"),
         "kill_hit": _kill_flag(payoff),
         "first_probe_layer": payoff.get("first_probe_layer"),
         "first_probe_hit": payoff.get("first_probe_hit"),
         "committed_omega": payoff.get("committed_omega"),
+        "omega_source": payoff.get("omega_source"),
+        "rank": payoff.get("rank"),
+        "rank_method": payoff.get("rank_method"),
         "true_root_rank_in_omega": payoff.get("true_root_rank_in_omega"),
         "plant_layer_complied": payoff.get("plant_layer_complied"),
+        "refutation_log_summary": payoff.get("refutation_log_summary"),
         "probe_rounds": payoff.get("probe_rounds"),
         "tokens": data.get("total_tokens") or payoff.get("tokens"),
         "duration_s": data.get("total_duration_s"),

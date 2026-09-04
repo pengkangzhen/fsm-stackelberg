@@ -289,6 +289,22 @@ class DiagnosisOutput(BaseModel):
     evidence: str = ""  # Specific observations that support the conclusion
 
 
+class LayerRankOutput(BaseModel):
+    """Ordered layer ranking for evidence-informed Stackelberg commit.
+
+    Contract: ordered list only. Do **not** use confidence/probability fields
+    even if a model emits them — ranking is not a calibrated posterior.
+    """
+
+    rank: List[str] = Field(
+        description="Best-first permutation of data_engineer, model_expert, python_developer"
+    )
+    rationale: str = Field(
+        default="",
+        description="Short evidence-based justification (not a probability)",
+    )
+
+
 class BackwardStepOutput(BaseModel):
     """Structured output for backward step.
 

@@ -28,7 +28,7 @@ PROVIDER_ENV = {
     "OpenRouter": ("OPENROUTER_BASE_URL", "OPENROUTER_API_KEY"),
     "MiniMax": ("MINIMAX_ANTHROPIC_BASE_URL", "MINIMAX_API_KEY"),
     "ZhipuAI": ("ZHIPUAI_BASE_URL", "ZHIPUAI_API_KEY"),
-    "DashScope": ("QWEN_BASE_URL", "QWEN_API_KEY"),  # 阿里云百炼，复用 Qwen 凭据
+    "DashScope": ("QWEN_BASE_URL", "QWEN_API_KEY"),  # 阿里云百炼；也认 DASHSCOPE_API_KEY
     "DashScopeGLM": ("DASHSCOPE_GLM_BASE_URL", "DASHSCOPE_GLM_API_KEY"),
     "Moonshot": ("MOONSHOT_BASE_URL", "MOONSHOT_API_KEY"),
     "MiMo": ("MIMO_BASE_URL", "MIMO_API_KEY"),
@@ -40,7 +40,8 @@ PROVIDER_MODELS = {
     "OpenRouter": ["qwen/qwen3.5-plus-02-15","qwen/qwen3.6-plus-preview:free", "deepseek/deepseek-v3.2", "minimax/minimax-m2.5:free", "z-ai/glm-5", "moonshotai/kimi-k2.5", "moonshotai/kimi-k2.6:free", "openai/gpt-oss-120b:free"],
     "MiniMax": ["MiniMax-M2.7", "MiniMax-M3"],
     "ZhipuAI": ["glm-5", "glm-5.1"],
-    "DashScope": ["glm-5.1", "qwen3.7-plus", "kimi-k2.6"],  # 阿里云百炼平台托管的模型
+    # 阿里云百炼托管：含 deepseek-v4-flash（便宜默认）
+    "DashScope": ["deepseek-v4-flash", "qwen3.7-plus", "glm-5.1", "kimi-k2.6"],
     "DashScopeGLM": ["glm-5.2"],
     "Moonshot": ["kimi-k2.5"],
     "MiMo": ["mimo-v2.5-pro"],
@@ -81,10 +82,19 @@ def get_llm(
     base_url_env, api_key_env = PROVIDER_ENV[provider]
     base_url = os.getenv(base_url_env)
     api_key = os.getenv(api_key_env)
+    # DashScope / 百炼：官方示例用 DASHSCOPE_API_KEY；本仓库常复用 QWEN_*。
+    if provider == "DashScope":
+        base_url = (
+            base_url
+            or os.getenv("DASHSCOPE_BASE_URL")
+            or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        api_key = api_key or os.getenv("DASHSCOPE_API_KEY")
 
     if not base_url or not api_key:
         raise ValueError(
             f"Missing environment variables for {provider}: {base_url_env}, {api_key_env}"
+            + (" (or DASHSCOPE_API_KEY)" if provider == "DashScope" else "")
         )
 
     if model is None:
@@ -173,9 +183,20 @@ def get_llm(
         return PatchedFCChatOpenAI(**kwargs)
 
     # DeepSeek v4+ thinking mode
-    is_deepseek_v4 = provider == "DeepSeek" and "v4" in model.lower()
-    if is_deepseek_v4:
-        kwargs["extra_body"] = {"thinking": {"type": "enabled"}}
+    # - Official DeepSeek API: thinking.type
+    # - DashScope 百炼: enable_thinking (see Bailian OpenAI-compat sample)
+    # Pipeline uses structured JSON across agents; thinking raises latency/cost and
+    # often breaks json_mode. Default OFF; set FSM_ENABLE_THINKING=1 to force on.
+    is_deepseek_v4 = "deepseek" in model.lower() and "v4" in model.lower()
+    enable_thinking = os.getenv("FSM_ENABLE_THINKING", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+    if provider == "DeepSeek" and is_deepseek_v4:
+        kwargs["extra_body"] = {
+            "thinking": {"type": "enabled" if enable_thinking else "disabled"}
+        }
+    if provider == "DashScope" and is_deepseek_v4:
+        kwargs["extra_body"] = {"enable_thinking": bool(enable_thinking)}
 
     is_qwen3_model = "qwen3" in model.lower() or "qwen/qwen3" in model.lower()
 

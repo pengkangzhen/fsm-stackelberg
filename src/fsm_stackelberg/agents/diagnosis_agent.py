@@ -317,6 +317,7 @@ def diagnosis_agent_node(state: Dict) -> Dict:
     inspection_policy = state.get("inspection_policy")
     probe_queue = list(state.get("probe_queue") or [])
     cleared_layers = list(state.get("cleared_layers") or [])
+    refutation_log = list(state.get("refutation_log") or [])
 
     # 根据模式选择诊断方式
     if diagnosis_mode == "sequential":
@@ -334,6 +335,7 @@ def diagnosis_agent_node(state: Dict) -> Dict:
             inspection_policy,
             probe_queue,
             cleared_layers,
+            refutation_log,
         ) = _stackelberg_diagnosis(
             state, error_category, gurobi_status, error_info
         )
@@ -443,6 +445,7 @@ def diagnosis_agent_node(state: Dict) -> Dict:
         "inspection_policy": inspection_policy,
         "probe_queue": probe_queue,
         "cleared_layers": cleared_layers,
+        "refutation_log": refutation_log,
     }
 
 
@@ -454,22 +457,27 @@ def _stackelberg_diagnosis(
 ) -> tuple:
     """Stackelberg inspection: commit σ and select the next layer to probe.
 
-    The inspector (DiagnosisAgent) does not run a single-judge LLM accusation.
-    It commits an observable probing order ω (seeded by Prior(status)) and a
-    verification rule ν = executed refutation. The active inspectee responds in
-    its backward_step (comply-repair or deflect); the FSM re-solve is ν.
+    Evidence-informed default: rank layers from stack+history, align ω with
+    probe_order ablation, commit once, then probe uncleared layers. Legacy
+    ``omega_source=status_prior`` keeps Prior(status) seeding for A/B only.
 
     Returns:
         (error_agent, confidence, reason, metrics,
-         inspection_policy, probe_queue, cleared_layers)
+         inspection_policy, probe_queue, cleared_layers, refutation_log)
     """
+    from ..game.ranking import align_omega, rank_layers
+    from ..game.verified import make_refutation_entry
+
     start_time = time.time()
     metrics = {"total_tokens": 0, "duration_s": 0.0}
 
     probe_order_mode = state.get("probe_order", "causal")
+    omega_source = state.get("omega_source") or "evidence_rank"
+    rank_method = state.get("rank_method") or "llm_rank"
     probe_queue = list(state.get("probe_queue") or [])
     cleared_layers = list(state.get("cleared_layers") or [])
     inspection_policy = state.get("inspection_policy")
+    refutation_log = list(state.get("refutation_log") or [])
 
     # Syntax errors are localized to code generation — probe PD directly.
     if error_category == "syntax" or (gurobi_status == "" and error_category == "syntax"):
@@ -479,10 +487,16 @@ def _stackelberg_diagnosis(
                 "omega": ["python_developer"],
                 "nu": VERIFICATION_RULE,
                 "probe_order": probe_order_mode,
+                "omega_source": omega_source,
+                "rank": ["python_developer", "model_expert", "data_engineer"],
+                "rank_method": "syntax_shortcut",
+                "rank_rationale": "syntax errors localize to python_developer",
                 "seed": "python_developer",
+                "committed_at_round": state.get("current_round"),
             }
             probe_queue = ["python_developer"]
         metrics["duration_s"] = time.time() - start_time
+        state["refutation_log"] = refutation_log
         return (
             "python_developer",
             1.0,
@@ -491,14 +505,43 @@ def _stackelberg_diagnosis(
             inspection_policy,
             probe_queue,
             cleared_layers,
+            refutation_log,
         )
 
     # First entry into this failure episode: commit inspection policy σ.
     if not inspection_policy or not probe_queue:
         probe_seed = state.get("probe_seed")
-        probe_queue = build_probe_order(
-            gurobi_status,
-            probe_order_mode,
+        rank_result = None
+        rank_list: List[str] = []
+        rank_rationale = ""
+        rank_method_used = rank_method
+
+        if omega_source == "evidence_rank" and probe_order_mode == "causal":
+            # Rank only needed for causal tip; reverse/random ignore rank (Exp-A).
+            rank_result = rank_layers(state, method=rank_method)
+            rank_list = list(rank_result.rank)
+            rank_rationale = rank_result.rationale
+            rank_method_used = rank_result.method
+            metrics["total_tokens"] = int(rank_result.tokens or 0)
+        elif omega_source == "evidence_rank":
+            # reverse/random: still record a placeholder rank for auditability
+            # without spending LLM tokens (pure order ablation).
+            rank_list = list(CAUSAL_LAYERS)
+            rank_method_used = "ablation_ignored"
+            rank_rationale = (
+                f"probe_order={probe_order_mode} ignores rank tip (Exp-A freeze)"
+            )
+        else:
+            # status_prior: optional heuristic rank for logs only
+            rank_list = get_candidate_agents(gurobi_status)
+            rank_method_used = "status_prior"
+            rank_rationale = "legacy Prior(status) seed; no evidence rank"
+
+        probe_queue = align_omega(
+            probe_order=probe_order_mode,
+            rank=rank_list,
+            gurobi_status=gurobi_status,
+            omega_source=omega_source,
             probe_seed=probe_seed,
         )
         seed = probe_queue[0] if probe_queue else "model_expert"
@@ -506,21 +549,32 @@ def _stackelberg_diagnosis(
             "omega": list(probe_queue),
             "nu": VERIFICATION_RULE,
             "probe_order": probe_order_mode,
+            "omega_source": omega_source,
+            "rank": list(rank_list),
+            "rank_method": rank_method_used,
+            "rank_rationale": rank_rationale,
             "seed": seed,
             "probe_seed": probe_seed,
+            "committed_at_round": state.get("current_round"),
             "prior_candidates": get_candidate_agents(gurobi_status),
-            "prior_rotated": probe_order_mode == "causal",
+            "prior_rotated": (
+                probe_order_mode == "causal" and omega_source == "status_prior"
+            ),
         }
+        if rank_result is not None:
+            inspection_policy["rank_raw"] = rank_result.raw
         cleared_layers = []
         logger.info(
             "DiagnosisAgent (stackelberg): committed σ omega=%s nu=%s seed=%s "
-            "probe_order=%s probe_seed=%s prior_rotated=%s",
+            "probe_order=%s omega_source=%s rank=%s rank_method=%s probe_seed=%s",
             probe_queue,
             VERIFICATION_RULE,
             seed,
             probe_order_mode,
+            omega_source,
+            rank_list,
+            rank_method_used,
             probe_seed,
-            probe_order_mode == "causal",
         )
     else:
         # Re-entry: previous probe was settled. Clear the last probed layer.
@@ -529,17 +583,33 @@ def _stackelberg_diagnosis(
         last_agent = state.get("error_agent")
         if last_agent and last_agent not in cleared_layers:
             cleared_layers.append(last_agent)
-            outcome = "deflect" if not state.get("error_resolved") else "refuted_comply"
+            complied = bool(state.get("error_resolved"))
+            action = "comply" if complied else "deflect"
+            # Re-entering diagnosis ⇒ re-solve did not reach Practical Optimal
+            # (or no re-solve on deflect).
+            entry = make_refutation_entry(
+                layer=last_agent,
+                action=action,
+                error_resolved=complied,
+                re_solve_strict_success=False,
+                retry_index=int(state.get("retry_count") or 0),
+                overturn=complied,  # claimed repair but still failing
+            )
+            refutation_log.append(entry)
+            state["refutation_log"] = refutation_log
             logger.info(
-                "DiagnosisAgent (stackelberg): cleared layer=%s outcome=%s",
+                "DiagnosisAgent (stackelberg): cleared layer=%s action=%s "
+                "overturn=%s",
                 last_agent,
-                outcome,
+                action,
+                entry["overturn"],
             )
 
     error_agent = next_unclear_layer(probe_queue, cleared_layers)
     if error_agent is None:
         logger.warning("DiagnosisAgent (stackelberg): all layers cleared, no probe left")
         metrics["duration_s"] = time.time() - start_time
+        state["refutation_log"] = refutation_log
         return (
             None,
             0.0,
@@ -548,14 +618,17 @@ def _stackelberg_diagnosis(
             inspection_policy,
             probe_queue,
             cleared_layers,
+            refutation_log,
         )
 
     reason = (
         f"Inspector probe under committed σ: layer={error_agent}, "
-        f"omega={probe_queue}, cleared={cleared_layers}, nu={VERIFICATION_RULE}"
+        f"omega={probe_queue}, cleared={cleared_layers}, nu={VERIFICATION_RULE}, "
+        f"omega_source={omega_source}"
     )
     metrics["duration_s"] = time.time() - start_time
     logger.info("DiagnosisAgent (stackelberg): probing %s", error_agent)
+    state["refutation_log"] = refutation_log
     return (
         error_agent,
         1.0,
@@ -564,6 +637,7 @@ def _stackelberg_diagnosis(
         inspection_policy,
         probe_queue,
         cleared_layers,
+        refutation_log,
     )
 
 
