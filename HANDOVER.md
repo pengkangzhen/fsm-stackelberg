@@ -205,7 +205,10 @@
     gains `resumed_from` / `snapshot_dir` / `snapshot_forward_tokens`.
     Tests: `tests/test_snapshot_resume.py` (10). **Also fixed latent CLI
     break:** `--probe_seed` / `--inject` were duplicated in `main.py` since
-    `b5a7798` → argparse ArgumentError on every invocation; deduplicated.
+    `9a26e17` (07-23, pr/1) → argparse ArgumentError on every invocation;
+    deduplicated. The 07-24~27 runs nevertheless succeeded through
+    `python -m fsm_stackelberg.main`, so that tree carried an uncommitted
+    local fix — commit fixes immediately; uncommitted state evaporates.
     **Design note (decided 2026-09-05):** expanded-n / re-Exp-A grids after
     recharge run in snapshot mode (freeze once per plant×seed, resume all
     arms); the no-plant E2E gate stays fully live and cannot be replayed.
