@@ -474,6 +474,9 @@ def build_run_manifest(
     git_commit: Optional[str] = None,
     events_path: str = "events.jsonl",
     artifacts_dir: str = "artifacts",
+    resumed_from: Optional[str] = None,
+    snapshot_dir: Optional[str] = None,
+    snapshot_forward_tokens: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Flatten ExperimentResult + payoff + commitment diagnostics into run_manifest."""
     state = state or {}
@@ -530,6 +533,10 @@ def build_run_manifest(
             "true_root_cause": getattr(exp, "true_root_cause", None)
             or state.get("true_root_cause")
             or None,
+            # Snapshot freeze/resume provenance (None on ordinary runs)
+            "resumed_from": resumed_from,
+            "snapshot_dir": snapshot_dir,
+            "snapshot_forward_tokens": snapshot_forward_tokens,
         },
         "outcome": {
             "gurobi_status": gurobi_status,

@@ -192,6 +192,25 @@
     Stacked pr/1–pr/6 merged into main in dependency order and pushed;
     compile clean at 17 pages; deferred writing: hybrid main-table
     confirmatory prose (waits for expanded n) and Exp-C real table.
+  - **Snapshot freeze/resume shipped (2026-09-05, branch
+    `pr/7-snapshot-resume`; offline, no API spend).** Cost-controlled
+    grids: `--snapshot_dir` freezes the failure blackboard at the
+    solver→diagnosis boundary (policy-invariant prefix); `--resume_from`
+    restores it and runs **only** the diagnosis–repair loop live
+    (entry node = `diagnosis_agent`). Per-cell cost drops to treatment-path
+    tokens only, and cells sharing a snapshot remove forward-pipeline noise
+    as a confound (the Setup's "same blackboard" fairness promise becomes
+    exact). Provenance: `snapshot_manifest.json` (provider/model/temp, git
+    commit, plant, failure surface, forward token baseline) + run_manifest
+    gains `resumed_from` / `snapshot_dir` / `snapshot_forward_tokens`.
+    Tests: `tests/test_snapshot_resume.py` (10). **Also fixed latent CLI
+    break:** `--probe_seed` / `--inject` were duplicated in `main.py` since
+    `b5a7798` → argparse ArgumentError on every invocation; deduplicated.
+    **Design note (decided 2026-09-05):** expanded-n / re-Exp-A grids after
+    recharge run in snapshot mode (freeze once per plant×seed, resume all
+    arms); the no-plant E2E gate stays fully live and cannot be replayed.
+    ZCode subagents may rehearse the resume path (harness validation only —
+    never as paper data: workspace holds the plants/a*, no audit trail).
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -534,6 +553,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Deterministic DE data catalog / validator | `src/fsm_stackelberg/data/data_contract.py`, `tests/test_data_contract.py` |
 | Inspection probe helpers | `src/fsm_stackelberg/game/inspection.py` |
 | Episode payoffs + kill / verified | `src/fsm_stackelberg/game/payoff.py`, `game/verified.py` |
+| Snapshot freeze/resume (cost grids) | `src/fsm_stackelberg/graph/snapshot.py`, `tests/test_snapshot_resume.py`; CLI `--snapshot_dir` / `--resume_from` |
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
