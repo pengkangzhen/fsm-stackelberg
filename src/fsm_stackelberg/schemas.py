@@ -129,6 +129,25 @@ class ParameterDefinition(BaseModel):
     sparse: bool = False  # True if parameter is a sparse dictionary (records format)
     access_hint: Optional[str] = None  # Guidance for sparse parameter access
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_fields(cls, data: Any) -> Any:
+        """Tolerate common LLM output variations before field-level validation.
+
+        * ``indices`` is often emitted as a plain mapping
+          ``{"i": "N", "t": "T"}`` instead of the canonical list of
+          ``{symbol, set}`` pairs (observed in subagent rehearsal outputs).
+          We convert the mapping, preserving insertion order.
+        """
+        if not isinstance(data, dict):
+            return data
+        idx = data.get("indices")
+        if isinstance(idx, dict):
+            data["indices"] = [
+                {"symbol": str(k), "set": str(v)} for k, v in idx.items()
+            ]
+        return data
+
 
 class DerivedParameter(BaseModel):
     """A parameter that must be computed from other parameters, not directly available in data."""
@@ -190,6 +209,40 @@ class DecisionVariable(BaseModel):
     type: str  # "Continuous" | "Integer" | "Binary"
     description: str
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_fields(cls, data: Any) -> Any:
+        """Tolerate common LLM output variations before field-level validation.
+
+        * ``indices`` / ``shape`` are often omitted when the indexing is
+          already visible in the symbol (e.g. ``y_in[h,t]``) or described in
+          a free-text ``bounds`` field (observed in subagent rehearsal
+          outputs).  We derive ``indices`` from the symbol brackets and
+          default ``shape`` to the same list (shape is descriptive; the
+          ModelComponents validator tolerates mismatched lengths).
+        * ``type`` is sometimes lowercase (``continuous``); normalise to
+          the capitalised convention used by downstream code generation.
+        * ``name`` is sometimes emitted instead of ``symbol``.
+        """
+        if not isinstance(data, dict):
+            return data
+        if not data.get("symbol") and data.get("name"):
+            data["symbol"] = data["name"]
+        symbol = str(data.get("symbol") or "")
+        if not data.get("indices"):
+            start, end = symbol.find("["), symbol.rfind("]")
+            if 0 <= start < end:
+                inner = symbol[start + 1 : end]
+                parts = [p.strip() for p in inner.split(",") if p.strip()]
+                if parts:
+                    data["indices"] = parts
+        if not data.get("shape") and data.get("indices"):
+            data["shape"] = list(data["indices"])
+        var_type = data.get("type")
+        if isinstance(var_type, str) and var_type:
+            data["type"] = var_type.capitalize()
+        return data
+
 
 class ObjectiveFunction(BaseModel):
     """Definition of the objective function."""
@@ -197,6 +250,25 @@ class ObjectiveFunction(BaseModel):
     direction: str  # "min" | "max"
     expression: str
     description: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_fields(cls, data: Any) -> Any:
+        """Normalise natural-language directions to the canonical min/max.
+
+        LLMs emit ``minimize`` / ``minimum`` / ``maximise`` etc.; the
+        ModelComponents consistency check requires exactly ``min``/``max``
+        (observed in subagent rehearsal outputs).
+        """
+        if isinstance(data, dict):
+            d = data.get("direction")
+            if isinstance(d, str) and d.strip():
+                dl = d.strip().lower()
+                if dl in {"minimize", "minimise", "min", "minimum"}:
+                    data["direction"] = "min"
+                elif dl in {"maximize", "maximise", "max", "maximum"}:
+                    data["direction"] = "max"
+        return data
 
 
 class Constraint(BaseModel):
