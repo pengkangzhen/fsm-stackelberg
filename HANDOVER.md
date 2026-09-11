@@ -380,7 +380,26 @@
     - 编排/汇总脚本已实例化：`run_p4_grid.py --prob_name/--state_root/
       --prefix`（快照目录 `{prob}__{plant}_s{seed}` 实例限定），
       `summarize_p4_grid.py` 增 `instances` 块。
-  - **Next concrete work (ordered) — Debate still frozen:**
+  - **Exp-B external DONE（2026-09-12 凌晨，Debate/Reflexion × me_force
+    n=20，快照同板，用户明示解冻）**：实现两模式（debate = 三透镜辩手
+    单轮投票 `{suspected_agent, argument}` + 机械多数票 + status prior
+    平票决胜，不采信自报置信度；reflexion = 单判官初始归因 + 回合记忆
+    批判修订），与既有修复路径共享；测试 106/106。**上线前 subagent
+    彩排 PASS**（用户要求的零成本门：4 子代理在真实黑板回放真实
+    prompt，3/3 辩手不同透镜独立投中 a\*、反思从伪造 PD 初始归因正确
+    修订到 ME、零 schema 漂移；`results/subagent_rehearsal/
+    debate_reflexion/`，gitignored）。**结果**：debate/reflexion 的
+    first-probe 与 adversarial **逐格全同**（12/20，0:0 不一致对）——
+    多叫 LLM 不改善命名；SB 对两者 first-probe 8:0（p=0.0078）。
+    verified：reflexion 点估最高 11/20 (0.55) vs SB 9/20 (0.45)
+    （0:2，ns，诚实保留）；debate 最低 7/20。成本决定性：debate 3.7×、
+    reflexion 2.8× SB token。**修订触发子句未触发**（无外部协议在相近
+    成本下支配 SB）。1 格退化（reflexion_s2，PD backward
+    LengthFinishReason 基建类）按补尾先例重跑成功。总结：
+    `results/exp_b_external/summary.md`；编排
+    `scripts/run_ebext_grid.py`。稿件 tab:exp_baselines 已换五方法全表
+    + 外部 prose，编译 0 错误。
+  - **Next concrete work (ordered) — Debate unfrozen and DONE:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
        partially localized**. Healthy-seed forward PD is stable (gap 0%).
@@ -418,41 +437,44 @@
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：Exp-B external（Debate/Reflexion）解冻评估 或 实例族×植物扩展
+# 任务：Exp-C（诊断动力学）设计 + 离线先行，或 DE/PD 实例族复制
 
 ## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
 
-- 引擎：官方 DeepSeek / deepseek-flash（余额 ~¥9.6）。
-  编排 `scripts/run_p4_grid.py`（--prob_name/--state_root/--prefix，
-  快照实例限定）；汇总 `scripts/summarize_p4_grid.py`（plants+instances）。
-- **Exp-A 主结论已三向稳定**：(i) smoke n=20 first-probe 强确认；
-  (ii) Phase-4 多植物条件复制（对齐=rank 可见性，见
-  results/p4_grid/summary.md）；(iii) 实例族 n=10×2 verified 子句显著
-  （池化 vs reverse p=0.0078、vs random p=0.039，见
-  results/instance_family/summary.md）。稿件三张 measured 表已更新。
-- schema 漂移防御：嵌套提升 + 重复约束名去重两个 before-validator
-  已落地（94 tests passed）；未来战役冻结成功率应回升。
+- 引擎：官方 DeepSeek / deepseek-flash（余额以 GET
+  api.deepseek.com/user/balance 实查为准）。
+- **实验主体已齐**：Exp-A n=20（smoke）+ 实例族 n=10×2（verified 子句
+  池化显著 p=0.0078/0.039）+ Phase-4 三植物条件复制 + Exp-B 五方法
+  同板 n=20 全表（SB/adv/seq/debate/reflexion：SB first-probe 8:0
+  支配全部对手；reflexion verified 0.55 点估高于 SB 0.45 但 ns 且
+  2.8× 成本）。各总结：results/exp_ab_ds41_snapshot/、
+  results/instance_family/、results/p4_grid/、results/exp_b_external/。
+- 稿件 measured 表全数落地（tab:exp_ablation / tab:exp_multiplant /
+  tab:exp_instances / tab:exp_baselines），编译 0 错误；结论与摘要仍是
+  占位符。schema 漂移防御 4 类已落地（106 tests）。
+- 编排工具链：run_p4_grid.py（实例化）/ run_ebext_grid.py（外部位）/
+  summarize_p4_grid.py + exp_b_external/summary.json。
 
-## 本任务（按优先级，先小试 2 seed 再放量）
+## 本任务（按优先级）
 
-1. **DE/PD 植物的实例族复制**（外部效度 × 条件复制的交叉）：deswap
-   与 pdbal 各跑 fam_H4_Omega10 n=6-10/序（pdbal 需先过 no-plant gate；
-   deswap 注意 z*-silent 类的实例依赖率）。
-2. 或 **Exp-B external 解冻**（Debate/Reflexion）——需用户明示后开。
+1. **Exp-C 设计 + 离线先行**：attr vs K 曲线与 deflect-overturn 率可先
+   从既有 200+ 臂的 events.jsonl/refutation_log 离线重分析；需要补格
+   （如 K 扫描）再实跑，先 2 seed 试运行。
+2. 或 **DE/PD 植物实例族复制**（p4 结论的实例交叉）。
 
 ## 硬约束
 
-- 不跑 Debate/Reflexion，除非用户明确要求。
-- 主指标 verified_attribution_hit；战役内设计不可变；序贯扩样须披露。
-- 引擎/运行方式不与旧战役混池；manifest 溯源（自动）。
-- 预算守卫：先查余额（GET api.deepseek.com/user/balance），战役硬帽
-  与用户确认；每格先 2 seed 试运行。
+- Debate/Reflexion 已解冻（用户 2026-09-12 明示）；如需新协议变体仍
+  先 subagent 彩排再花钱。
+- 主指标 verified_attribution_hit；战役内设计不可变；序贯扩样披露。
+- 引擎/运行方式不与旧战役混池；manifest 溯源。
+- 预算：先查余额，战役硬帽与用户确认；每格先 2 seed 试运行。
 
 ## 验收
 
-- [ ] 所选方案全量落盘 + summary（含配对检验）入 results/ 对应目录
-- [ ] 稿件对应表/prose 刷新；HANDOVER 更新
-- [ ] 未盲开 Debate / 未超预算 / 全部提交推送
+- [ ] 所选方案产出 summary（含检验）入 results/ 对应目录
+- [ ] 稿件对应表/prose 刷新（Exp-C 现为 mock 占位）
+- [ ] HANDOVER 更新 + 未超预算 + 全部提交推送
 ```
 
 ---
@@ -554,7 +576,9 @@ LangGraph `StateGraph` (extended FSM):
   - `get_candidate_agents` / `build_probe_order` — Prior(status) +
     `causal|reverse|random`.
 - Inspectee signals: `error_resolved` + `backward_reason` (comply vs deflect).
-- **Not yet implemented:** `debate`, `reflexion` diagnosis modes (Exp-III).
+- **`debate` / `reflexion` modes implemented (2026-09-12)** in
+  `diagnosis_agent.py` (`_debate_diagnosis`, `_reflexion_diagnosis`);
+  Exp-III-era note "not yet implemented" is obsolete.
 
 ### 3.2b Progressive knowledge (scaffolding, not the paper claim)
 
@@ -745,7 +769,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
-| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`（实例化：--prob_name/--state_root/--prefix）, `scripts/summarize_p4_grid.py`；总结 `results/p4_grid/summary.md`、`results/instance_family/summary.md` |
+| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`（实例化：--prob_name/--state_root/--prefix）, `scripts/summarize_p4_grid.py`, `scripts/run_ebext_grid.py`；总结 `results/p4_grid/`、`results/instance_family/`、`results/exp_b_external/` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |

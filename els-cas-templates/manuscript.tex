@@ -1104,7 +1104,8 @@ external protocols), and mechanism diagnostics. Tables marked
 (\texttt{omega\_source}=\texttt{evidence\_rank}, hybrid rank under the
 force-zero plant); tables marked \emph{preliminary} are from the earlier
 status-prior $\omega$ implementation and do not substitute for the redesign.
-External Debate/Reflexion and Exp-C remain unrun at the time of writing.
+External Debate/Reflexion ran later under the same engine and snapshot
+protocol (measured below); Exp-C remains unrun at the time of writing.
 
 \subsection{Setup}
 \label{sec:exp_setup}
@@ -1495,15 +1496,34 @@ registered $\geq$ clause holds as a tie) and sequential $0/20$
 dimension is decisive: adversarial matches Stackelberg's verified rate
 only by spending $1.9\times$ the loop tokens ($1.26{\times}10^{5}$ versus
 $0.65{\times}10^{5}$), and its single-judge first-probe is $12/20$
-against Stackelberg's committed $20/20$. Debate and Reflexion were not
-run in this pass (cost freeze until SB verified rates stabilize; reported
-as not run, not as wins).
+against Stackelberg's committed $20/20$.
+
+The external rows extend the comparison on the identical twenty frozen
+blackboards. Debate (three lens-diverse voters, single round, mechanical
+majority with status-prior tie-break; no LLM-reported confidence) attains
+first-probe $12/20$ --- \emph{cell-for-cell identical} to the single-judge
+baseline ($0{:}0$ discordant pairs) --- and verified attribution $7/20$ at
+$3.7\times$ Stackelberg's loop tokens. Reflexion (single-judge accusation
+critiqued against episode memory) also attains first-probe $12/20$
+(cell-for-cell identical again), with verified attribution $11/20$
+($0.55$): a point estimate above Stackelberg's $0.45$ that is not
+significant ($0{:}2$ discordant pairs, $p=0.5$) and is bought at
+$2.8\times$ the loop tokens without a committed order or its audit
+structure. Against Stackelberg, both external protocols lose first-probe
+naming decisively ($8{:}0$ discordant pairs each, $p=0.008$). The
+registered revision clause --- an external protocol strictly dominating
+Stackelberg on verified attribution at similar or lower cost --- is
+therefore not triggered: multi-calling the diagnoser neither improves
+naming over a single judge nor delivers verified attribution at
+competitive cost, although Reflexion's non-significant verified edge is
+reported as an honest caveat against over-reading the Stackelberg
+advantage.
 
 \begin{table}[t]
 \centering
-\caption{Exp-B internal baselines --- \textbf{measured} (evidence-informed;
-snapshot mode; $n{=}20$; $K{=}3$; loop-token accounting). Primary: verified
-attribution. External Debate/Reflexion not run.}
+\caption{Exp-B unified baselines --- \textbf{measured} (evidence-informed;
+snapshot mode; $n{=}20$; $K{=}3$; shared frozen blackboards across all
+methods; loop-token accounting). Primary: verified attribution.}
 \label{tab:exp_baselines}
 \label{tab:exp_ii}
 \label{tab:exp_iii}
@@ -1517,8 +1537,10 @@ Internal & adversarial
   & $8/20$ (0.40) & $12/20$ (0.60) & $9/20$ & $1.26{\times}10^{5}$ \\
 Internal & sequential
   & $0/20$ (0.00) & $0/20$ (0.00) & $7/20$ & $0.61{\times}10^{5}$ \\
-External & Debate / Reflexion
-  & --- & --- & --- & not run \\
+External & debate (3-voter panel)
+  & $7/20$ (0.35) & $12/20$ (0.60) & $7/20$ & $2.41{\times}10^{5}$ \\
+External & reflexion (memory critique)
+  & $11/20$ (0.55) & $12/20$ (0.60) & $11/20$ & $1.80{\times}10^{5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
