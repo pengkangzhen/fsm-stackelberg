@@ -39,33 +39,37 @@ from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-RESULTS = (REPO / "results" / "mako" / "DeepSeek_deepseek-flash"
-           / "prob_tslp_ecr_demand_k3" / "smoke_H4_Omega5")
 SNAPSHOTS = REPO / "results" / "snapshots"
-P4_ROOT = REPO / "results" / "p4_grid"
-
-BASE_ARGS = [
-    "--dataset", "prob_tslp_ecr_demand",
-    "--prob_name", "smoke_H4_Omega5",
-    "--provider", "DeepSeek",
-    "--model", "deepseek-flash",
-    "--knowledge", "progressive",
-    "--max_retries", "3",
-    "--omega_source", "evidence_rank",
-    "--rank_method", "hybrid",
-    "--diagnosis_mode", "stackelberg",
-]
 ORDERS = ("causal", "reverse", "random")
 IDLE_IN_CNY_PER_M = 1.0
 IDLE_OUT_CNY_PER_M = 4.0
 
 
-def cell_dir(suffix: str) -> Path:
-    return RESULTS / suffix
+def results_root(prob_name: str) -> Path:
+    return (REPO / "results" / "mako" / "DeepSeek_deepseek-flash"
+            / "prob_tslp_ecr_demand_k3" / prob_name)
 
 
-def read_tokens(suffix: str) -> dict | None:
-    m = cell_dir(suffix) / "run_manifest.json"
+def base_args(prob_name: str) -> list[str]:
+    return [
+        "--dataset", "prob_tslp_ecr_demand",
+        "--prob_name", prob_name,
+        "--provider", "DeepSeek",
+        "--model", "deepseek-flash",
+        "--knowledge", "progressive",
+        "--max_retries", "3",
+        "--omega_source", "evidence_rank",
+        "--rank_method", "hybrid",
+        "--diagnosis_mode", "stackelberg",
+    ]
+
+
+def cell_dir(prob_name: str, suffix: str) -> Path:
+    return results_root(prob_name) / suffix
+
+
+def read_tokens(prob_name: str, suffix: str) -> dict | None:
+    m = cell_dir(prob_name, suffix) / "run_manifest.json"
     if not m.exists():
         return None
     try:
@@ -90,17 +94,22 @@ def est_cny(prompt_tokens: int, completion_tokens: int) -> float:
 class PlantCampaign:
     """Restartable per-plant bookkeeping; state mutations hold self.lock."""
 
-    def __init__(self, plant: str, short: str):
+    def __init__(self, plant: str, short: str, prob_name: str,
+                 state_root: Path, prefix: str = "p4"):
         self.plant = plant
         self.short = short
+        self.prob_name = prob_name
+        self.prefix = prefix
         self.lock = threading.Lock()
-        self.state_path = P4_ROOT / short / "state.json"
+        self.state_path = state_root / short / "state.json"
+        self.log_dir = state_root / short / "logs"
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        (P4_ROOT / short / "logs").mkdir(parents=True, exist_ok=True)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
         if self.state_path.exists():
             self.state = json.loads(self.state_path.read_text())
         else:
             self.state = {"plant": plant, "short": short,
+                          "prob_name": prob_name,
                           "usable_seeds": [], "failed_freezes": [],
                           "cells": {}, "est_spend_cny": 0.0}
 
@@ -140,15 +149,16 @@ class PlantCampaign:
             return json.loads(json.dumps(self.state))
 
 
-def run_cell(suffix: str, extra_args: list[str], log_path: Path) -> dict:
+def run_cell(prob_name: str, suffix: str, extra_args: list[str],
+             log_path: Path) -> dict:
     """Launch one pipeline run; return {'ok', 'tokens', 'rc', 'skipped'}."""
-    if (cell_dir(suffix) / "run_manifest.json").exists():
-        return {"ok": True, "tokens": read_tokens(suffix), "skipped": True,
-                "rc": 0}
+    if (cell_dir(prob_name, suffix) / "run_manifest.json").exists():
+        return {"ok": True, "tokens": read_tokens(prob_name, suffix),
+                "skipped": True, "rc": 0}
     log_path.parent.mkdir(parents=True, exist_ok=True)
     env = {**os.environ, "MAKO_RESULT_SUFFIX": suffix}
     cmd = ["uv", "run", "--no-sync", "python", "-u", "-m",
-           "fsm_stackelberg.main", *BASE_ARGS, *extra_args]
+           "fsm_stackelberg.main", *base_args(prob_name), *extra_args]
     t0 = time.time()
     with log_path.open("w") as fh:
         try:
@@ -158,8 +168,8 @@ def run_cell(suffix: str, extra_args: list[str], log_path: Path) -> dict:
         except subprocess.TimeoutExpired:
             rc = -9
     return {
-        "ok": rc == 0 and read_tokens(suffix) is not None,
-        "tokens": read_tokens(suffix),
+        "ok": rc == 0 and read_tokens(prob_name, suffix) is not None,
+        "tokens": read_tokens(prob_name, suffix),
         "rc": rc,
         "duration_s": round(time.time() - t0, 1),
         "skipped": False,
@@ -168,18 +178,19 @@ def run_cell(suffix: str, extra_args: list[str], log_path: Path) -> dict:
 
 def process_seed(camp: PlantCampaign, seed: int, max_spend: float) -> dict:
     """Freeze one seed then (if usable) run the three arms serially."""
-    snap = SNAPSHOTS / f"{camp.plant}_s{seed}"
+    snap = SNAPSHOTS / f"{camp.prob_name}__{camp.plant}_s{seed}"
     summary = {"seed": seed, "freeze": None, "arms": {}}
 
     if (snap / "snapshot_state.json").exists():
         summary["freeze"] = "ok(skip)"
     else:
-        suffix = f"p4_{camp.short}_freeze_s{seed}"
+        suffix = f"{camp.prefix}_{camp.short}_freeze_s{seed}"
         res = run_cell(
+            camp.prob_name,
             suffix,
             ["--probe_order", "causal", "--inject", camp.plant,
              "--snapshot_dir", str(snap)],
-            P4_ROOT / camp.short / "logs" / f"freeze_s{seed}.log")
+            camp.log_dir / f"freeze_s{seed}.log")
         camp.record_cell(seed, "freeze", "ran" if res["ok"] else f"fail_rc{res['rc']}",
                          res.get("tokens"), suffix)
         summary["freeze"] = "ok" if (snap / "snapshot_state.json").exists() else "fail"
@@ -190,13 +201,12 @@ def process_seed(camp: PlantCampaign, seed: int, max_spend: float) -> dict:
             if camp.snapshot()["est_spend_cny"] > max_spend:
                 summary["arms"][order] = "budget_stop"
                 break
-            suffix = f"p4_{camp.short}_ea_{order}_s{seed}"
+            suffix = f"{camp.prefix}_{camp.short}_ea_{order}_s{seed}"
             extra = ["--probe_order", order, "--resume_from", str(snap)]
             if order == "random":
                 extra += ["--probe_seed", str(seed)]
-            res = run_cell(suffix, extra,
-                           P4_ROOT / camp.short / "logs"
-                           / f"ea_{order}_s{seed}.log")
+            res = run_cell(camp.prob_name, suffix, extra,
+                           camp.log_dir / f"ea_{order}_s{seed}.log")
             camp.record_cell(seed, f"ea_{order}",
                              "ok" if res["ok"] else f"fail_rc{res['rc']}",
                              res.get("tokens"), suffix)
@@ -209,10 +219,17 @@ def process_seed(camp: PlantCampaign, seed: int, max_spend: float) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--plant", required=True,
-                    choices=["de_swap_demand_supply_source",
+                    choices=["me_force_zero_sea",
+                             "de_swap_demand_supply_source",
                              "pd_comment_out_balance"])
     ap.add_argument("--short", required=True,
-                    help="short plant tag used in result suffixes")
+                    help="short campaign tag used in result suffixes")
+    ap.add_argument("--prob_name", default="smoke_H4_Omega5",
+                    help="instance name (results root segment)")
+    ap.add_argument("--state_root", default="results/p4_grid",
+                    help="root dir for state.json/logs of this campaign")
+    ap.add_argument("--prefix", default="p4",
+                    help="result-suffix campaign prefix (p4/p5/...)")
     ap.add_argument("--seed_start", type=int, default=1)
     ap.add_argument("--seed_max", type=int, default=40,
                     help="hard cap on attempt seeds (backfill guard)")
@@ -222,7 +239,8 @@ def main() -> int:
                     help="concurrent seed pipelines (arms serial inside each)")
     args = ap.parse_args()
 
-    camp = PlantCampaign(args.plant, args.short)
+    camp = PlantCampaign(args.plant, args.short, args.prob_name,
+                         REPO / args.state_root, prefix=args.prefix)
     st = camp.snapshot()
     print(f"[p4] plant={args.plant} short={args.short} "
           f"usable={len(st['usable_seeds'])} "

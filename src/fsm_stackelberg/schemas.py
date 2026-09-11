@@ -344,6 +344,14 @@ class ModelExpertOutput(BaseModel):
                         continue
                 if parsed is not None:
                     data[field] = parsed
+        # Nesting drift: LLMs sometimes hoist objective_function / constraints
+        # to the top level as siblings of model_components (first seen live on
+        # fam_H4_Omega10, deepseek-flash) — lift them back in.
+        mc = data.get("model_components")
+        if isinstance(mc, dict):
+            for stray in ("objective_function", "constraints"):
+                if stray not in mc and stray in data:
+                    mc[stray] = data.pop(stray)
         # Flatten nested lists in both list fields (e.g. [["a","b"]] -> ["a","b"])
         for list_field in ("ambiguous_points", "assumptions_made"):
             val = data.get(list_field)

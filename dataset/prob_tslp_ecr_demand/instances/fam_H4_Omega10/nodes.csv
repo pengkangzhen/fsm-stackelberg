@@ -1,0 +1,10 @@
+node_name,type
+dalian,hub
+yingkou,spoke
+dandong,spoke
+shenyang,dry_port
+anshan,dry_port
+changchun,dry_port
+jilin,dry_port
+tonghua,dry_port
+harbin,dry_port

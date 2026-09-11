@@ -27,11 +27,16 @@ import math
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-RESULTS = (REPO / "results" / "mako" / "DeepSeek_deepseek-flash"
-           / "prob_tslp_ecr_demand_k3" / "smoke_H4_Omega5")
+SMOKE = "smoke_H4_Omega5"
 SNAPSHOTS = REPO / "results" / "snapshots"
 P4_ROOT = REPO / "results" / "p4_grid"
+FAMILY_ROOT = REPO / "results" / "instance_family"
 ORDERS = ("causal", "random", "reverse")
+
+
+def results_root(prob_name: str) -> Path:
+    return (REPO / "results" / "mako" / "DeepSeek_deepseek-flash"
+            / "prob_tslp_ecr_demand_k3" / prob_name)
 
 PLANTS = {
     "deswap": {"plant": "de_swap_demand_supply_source",
@@ -51,8 +56,34 @@ PLANTS = {
 }
 
 
-def load_cell(suffix: str) -> dict | None:
-    mf = RESULTS / suffix / "run_manifest.json"
+def collect_family() -> list[dict]:
+    """Instance-family campaigns (p5): one block per state dir."""
+    out = []
+    for state_f in sorted(FAMILY_ROOT.glob("*/state.json")):
+        st = json.loads(state_f.read_text())
+        spec = {"plant": st["plant"], "astar": "model_expert",
+                "label": f"{st['prob_name']} — {st['plant']} (a*=ME)",
+                "prefix": f"p5_{st['short']}_ea",
+                "prob_name": st["prob_name"]}
+        seeds = sorted(int(s[1:]) for s in st["usable_seeds"])
+        if not seeds:
+            continue
+        cells = {o: {} for o in ORDERS}
+        for order in ORDERS:
+            for s in seeds:
+                cell = load_cell(spec["prob_name"],
+                                 f"{spec['prefix']}_{order}_s{s}")
+                if cell is not None:
+                    cells[order][s] = cell
+        out.append({"short": st["short"], "spec": spec, "seeds": seeds,
+                    "failed_freezes": sorted(st["failed_freezes"],
+                                             key=lambda x: int(x[1:])),
+                    "cells": cells})
+    return out
+
+
+def load_cell(prob_name: str, suffix: str) -> dict | None:
+    mf = results_root(prob_name) / suffix / "run_manifest.json"
     if not mf.exists():
         return None
     m = json.loads(mf.read_text())
@@ -116,9 +147,10 @@ def collect(short: str) -> dict | None:
             return None
         seeds, failed = got
     cells = {o: {} for o in ORDERS}
+    prob = spec.get("prob_name", SMOKE)
     for order in ORDERS:
         for s in seeds:
-            cell = load_cell(f"{spec['prefix']}_{order}_s{s}")
+            cell = load_cell(prob, f"{spec['prefix']}_{order}_s{s}")
             if cell is not None:
                 cells[order][s] = cell
     return {"short": short, "spec": spec, "seeds": seeds,
@@ -210,9 +242,32 @@ def main() -> None:
             out["cross_plant"][f"{metric}:{a}_vs_{b}"] = {
                 "b": b_sum, "c": c_sum, "p": round(p, 6)}
 
+    out["instances"] = {}
+    for r in collect_family():
+        out["instances"][r["short"]] = {**plant_table(r),
+                                        "seeds": r["seeds"],
+                                        "failed_freezes": r["failed_freezes"],
+                                        "label": r["spec"]["label"]}
+        # pooled discordant pairs across instances
+        for metric in ("first_probe", "verified"):
+            for a, b in (("causal", "reverse"), ("causal", "random")):
+                key = f"{metric}:{a}_vs_{b}"
+                mm = out["instances"][r["short"]][f"mcnemar_{metric}"][f"{a}|{b}"]
+                fam = out["instances"].setdefault("_pooled", {})
+                slot = fam.setdefault(key, {"b": 0, "c": 0})
+                slot["b"] += mm["b"]
+                slot["c"] += mm["c"]
+
+    if "_pooled" in out.get("instances", {}):
+        for key, slot in out["instances"]["_pooled"].items():
+            n = slot["b"] + slot["c"]
+            slot["p"] = round(min(1.0, 2 * sum(math.comb(n, k)
+                               for k in range(0, min(slot["b"], slot["c"]) + 1))
+                            * 0.5 ** n), 6) if n else 1.0
+
     P4_ROOT.mkdir(parents=True, exist_ok=True)
     (P4_ROOT / "summary.json").write_text(json.dumps(out, indent=1))
-    print(json.dumps(out["cross_plant"], indent=1))
+    print(json.dumps(out.get("cross_plant", {}), indent=1))
     print("wrote", P4_ROOT / "summary.json")
 
 

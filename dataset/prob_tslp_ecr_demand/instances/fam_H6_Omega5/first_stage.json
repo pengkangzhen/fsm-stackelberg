@@ -1,0 +1,49 @@
+{
+  "B_in": [
+    {
+      "hub": "dalian",
+      "value": 400.0
+    }
+  ],
+  "B_out": [
+    {
+      "hub": "dalian",
+      "value": 400.0
+    }
+  ],
+  "D_ext_eff": [
+    {
+      "hub": "dalian",
+      "period": 1,
+      "value": 50.0
+    },
+    {
+      "hub": "dalian",
+      "period": 2,
+      "value": 50.0
+    },
+    {
+      "hub": "dalian",
+      "period": 3,
+      "value": 50.0
+    },
+    {
+      "hub": "dalian",
+      "period": 4,
+      "value": 50.0
+    },
+    {
+      "hub": "dalian",
+      "period": 5,
+      "value": 50.0
+    },
+    {
+      "hub": "dalian",
+      "period": 6,
+      "value": 50.0
+    }
+  ],
+  "c_sea_in": 800.0,
+  "c_sea_out": 600.0,
+  "c_spill": 100000.0
+}

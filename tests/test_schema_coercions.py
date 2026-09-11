@@ -144,3 +144,33 @@ class TestObjectiveDirectionCoercion(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNestingDriftLift(unittest.TestCase):
+    def test_lifts_top_level_objective_and_constraints_into_model_components(self):
+        # Regression (2026-09-12, live on fam_H4_Omega10 / deepseek-flash): the
+        # model hoisted objective_function and constraints to siblings of
+        # model_components; the before-validator lifts them back in.
+        me = ModelExpertOutput.model_validate(
+            {
+                "knowledge_requests": [],
+                "model_components": {
+                    "decision_variables": [
+                        {"symbol": "y_in[h,t]", "type": "Continuous",
+                         "description": "sea arrival"}
+                    ]
+                },
+                "objective_function": {
+                    "direction": "min",
+                    "expression": "c * y_in[h,t]",
+                    "description": "cost",
+                },
+                "constraints": [
+                    {"name": "cap", "expression": "y_in[h,t] <= 1",
+                     "description": "d"}
+                ],
+            }
+        )
+        self.assertEqual(
+            me.model_components.objective_function.expression, "c * y_in[h,t]")
+        self.assertEqual(len(me.model_components.constraints), 1)

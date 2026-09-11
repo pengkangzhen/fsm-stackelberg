@@ -1,0 +1,76 @@
+{
+  "instance_name": "fam_H6_Omega5",
+  "problem": "tslp_ecr_demand",
+  "formulation": "two_stage_DEP_D1_D2",
+  "sets": {
+    "hubs": [
+      "dalian"
+    ],
+    "spokes": [
+      "yingkou",
+      "dandong"
+    ],
+    "dry_ports": [
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "seas": [
+      "dalian",
+      "yingkou",
+      "dandong"
+    ],
+    "nodes": [
+      "dalian",
+      "yingkou",
+      "dandong",
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "periods": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "modes": [
+      "road",
+      "rail"
+    ],
+    "scenarios": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "_meta": {
+    "problem": "tslp_ecr_demand",
+    "formulation": "two_stage_DEP_D1_D2",
+    "variable_domain": "continuous_nonnegative_TEU",
+    "uncertainty": "export_demand_eta_omega",
+    "supply": "exogenous_deterministic_xi",
+    "instance": {
+      "profile": "stochastic_hl",
+      "T": 6,
+      "sdr": 1.0,
+      "lease_mult": 1.0,
+      "seed": 13,
+      "n_nodes": 9,
+      "n_arcs": 108,
+      "tot_xi": 9223.590697674419,
+      "tot_eta_bar": 9915.36
+    },
+    "n_scenarios": 5
+  }
+}

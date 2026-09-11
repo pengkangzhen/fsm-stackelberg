@@ -1,0 +1,3599 @@
+{
+  "sets": {
+    "hubs": [
+      "dalian"
+    ],
+    "spokes": [
+      "yingkou",
+      "dandong"
+    ],
+    "dry_ports": [
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "seas": [
+      "dalian",
+      "yingkou",
+      "dandong"
+    ],
+    "nodes": [
+      "dalian",
+      "yingkou",
+      "dandong",
+      "shenyang",
+      "anshan",
+      "changchun",
+      "jilin",
+      "tonghua",
+      "harbin"
+    ],
+    "periods": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "modes": [
+      "road",
+      "rail"
+    ],
+    "scenarios": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "topology": {
+    "lambda_hl": [
+      {
+        "sea": "dalian",
+        "dry": "shenyang",
+        "linked": 1
+      },
+      {
+        "sea": "yingkou",
+        "dry": "shenyang",
+        "linked": 1
+      },
+      {
+        "sea": "dalian",
+        "dry": "anshan",
+        "linked": 1
+      },
+      {
+        "sea": "yingkou",
+        "dry": "anshan",
+        "linked": 1
+      },
+      {
+        "sea": "dalian",
+        "dry": "changchun",
+        "linked": 1
+      },
+      {
+        "sea": "dandong",
+        "dry": "changchun",
+        "linked": 1
+      },
+      {
+        "sea": "dalian",
+        "dry": "jilin",
+        "linked": 1
+      },
+      {
+        "sea": "dandong",
+        "dry": "jilin",
+        "linked": 1
+      },
+      {
+        "sea": "dalian",
+        "dry": "tonghua",
+        "linked": 1
+      },
+      {
+        "sea": "dandong",
+        "dry": "tonghua",
+        "linked": 1
+      },
+      {
+        "sea": "dalian",
+        "dry": "harbin",
+        "linked": 1
+      },
+      {
+        "sea": "dandong",
+        "dry": "harbin",
+        "linked": 1
+      }
+    ],
+    "arcs": [
+      {
+        "from": "dalian",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 344.17706401860187,
+        "capacity": 5000.0,
+        "unit_cost": 1548.7967880837084
+      },
+      {
+        "from": "shenyang",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 344.17706401860187,
+        "capacity": 5000.0,
+        "unit_cost": 1548.7967880837084
+      },
+      {
+        "from": "dalian",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 344.17706401860187,
+        "capacity": 5000.0,
+        "unit_cost": 619.5187152334834
+      },
+      {
+        "from": "shenyang",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 344.17706401860187,
+        "capacity": 5000.0,
+        "unit_cost": 619.5187152334834
+      },
+      {
+        "from": "yingkou",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 152.79058173192587,
+        "capacity": 5000.0,
+        "unit_cost": 687.5576177936664
+      },
+      {
+        "from": "shenyang",
+        "to": "yingkou",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 152.79058173192587,
+        "capacity": 5000.0,
+        "unit_cost": 687.5576177936664
+      },
+      {
+        "from": "yingkou",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 152.79058173192587,
+        "capacity": 5000.0,
+        "unit_cost": 275.02304711746655
+      },
+      {
+        "from": "shenyang",
+        "to": "yingkou",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 152.79058173192587,
+        "capacity": 5000.0,
+        "unit_cost": 275.02304711746655
+      },
+      {
+        "from": "dalian",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 269.9516039353306,
+        "capacity": 5000.0,
+        "unit_cost": 1214.7822177089877
+      },
+      {
+        "from": "anshan",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 269.9516039353306,
+        "capacity": 5000.0,
+        "unit_cost": 1214.7822177089877
+      },
+      {
+        "from": "dalian",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 269.9516039353306,
+        "capacity": 5000.0,
+        "unit_cost": 485.9128870835951
+      },
+      {
+        "from": "anshan",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 269.9516039353306,
+        "capacity": 5000.0,
+        "unit_cost": 485.9128870835951
+      },
+      {
+        "from": "yingkou",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 80.7803284362209,
+        "capacity": 5000.0,
+        "unit_cost": 363.51147796299404
+      },
+      {
+        "from": "anshan",
+        "to": "yingkou",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 80.7803284362209,
+        "capacity": 5000.0,
+        "unit_cost": 363.51147796299404
+      },
+      {
+        "from": "yingkou",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 80.7803284362209,
+        "capacity": 5000.0,
+        "unit_cost": 145.40459118519763
+      },
+      {
+        "from": "anshan",
+        "to": "yingkou",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 80.7803284362209,
+        "capacity": 5000.0,
+        "unit_cost": 145.40459118519763
+      },
+      {
+        "from": "dalian",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 624.998751900124,
+        "capacity": 5000.0,
+        "unit_cost": 2812.4943835505583
+      },
+      {
+        "from": "changchun",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 624.998751900124,
+        "capacity": 5000.0,
+        "unit_cost": 2812.4943835505583
+      },
+      {
+        "from": "dalian",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 624.998751900124,
+        "capacity": 5000.0,
+        "unit_cost": 1124.9977534202233
+      },
+      {
+        "from": "changchun",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 624.998751900124,
+        "capacity": 5000.0,
+        "unit_cost": 1124.9977534202233
+      },
+      {
+        "from": "dandong",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 446.64603343160684,
+        "capacity": 5000.0,
+        "unit_cost": 2009.9071504422309
+      },
+      {
+        "from": "changchun",
+        "to": "dandong",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 446.64603343160684,
+        "capacity": 5000.0,
+        "unit_cost": 2009.9071504422309
+      },
+      {
+        "from": "dandong",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 446.64603343160684,
+        "capacity": 5000.0,
+        "unit_cost": 803.9628601768924
+      },
+      {
+        "from": "changchun",
+        "to": "dandong",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 446.64603343160684,
+        "capacity": 5000.0,
+        "unit_cost": 803.9628601768924
+      },
+      {
+        "from": "dalian",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 690.4894050627242,
+        "capacity": 5000.0,
+        "unit_cost": 3107.202322782259
+      },
+      {
+        "from": "jilin",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 690.4894050627242,
+        "capacity": 5000.0,
+        "unit_cost": 3107.202322782259
+      },
+      {
+        "from": "dalian",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 690.4894050627242,
+        "capacity": 5000.0,
+        "unit_cost": 1242.8809291129037
+      },
+      {
+        "from": "jilin",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 690.4894050627242,
+        "capacity": 5000.0,
+        "unit_cost": 1242.8809291129037
+      },
+      {
+        "from": "dandong",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 496.4345473975436,
+        "capacity": 5000.0,
+        "unit_cost": 2233.9554632889462
+      },
+      {
+        "from": "jilin",
+        "to": "dandong",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 496.4345473975436,
+        "capacity": 5000.0,
+        "unit_cost": 2233.9554632889462
+      },
+      {
+        "from": "dandong",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 496.4345473975436,
+        "capacity": 5000.0,
+        "unit_cost": 893.5821853155785
+      },
+      {
+        "from": "jilin",
+        "to": "dandong",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 496.4345473975436,
+        "capacity": 5000.0,
+        "unit_cost": 893.5821853155785
+      },
+      {
+        "from": "dalian",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 480.0817390001202,
+        "capacity": 5000.0,
+        "unit_cost": 2160.3678255005407
+      },
+      {
+        "from": "tonghua",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 480.0817390001202,
+        "capacity": 5000.0,
+        "unit_cost": 2160.3678255005407
+      },
+      {
+        "from": "dalian",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 480.0817390001202,
+        "capacity": 5000.0,
+        "unit_cost": 864.1471302002163
+      },
+      {
+        "from": "tonghua",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 480.0817390001202,
+        "capacity": 5000.0,
+        "unit_cost": 864.1471302002163
+      },
+      {
+        "from": "dandong",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 269.0298814831852,
+        "capacity": 5000.0,
+        "unit_cost": 1210.6344666743335
+      },
+      {
+        "from": "tonghua",
+        "to": "dandong",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 269.0298814831852,
+        "capacity": 5000.0,
+        "unit_cost": 1210.6344666743335
+      },
+      {
+        "from": "dandong",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 269.0298814831852,
+        "capacity": 5000.0,
+        "unit_cost": 484.25378666973336
+      },
+      {
+        "from": "tonghua",
+        "to": "dandong",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 269.0298814831852,
+        "capacity": 5000.0,
+        "unit_cost": 484.25378666973336
+      },
+      {
+        "from": "dalian",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 864.3687102577165,
+        "capacity": 5000.0,
+        "unit_cost": 3889.6591961597246
+      },
+      {
+        "from": "harbin",
+        "to": "dalian",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 864.3687102577165,
+        "capacity": 5000.0,
+        "unit_cost": 3889.6591961597246
+      },
+      {
+        "from": "dalian",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 864.3687102577165,
+        "capacity": 5000.0,
+        "unit_cost": 1555.8636784638898
+      },
+      {
+        "from": "harbin",
+        "to": "dalian",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 864.3687102577165,
+        "capacity": 5000.0,
+        "unit_cost": 1555.8636784638898
+      },
+      {
+        "from": "dandong",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 686.9617091828853,
+        "capacity": 5000.0,
+        "unit_cost": 3091.327691322984
+      },
+      {
+        "from": "harbin",
+        "to": "dandong",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 686.9617091828853,
+        "capacity": 5000.0,
+        "unit_cost": 3091.327691322984
+      },
+      {
+        "from": "dandong",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 686.9617091828853,
+        "capacity": 5000.0,
+        "unit_cost": 1236.5310765291936
+      },
+      {
+        "from": "harbin",
+        "to": "dandong",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 686.9617091828853,
+        "capacity": 5000.0,
+        "unit_cost": 1236.5310765291936
+      },
+      {
+        "from": "shenyang",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 205.11764070247514,
+        "capacity": 5000.0,
+        "unit_cost": 923.0293831611382
+      },
+      {
+        "from": "tonghua",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 205.11764070247514,
+        "capacity": 5000.0,
+        "unit_cost": 923.0293831611382
+      },
+      {
+        "from": "shenyang",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 205.11764070247514,
+        "capacity": 5000.0,
+        "unit_cost": 369.21175326445524
+      },
+      {
+        "from": "tonghua",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 205.11764070247514,
+        "capacity": 5000.0,
+        "unit_cost": 369.21175326445524
+      },
+      {
+        "from": "anshan",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 74.52619292072225,
+        "capacity": 5000.0,
+        "unit_cost": 335.3678681432501
+      },
+      {
+        "from": "shenyang",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 74.52619292072225,
+        "capacity": 5000.0,
+        "unit_cost": 335.3678681432501
+      },
+      {
+        "from": "anshan",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 74.52619292072225,
+        "capacity": 5000.0,
+        "unit_cost": 134.14714725730005
+      },
+      {
+        "from": "shenyang",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 74.52619292072225,
+        "capacity": 5000.0,
+        "unit_cost": 134.14714725730005
+      },
+      {
+        "from": "anshan",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 355.87065783333946,
+        "capacity": 5000.0,
+        "unit_cost": 1601.4179602500276
+      },
+      {
+        "from": "changchun",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 355.87065783333946,
+        "capacity": 5000.0,
+        "unit_cost": 1601.4179602500276
+      },
+      {
+        "from": "anshan",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 355.87065783333946,
+        "capacity": 5000.0,
+        "unit_cost": 640.5671841000111
+      },
+      {
+        "from": "changchun",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 355.87065783333946,
+        "capacity": 5000.0,
+        "unit_cost": 640.5671841000111
+      },
+      {
+        "from": "anshan",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 427.193383790339,
+        "capacity": 5000.0,
+        "unit_cost": 1922.3702270565254
+      },
+      {
+        "from": "jilin",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 427.193383790339,
+        "capacity": 5000.0,
+        "unit_cost": 1922.3702270565254
+      },
+      {
+        "from": "anshan",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 427.193383790339,
+        "capacity": 5000.0,
+        "unit_cost": 768.9480908226102
+      },
+      {
+        "from": "jilin",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 427.193383790339,
+        "capacity": 5000.0,
+        "unit_cost": 768.9480908226102
+      },
+      {
+        "from": "anshan",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 254.63994232883192,
+        "capacity": 5000.0,
+        "unit_cost": 1145.8797404797438
+      },
+      {
+        "from": "tonghua",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 254.63994232883192,
+        "capacity": 5000.0,
+        "unit_cost": 1145.8797404797438
+      },
+      {
+        "from": "anshan",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 254.63994232883192,
+        "capacity": 5000.0,
+        "unit_cost": 458.3518961918975
+      },
+      {
+        "from": "tonghua",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 254.63994232883192,
+        "capacity": 5000.0,
+        "unit_cost": 458.3518961918975
+      },
+      {
+        "from": "anshan",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 594.5034253857837,
+        "capacity": 5000.0,
+        "unit_cost": 2675.2654142360266
+      },
+      {
+        "from": "harbin",
+        "to": "anshan",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 594.5034253857837,
+        "capacity": 5000.0,
+        "unit_cost": 2675.2654142360266
+      },
+      {
+        "from": "anshan",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 594.5034253857837,
+        "capacity": 5000.0,
+        "unit_cost": 1070.1061656944107
+      },
+      {
+        "from": "harbin",
+        "to": "anshan",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 594.5034253857837,
+        "capacity": 5000.0,
+        "unit_cost": 1070.1061656944107
+      },
+      {
+        "from": "changchun",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 281.34466466301814,
+        "capacity": 5000.0,
+        "unit_cost": 1266.0509909835816
+      },
+      {
+        "from": "shenyang",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 281.34466466301814,
+        "capacity": 5000.0,
+        "unit_cost": 1266.0509909835816
+      },
+      {
+        "from": "changchun",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 281.34466466301814,
+        "capacity": 5000.0,
+        "unit_cost": 506.42039639343267
+      },
+      {
+        "from": "shenyang",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 281.34466466301814,
+        "capacity": 5000.0,
+        "unit_cost": 506.42039639343267
+      },
+      {
+        "from": "changchun",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 100.03647291169548,
+        "capacity": 5000.0,
+        "unit_cost": 450.16412810262966
+      },
+      {
+        "from": "jilin",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 100.03647291169548,
+        "capacity": 5000.0,
+        "unit_cost": 450.16412810262966
+      },
+      {
+        "from": "changchun",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 100.03647291169548,
+        "capacity": 5000.0,
+        "unit_cost": 180.06565124105188
+      },
+      {
+        "from": "jilin",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 100.03647291169548,
+        "capacity": 5000.0,
+        "unit_cost": 180.06565124105188
+      },
+      {
+        "from": "changchun",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 236.5824188885338,
+        "capacity": 5000.0,
+        "unit_cost": 1064.620884998402
+      },
+      {
+        "from": "tonghua",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 236.5824188885338,
+        "capacity": 5000.0,
+        "unit_cost": 1064.620884998402
+      },
+      {
+        "from": "changchun",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 236.5824188885338,
+        "capacity": 5000.0,
+        "unit_cost": 425.8483539993608
+      },
+      {
+        "from": "tonghua",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 236.5824188885338,
+        "capacity": 5000.0,
+        "unit_cost": 425.8483539993608
+      },
+      {
+        "from": "changchun",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 240.98344190026702,
+        "capacity": 5000.0,
+        "unit_cost": 1084.4254885512016
+      },
+      {
+        "from": "harbin",
+        "to": "changchun",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 240.98344190026702,
+        "capacity": 5000.0,
+        "unit_cost": 1084.4254885512016
+      },
+      {
+        "from": "changchun",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 240.98344190026702,
+        "capacity": 5000.0,
+        "unit_cost": 433.77019542048066
+      },
+      {
+        "from": "harbin",
+        "to": "changchun",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 240.98344190026702,
+        "capacity": 5000.0,
+        "unit_cost": 433.77019542048066
+      },
+      {
+        "from": "jilin",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 354.1598600741277,
+        "capacity": 5000.0,
+        "unit_cost": 1593.7193703335747
+      },
+      {
+        "from": "shenyang",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 354.1598600741277,
+        "capacity": 5000.0,
+        "unit_cost": 1593.7193703335747
+      },
+      {
+        "from": "jilin",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 354.1598600741277,
+        "capacity": 5000.0,
+        "unit_cost": 637.4877481334299
+      },
+      {
+        "from": "shenyang",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 354.1598600741277,
+        "capacity": 5000.0,
+        "unit_cost": 637.4877481334299
+      },
+      {
+        "from": "jilin",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 247.78869728839277,
+        "capacity": 5000.0,
+        "unit_cost": 1115.0491377977673
+      },
+      {
+        "from": "tonghua",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 247.78869728839277,
+        "capacity": 5000.0,
+        "unit_cost": 1115.0491377977673
+      },
+      {
+        "from": "jilin",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 247.78869728839277,
+        "capacity": 5000.0,
+        "unit_cost": 446.019655119107
+      },
+      {
+        "from": "tonghua",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 247.78869728839277,
+        "capacity": 5000.0,
+        "unit_cost": 446.019655119107
+      },
+      {
+        "from": "harbin",
+        "to": "shenyang",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 520.1919085782448,
+        "capacity": 5000.0,
+        "unit_cost": 2340.8635886021016
+      },
+      {
+        "from": "shenyang",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 520.1919085782448,
+        "capacity": 5000.0,
+        "unit_cost": 2340.8635886021016
+      },
+      {
+        "from": "harbin",
+        "to": "shenyang",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 520.1919085782448,
+        "capacity": 5000.0,
+        "unit_cost": 936.3454354408407
+      },
+      {
+        "from": "shenyang",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 520.1919085782448,
+        "capacity": 5000.0,
+        "unit_cost": 936.3454354408407
+      },
+      {
+        "from": "harbin",
+        "to": "jilin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 210.17171063966697,
+        "capacity": 5000.0,
+        "unit_cost": 945.7726978785014
+      },
+      {
+        "from": "jilin",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 210.17171063966697,
+        "capacity": 5000.0,
+        "unit_cost": 945.7726978785014
+      },
+      {
+        "from": "harbin",
+        "to": "jilin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 210.17171063966697,
+        "capacity": 5000.0,
+        "unit_cost": 378.30907915140057
+      },
+      {
+        "from": "jilin",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 210.17171063966697,
+        "capacity": 5000.0,
+        "unit_cost": 378.30907915140057
+      },
+      {
+        "from": "harbin",
+        "to": "tonghua",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 455.11691151440135,
+        "capacity": 5000.0,
+        "unit_cost": 2048.026101814806
+      },
+      {
+        "from": "tonghua",
+        "to": "harbin",
+        "mode": "road",
+        "transit_time": 0,
+        "distance_km": 455.11691151440135,
+        "capacity": 5000.0,
+        "unit_cost": 2048.026101814806
+      },
+      {
+        "from": "harbin",
+        "to": "tonghua",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 455.11691151440135,
+        "capacity": 5000.0,
+        "unit_cost": 819.2104407259225
+      },
+      {
+        "from": "tonghua",
+        "to": "harbin",
+        "mode": "rail",
+        "transit_time": 1,
+        "distance_km": 455.11691151440135,
+        "capacity": 5000.0,
+        "unit_cost": 819.2104407259225
+      }
+    ]
+  },
+  "first_stage": {
+    "vessel_calls": [
+      {
+        "hub": "dalian",
+        "period": 1,
+        "calls": 1.0
+      },
+      {
+        "hub": "dalian",
+        "period": 2,
+        "calls": 1.0
+      },
+      {
+        "hub": "dalian",
+        "period": 3,
+        "calls": 1.0
+      },
+      {
+        "hub": "dalian",
+        "period": 4,
+        "calls": 1.0
+      },
+      {
+        "hub": "dalian",
+        "period": 5,
+        "calls": 1.0
+      },
+      {
+        "hub": "dalian",
+        "period": 6,
+        "calls": 1.0
+      }
+    ],
+    "B_in": [
+      {
+        "hub": "dalian",
+        "value": 400.0
+      }
+    ],
+    "B_out": [
+      {
+        "hub": "dalian",
+        "value": 400.0
+      }
+    ],
+    "D_ext_eff": [
+      {
+        "hub": "dalian",
+        "period": 1,
+        "value": 50.0
+      },
+      {
+        "hub": "dalian",
+        "period": 2,
+        "value": 50.0
+      },
+      {
+        "hub": "dalian",
+        "period": 3,
+        "value": 50.0
+      },
+      {
+        "hub": "dalian",
+        "period": 4,
+        "value": 50.0
+      },
+      {
+        "hub": "dalian",
+        "period": 5,
+        "value": 50.0
+      },
+      {
+        "hub": "dalian",
+        "period": 6,
+        "value": 50.0
+      }
+    ],
+    "c_sea_in": 800.0,
+    "c_sea_out": 600.0
+  },
+  "supply_demand": {
+    "xi": [
+      {
+        "node": "dalian",
+        "period": 1,
+        "value": 672.553488372093
+      },
+      {
+        "node": "dalian",
+        "period": 2,
+        "value": 672.553488372093
+      },
+      {
+        "node": "dalian",
+        "period": 3,
+        "value": 672.553488372093
+      },
+      {
+        "node": "dalian",
+        "period": 4,
+        "value": 672.553488372093
+      },
+      {
+        "node": "dalian",
+        "period": 5,
+        "value": 672.553488372093
+      },
+      {
+        "node": "dalian",
+        "period": 6,
+        "value": 672.553488372093
+      },
+      {
+        "node": "yingkou",
+        "period": 1,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "yingkou",
+        "period": 2,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "yingkou",
+        "period": 3,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "yingkou",
+        "period": 4,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "yingkou",
+        "period": 5,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "yingkou",
+        "period": 6,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 1,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 2,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 3,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 4,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 5,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "dandong",
+        "period": 6,
+        "value": 201.76604651162793
+      },
+      {
+        "node": "shenyang",
+        "period": 1,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "shenyang",
+        "period": 2,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "shenyang",
+        "period": 3,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "shenyang",
+        "period": 4,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "shenyang",
+        "period": 5,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "shenyang",
+        "period": 6,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 1,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 2,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 3,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 4,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 5,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "anshan",
+        "period": 6,
+        "value": 91.27511627906979
+      },
+      {
+        "node": "changchun",
+        "period": 1,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "changchun",
+        "period": 2,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "changchun",
+        "period": 3,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "changchun",
+        "period": 4,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "changchun",
+        "period": 5,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "changchun",
+        "period": 6,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 1,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 2,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 3,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 4,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 5,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "jilin",
+        "period": 6,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 1,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 2,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 3,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 4,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 5,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "tonghua",
+        "period": 6,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 1,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 2,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 3,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 4,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 5,
+        "value": 69.65732558139537
+      },
+      {
+        "node": "harbin",
+        "period": 6,
+        "value": 69.65732558139537
+      }
+    ],
+    "E": [
+      {
+        "node": "yingkou",
+        "period": 1,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 1,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "yingkou",
+        "period": 2,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 2,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "yingkou",
+        "period": 3,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 3,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "yingkou",
+        "period": 4,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 4,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "yingkou",
+        "period": 5,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 5,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "yingkou",
+        "period": 6,
+        "value": 57.64744186046512
+      },
+      {
+        "node": "dandong",
+        "period": 6,
+        "value": 57.64744186046512
+      }
+    ],
+    "eta_bar": [
+      {
+        "node": "dalian",
+        "period": 1,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 1,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 1,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 1,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 1,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 1,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 1,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 1,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 1,
+        "value": 225.12
+      },
+      {
+        "node": "dalian",
+        "period": 2,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 2,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 2,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 2,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 2,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 2,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 2,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 2,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 2,
+        "value": 225.12
+      },
+      {
+        "node": "dalian",
+        "period": 3,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 3,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 3,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 3,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 3,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 3,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 3,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 3,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 3,
+        "value": 225.12
+      },
+      {
+        "node": "dalian",
+        "period": 4,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 4,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 4,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 4,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 4,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 4,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 4,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 4,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 4,
+        "value": 225.12
+      },
+      {
+        "node": "dalian",
+        "period": 5,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 5,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 5,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 5,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 5,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 5,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 5,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 5,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 5,
+        "value": 225.12
+      },
+      {
+        "node": "dalian",
+        "period": 6,
+        "value": 379.26
+      },
+      {
+        "node": "yingkou",
+        "period": 6,
+        "value": 229.95
+      },
+      {
+        "node": "dandong",
+        "period": 6,
+        "value": 20.790000000000003
+      },
+      {
+        "node": "shenyang",
+        "period": 6,
+        "value": 387.52
+      },
+      {
+        "node": "anshan",
+        "period": 6,
+        "value": 38.080000000000005
+      },
+      {
+        "node": "changchun",
+        "period": 6,
+        "value": 302.40000000000003
+      },
+      {
+        "node": "jilin",
+        "period": 6,
+        "value": 53.76
+      },
+      {
+        "node": "tonghua",
+        "period": 6,
+        "value": 15.68
+      },
+      {
+        "node": "harbin",
+        "period": 6,
+        "value": 225.12
+      }
+    ],
+    "eta": [
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 1,
+        "value": 517.8231385858904
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 1,
+        "value": 88.37751544999242
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 1,
+        "value": 24.773630009334187
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 1,
+        "value": 392.91716369263384
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 1,
+        "value": 48.119792184163025
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 1,
+        "value": 325.7228570399026
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 1,
+        "value": 73.40668476380655
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 1,
+        "value": 15.77954842869994
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 1,
+        "value": 201.87728549117054
+      },
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 2,
+        "value": 423.2909422534603
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 2,
+        "value": 249.8225945529226
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 2,
+        "value": 19.30626195191687
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 2,
+        "value": 368.3529645806277
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 2,
+        "value": 43.55926020505946
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 2,
+        "value": 344.99703130877344
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 2,
+        "value": 48.44921915651134
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 2,
+        "value": 14.526849761473292
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 2,
+        "value": 143.771069499256
+      },
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 3,
+        "value": 506.63124482393545
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 3,
+        "value": 219.63486250271157
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 3,
+        "value": 26.35039955599992
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 3,
+        "value": 419.87525338243216
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 3,
+        "value": 52.885220491543365
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 3,
+        "value": 395.3644113562314
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 3,
+        "value": 57.18234481992242
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 3,
+        "value": 20.32367408467605
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 3,
+        "value": 182.34163856303257
+      },
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 4,
+        "value": 474.72870338200255
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 4,
+        "value": 161.86531736703517
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 4,
+        "value": 22.217176816373787
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 4,
+        "value": 470.05218586967067
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 4,
+        "value": 39.78318239079705
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 4,
+        "value": 280.19552416698605
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 4,
+        "value": 45.09861839960669
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 4,
+        "value": 14.604979152513287
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 4,
+        "value": 272.44585841606306
+      },
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 5,
+        "value": 446.83195367664314
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 5,
+        "value": 217.89457401824697
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 5,
+        "value": 15.60911392387312
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 5,
+        "value": 439.7574822350773
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 5,
+        "value": 27.037760099800643
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 5,
+        "value": 270.2938953684843
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 5,
+        "value": 45.85912528842878
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 5,
+        "value": 18.01087969930516
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 5,
+        "value": 235.74340115591858
+      },
+      {
+        "scenario": 0,
+        "node": "dalian",
+        "period": 6,
+        "value": 414.29260515226736
+      },
+      {
+        "scenario": 0,
+        "node": "yingkou",
+        "period": 6,
+        "value": 242.47803980227596
+      },
+      {
+        "scenario": 0,
+        "node": "dandong",
+        "period": 6,
+        "value": 17.971166576756882
+      },
+      {
+        "scenario": 0,
+        "node": "shenyang",
+        "period": 6,
+        "value": 429.02153059014273
+      },
+      {
+        "scenario": 0,
+        "node": "anshan",
+        "period": 6,
+        "value": 48.83729816576822
+      },
+      {
+        "scenario": 0,
+        "node": "changchun",
+        "period": 6,
+        "value": 300.17607522671074
+      },
+      {
+        "scenario": 0,
+        "node": "jilin",
+        "period": 6,
+        "value": 60.572407681811974
+      },
+      {
+        "scenario": 0,
+        "node": "tonghua",
+        "period": 6,
+        "value": 15.285167586865715
+      },
+      {
+        "scenario": 0,
+        "node": "harbin",
+        "period": 6,
+        "value": 271.4296795611987
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 1,
+        "value": 429.825723338979
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 1,
+        "value": 270.2289374616879
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 1,
+        "value": 22.23874281553457
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 1,
+        "value": 514.6268608791098
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 1,
+        "value": 35.329477193167264
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 1,
+        "value": 282.1896356498523
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 1,
+        "value": 47.39632145696932
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 1,
+        "value": 17.595979033373133
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 1,
+        "value": 197.0970502117036
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 2,
+        "value": 330.37091045619167
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 2,
+        "value": 263.40656741423993
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 2,
+        "value": 25.621994220186753
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 2,
+        "value": 432.0345377695224
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 2,
+        "value": 17.64548332156443
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 2,
+        "value": 244.72430944384953
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 2,
+        "value": 42.217841104250326
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 2,
+        "value": 11.893244940376645
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 2,
+        "value": 206.76066940576888
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 3,
+        "value": 517.1242893628119
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 3,
+        "value": 215.81274051230568
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 3,
+        "value": 17.73201647019983
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 3,
+        "value": 441.6815580159975
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 3,
+        "value": 38.60681189141128
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 3,
+        "value": 309.6987946613995
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 3,
+        "value": 46.37687994692601
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 3,
+        "value": 15.675281991369095
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 3,
+        "value": 244.68460198395314
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 4,
+        "value": 234.28357350922542
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 4,
+        "value": 155.89578301682604
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 4,
+        "value": 25.299602803705895
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 4,
+        "value": 452.8562265749142
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 4,
+        "value": 34.221302439069724
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 4,
+        "value": 240.6980678608466
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 4,
+        "value": 51.76500268036936
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 4,
+        "value": 11.936706417176392
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 4,
+        "value": 209.80747309494544
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 5,
+        "value": 504.49926935940687
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 5,
+        "value": 236.0239840828654
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 5,
+        "value": 25.63942731836324
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 5,
+        "value": 370.26601854291107
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 5,
+        "value": 40.893468919514106
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 5,
+        "value": 386.2150282165976
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 5,
+        "value": 39.395999384746375
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 5,
+        "value": 14.590309008778148
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 5,
+        "value": 218.05580191144236
+      },
+      {
+        "scenario": 1,
+        "node": "dalian",
+        "period": 6,
+        "value": 400.6488364172216
+      },
+      {
+        "scenario": 1,
+        "node": "yingkou",
+        "period": 6,
+        "value": 301.40313258177406
+      },
+      {
+        "scenario": 1,
+        "node": "dandong",
+        "period": 6,
+        "value": 23.640421280885093
+      },
+      {
+        "scenario": 1,
+        "node": "shenyang",
+        "period": 6,
+        "value": 271.44484794845533
+      },
+      {
+        "scenario": 1,
+        "node": "anshan",
+        "period": 6,
+        "value": 36.016276934378034
+      },
+      {
+        "scenario": 1,
+        "node": "changchun",
+        "period": 6,
+        "value": 248.35244623158712
+      },
+      {
+        "scenario": 1,
+        "node": "jilin",
+        "period": 6,
+        "value": 43.87840633383894
+      },
+      {
+        "scenario": 1,
+        "node": "tonghua",
+        "period": 6,
+        "value": 22.029859714251018
+      },
+      {
+        "scenario": 1,
+        "node": "harbin",
+        "period": 6,
+        "value": 177.2608079349483
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 1,
+        "value": 397.1910468072706
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 1,
+        "value": 197.05738944669966
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 1,
+        "value": 24.36995874832003
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 1,
+        "value": 414.93341579990874
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 1,
+        "value": 39.05048950108149
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 1,
+        "value": 297.7934113692191
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 1,
+        "value": 65.99273228702035
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 1,
+        "value": 12.758189160203557
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 1,
+        "value": 192.39032884072407
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 2,
+        "value": 294.5631981062279
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 2,
+        "value": 291.32578949802553
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 2,
+        "value": 19.569350994268156
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 2,
+        "value": 307.11729066733545
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 2,
+        "value": 34.88833698310226
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 2,
+        "value": 453.5786591428408
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 2,
+        "value": 52.604450792591436
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 2,
+        "value": 18.345664594504704
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 2,
+        "value": 246.0643465554132
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 3,
+        "value": 378.3207032875974
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 3,
+        "value": 198.0924992874852
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 3,
+        "value": 19.40000039031625
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 3,
+        "value": 360.0485200202504
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 3,
+        "value": 21.25415265156018
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 3,
+        "value": 459.05119335732195
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 3,
+        "value": 63.70383944538016
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 3,
+        "value": 16.044674485221613
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 3,
+        "value": 215.96440839292342
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 4,
+        "value": 319.3638943571033
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 4,
+        "value": 273.6231026947603
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 4,
+        "value": 20.013052812435323
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 4,
+        "value": 424.66554041903083
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 4,
+        "value": 27.512836799750644
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 4,
+        "value": 325.29026094309256
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 4,
+        "value": 75.26723807411562
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 4,
+        "value": 14.771723880334093
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 4,
+        "value": 261.13717160712844
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 5,
+        "value": 381.9401270421056
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 5,
+        "value": 280.7777129493419
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 5,
+        "value": 25.228351109795113
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 5,
+        "value": 392.29784034793255
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 5,
+        "value": 33.81819736495586
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 5,
+        "value": 319.7428916840445
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 5,
+        "value": 54.20910060467057
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 5,
+        "value": 13.74225523354395
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 5,
+        "value": 245.67250362933328
+      },
+      {
+        "scenario": 2,
+        "node": "dalian",
+        "period": 6,
+        "value": 412.05255371903274
+      },
+      {
+        "scenario": 2,
+        "node": "yingkou",
+        "period": 6,
+        "value": 189.0636664460697
+      },
+      {
+        "scenario": 2,
+        "node": "dandong",
+        "period": 6,
+        "value": 20.32643332046757
+      },
+      {
+        "scenario": 2,
+        "node": "shenyang",
+        "period": 6,
+        "value": 613.9199964015173
+      },
+      {
+        "scenario": 2,
+        "node": "anshan",
+        "period": 6,
+        "value": 44.301011454929906
+      },
+      {
+        "scenario": 2,
+        "node": "changchun",
+        "period": 6,
+        "value": 308.3136927198667
+      },
+      {
+        "scenario": 2,
+        "node": "jilin",
+        "period": 6,
+        "value": 80.75915768204588
+      },
+      {
+        "scenario": 2,
+        "node": "tonghua",
+        "period": 6,
+        "value": 14.251855569201663
+      },
+      {
+        "scenario": 2,
+        "node": "harbin",
+        "period": 6,
+        "value": 113.6021201363531
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 1,
+        "value": 234.61467337958194
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 1,
+        "value": 160.06768847578385
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 1,
+        "value": 21.871308915571696
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 1,
+        "value": 463.1915183142172
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 1,
+        "value": 21.55183114229775
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 1,
+        "value": 369.97090024223485
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 1,
+        "value": 40.5593562869449
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 1,
+        "value": 16.48417968404494
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 1,
+        "value": 246.00751616828515
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 2,
+        "value": 412.0530825450992
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 2,
+        "value": 230.2970902217274
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 2,
+        "value": 21.500999346973067
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 2,
+        "value": 299.17937909838787
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 2,
+        "value": 40.19889983725933
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 2,
+        "value": 361.6493750206352
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 2,
+        "value": 63.71874572598273
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 2,
+        "value": 23.873906716578162
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 2,
+        "value": 273.8914619683117
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 3,
+        "value": 434.3609678035326
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 3,
+        "value": 306.4543922131036
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 3,
+        "value": 21.792650301251363
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 3,
+        "value": 287.54935595717086
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 3,
+        "value": 21.021227326500465
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 3,
+        "value": 379.60700902277347
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 3,
+        "value": 59.86747306433982
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 3,
+        "value": 18.337123248911276
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 3,
+        "value": 210.13264067120488
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 4,
+        "value": 405.4159993580946
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 4,
+        "value": 316.5207299262563
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 4,
+        "value": 22.182240611298685
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 4,
+        "value": 301.06284051453974
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 4,
+        "value": 34.79407896572626
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 4,
+        "value": 386.1714900307016
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 4,
+        "value": 42.04073863678684
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 4,
+        "value": 7.584637213380008
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 4,
+        "value": 121.83696161794239
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 5,
+        "value": 277.69880211085865
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 5,
+        "value": 266.7141083754047
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 5,
+        "value": 21.157829989455887
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 5,
+        "value": 328.82799353664734
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 5,
+        "value": 28.292400191949206
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 5,
+        "value": 295.50592664411244
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 5,
+        "value": 52.04402775351734
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 5,
+        "value": 13.911525103455162
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 5,
+        "value": 214.07767732813653
+      },
+      {
+        "scenario": 3,
+        "node": "dalian",
+        "period": 6,
+        "value": 321.3711358347007
+      },
+      {
+        "scenario": 3,
+        "node": "yingkou",
+        "period": 6,
+        "value": 312.88017704752997
+      },
+      {
+        "scenario": 3,
+        "node": "dandong",
+        "period": 6,
+        "value": 10.948257802043148
+      },
+      {
+        "scenario": 3,
+        "node": "shenyang",
+        "period": 6,
+        "value": 396.99012509270693
+      },
+      {
+        "scenario": 3,
+        "node": "anshan",
+        "period": 6,
+        "value": 30.354287144475826
+      },
+      {
+        "scenario": 3,
+        "node": "changchun",
+        "period": 6,
+        "value": 345.13011420062736
+      },
+      {
+        "scenario": 3,
+        "node": "jilin",
+        "period": 6,
+        "value": 51.232138165838506
+      },
+      {
+        "scenario": 3,
+        "node": "tonghua",
+        "period": 6,
+        "value": 16.82784325857012
+      },
+      {
+        "scenario": 3,
+        "node": "harbin",
+        "period": 6,
+        "value": 249.05458928215978
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 1,
+        "value": 394.8344058348676
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 1,
+        "value": 275.52795083560727
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 1,
+        "value": 15.004235496940744
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 1,
+        "value": 461.2804724883723
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 1,
+        "value": 36.41253430365002
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 1,
+        "value": 325.4213719405482
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 1,
+        "value": 70.49584683830169
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 1,
+        "value": 19.206139841550023
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 1,
+        "value": 314.44339546836994
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 2,
+        "value": 208.54810825193215
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 2,
+        "value": 185.98900278127348
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 2,
+        "value": 24.79900916114411
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 2,
+        "value": 299.8879225274386
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 2,
+        "value": 36.689373129997634
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 2,
+        "value": 405.6923320883127
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 2,
+        "value": 63.164774292250506
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 2,
+        "value": 12.662325450995963
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 2,
+        "value": 245.55218118974543
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 3,
+        "value": 428.207333548429
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 3,
+        "value": 233.04863999283026
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 3,
+        "value": 20.372094633588574
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 3,
+        "value": 398.4912705898664
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 3,
+        "value": 26.65208769199247
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 3,
+        "value": 310.0514710653442
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 3,
+        "value": 43.363772074801695
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 3,
+        "value": 16.91423887976816
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 3,
+        "value": 244.44506436398282
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 4,
+        "value": 311.5398449762082
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 4,
+        "value": 258.12674591755206
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 4,
+        "value": 22.26946808084888
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 4,
+        "value": 384.2573693935398
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 4,
+        "value": 43.60774399538194
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 4,
+        "value": 283.48205579034084
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 4,
+        "value": 50.7047333750919
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 4,
+        "value": 15.923937459400793
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 4,
+        "value": 222.45355247864293
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 5,
+        "value": 465.8956415208945
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 5,
+        "value": 120.77225862444335
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 5,
+        "value": 19.499050966777897
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 5,
+        "value": 231.35284205687333
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 5,
+        "value": 34.072166076208404
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 5,
+        "value": 316.4451637844823
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 5,
+        "value": 53.52188412318814
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 5,
+        "value": 18.625744736874005
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 5,
+        "value": 238.02512379575612
+      },
+      {
+        "scenario": 4,
+        "node": "dalian",
+        "period": 6,
+        "value": 168.6285108239595
+      },
+      {
+        "scenario": 4,
+        "node": "yingkou",
+        "period": 6,
+        "value": 176.67780750685222
+      },
+      {
+        "scenario": 4,
+        "node": "dandong",
+        "period": 6,
+        "value": 27.083808647696372
+      },
+      {
+        "scenario": 4,
+        "node": "shenyang",
+        "period": 6,
+        "value": 505.0098951891038
+      },
+      {
+        "scenario": 4,
+        "node": "anshan",
+        "period": 6,
+        "value": 38.4786753538402
+      },
+      {
+        "scenario": 4,
+        "node": "changchun",
+        "period": 6,
+        "value": 205.52387983284223
+      },
+      {
+        "scenario": 4,
+        "node": "jilin",
+        "period": 6,
+        "value": 76.5413813617441
+      },
+      {
+        "scenario": 4,
+        "node": "tonghua",
+        "period": 6,
+        "value": 8.92808127829261
+      },
+      {
+        "scenario": 4,
+        "node": "harbin",
+        "period": 6,
+        "value": 236.38694830129862
+      }
+    ],
+    "scenario_probability": [
+      {
+        "scenario": 0,
+        "probability": 0.2
+      },
+      {
+        "scenario": 1,
+        "probability": 0.2
+      },
+      {
+        "scenario": 2,
+        "probability": 0.2
+      },
+      {
+        "scenario": 3,
+        "probability": 0.2
+      },
+      {
+        "scenario": 4,
+        "probability": 0.2
+      }
+    ]
+  },
+  "inventory": {
+    "I0": [
+      {
+        "node": "dalian",
+        "value": 500.0
+      },
+      {
+        "node": "yingkou",
+        "value": 500.0
+      },
+      {
+        "node": "dandong",
+        "value": 500.0
+      },
+      {
+        "node": "shenyang",
+        "value": 300.0
+      },
+      {
+        "node": "anshan",
+        "value": 300.0
+      },
+      {
+        "node": "changchun",
+        "value": 300.0
+      },
+      {
+        "node": "jilin",
+        "value": 300.0
+      },
+      {
+        "node": "tonghua",
+        "value": 300.0
+      },
+      {
+        "node": "harbin",
+        "value": 300.0
+      }
+    ],
+    "U_cap": [
+      {
+        "node": "dalian",
+        "value": 5000.0
+      },
+      {
+        "node": "yingkou",
+        "value": 5000.0
+      },
+      {
+        "node": "dandong",
+        "value": 5000.0
+      },
+      {
+        "node": "shenyang",
+        "value": 3000.0
+      },
+      {
+        "node": "anshan",
+        "value": 3000.0
+      },
+      {
+        "node": "changchun",
+        "value": 3000.0
+      },
+      {
+        "node": "jilin",
+        "value": 3000.0
+      },
+      {
+        "node": "tonghua",
+        "value": 3000.0
+      },
+      {
+        "node": "harbin",
+        "value": 3000.0
+      }
+    ],
+    "c_hold": [
+      {
+        "node": "dalian",
+        "value": 70.0
+      },
+      {
+        "node": "yingkou",
+        "value": 70.0
+      },
+      {
+        "node": "dandong",
+        "value": 70.0
+      },
+      {
+        "node": "shenyang",
+        "value": 35.0
+      },
+      {
+        "node": "anshan",
+        "value": 35.0
+      },
+      {
+        "node": "changchun",
+        "value": 35.0
+      },
+      {
+        "node": "jilin",
+        "value": 35.0
+      },
+      {
+        "node": "tonghua",
+        "value": 35.0
+      },
+      {
+        "node": "harbin",
+        "value": 35.0
+      }
+    ],
+    "c_lease": [
+      {
+        "node": "dalian",
+        "value": 2000.0
+      },
+      {
+        "node": "yingkou",
+        "value": 2000.0
+      },
+      {
+        "node": "dandong",
+        "value": 2000.0
+      },
+      {
+        "node": "shenyang",
+        "value": 4000.0
+      },
+      {
+        "node": "anshan",
+        "value": 4000.0
+      },
+      {
+        "node": "changchun",
+        "value": 4000.0
+      },
+      {
+        "node": "jilin",
+        "value": 4000.0
+      },
+      {
+        "node": "tonghua",
+        "value": 4000.0
+      },
+      {
+        "node": "harbin",
+        "value": 4000.0
+      }
+    ],
+    "c_spill": 100000.0
+  },
+  "Q_bar": [],
+  "_meta": {
+    "problem": "tslp_ecr_demand",
+    "formulation": "two_stage_DEP_D1_D2",
+    "variable_domain": "continuous_nonnegative_TEU",
+    "uncertainty": "export_demand_eta_omega",
+    "supply": "exogenous_deterministic_xi",
+    "instance": {
+      "profile": "stochastic_hl",
+      "T": 6,
+      "sdr": 1.0,
+      "lease_mult": 1.0,
+      "seed": 13,
+      "n_nodes": 9,
+      "n_arcs": 108,
+      "tot_xi": 9223.590697674419,
+      "tot_eta_bar": 9915.36
+    },
+    "n_scenarios": 5
+  }
+}
