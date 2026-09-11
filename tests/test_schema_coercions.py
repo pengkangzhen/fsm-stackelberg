@@ -174,3 +174,42 @@ class TestNestingDriftLift(unittest.TestCase):
         self.assertEqual(
             me.model_components.objective_function.expression, "c * y_in[h,t]")
         self.assertEqual(len(me.model_components.constraints), 1)
+
+
+class TestDuplicateConstraintNameDedup(unittest.TestCase):
+    def test_duplicate_nonnegativity_names_are_renumbered(self):
+        # Regression (2026-09-12, live on fam_H4_Omega10 freezes): the model
+        # split nonnegativity into six same-named constraints and the
+        # consistency validator rejected the formulation mid-campaign.
+        me = ModelExpertOutput.model_validate(
+            {
+                "knowledge_requests": [],
+                "model_components": {
+                    "decision_variables": [
+                        {"symbol": "y[h,t]", "type": "Continuous",
+                         "description": "d"}
+                    ],
+                    "objective_function": {
+                        "direction": "min",
+                        "expression": "c * y[h,t]",
+                        "description": "cost",
+                    },
+                    "constraints": [
+                        {"name": "Nonnegativity",
+                         "expression": "y[h,t] >= 0", "description": "d"},
+                        {"name": "Nonnegativity",
+                         "expression": "x[i,j,t] >= 0", "description": "d"},
+                        {"name": "Capacity",
+                         "expression": "y[h,t] <= 1", "description": "d"},
+                        {"name": "Nonnegativity",
+                         "expression": "I[i,t] >= 0", "description": "d"},
+                    ],
+                },
+            }
+        )
+        names = [c.name for c in me.model_components.constraints]
+        self.assertEqual(len(set(names)), len(names))
+        self.assertEqual(names[0], "Nonnegativity")
+        self.assertEqual(names[1], "Nonnegativity_2")
+        self.assertEqual(names[2], "Capacity")
+        self.assertEqual(names[3], "Nonnegativity_3")

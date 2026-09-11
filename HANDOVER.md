@@ -358,6 +358,28 @@
     provenance 段声明 hardened 实现 + no-plant gate + 快照/loop-token
     口径 + 序贯披露；失效模式节新增"Rank-invisible semantic faults"
     家族。编译 0 错误。Exp-C 与 Debate 仍未跑。
+  - **实例族扩展 DONE（2026-09-12 凌晨，me_force × 2 新实例，快照模式，¥4.15）**：
+    `fam_H4_Omega10`（T=4，|Ω|=10，seed7，z*=1,433,725.34）与
+    `fam_H6_Omega5`（T=6，|Ω|=5，seed13，z*=2,633,849.94），各 n=10 可用
+    seed × 3 序。**预注册 Exp-A 预期全部满足，且 smoke n=20 未分辨的
+    verified 子句在族上分辨到显著**：first-probe causal 三实例全满贯
+    （40/40）、reverse 全零；池化 causal vs reverse 20:0（p=2e-06）、
+    vs random 11:0（p=0.001）；**verified 池化 causal 0.60 vs reverse
+    0.20（8:0，p=0.0078）、vs random 0.25（8:1，p=0.039）**——smoke 的
+    causal=random 平局（9/20=9/20）不复现。causal 臂最省 token、random
+    臂最贵（未对齐多轮搜索）。对齐审计继续零例外。总结（含逐实例表与
+    保留意见）：`results/instance_family/summary.md`；机器可读 =
+    `results/p4_grid/summary.json` 的 `instances` 节。
+    - **两个新 schema 漂移类（战役间修复，均先于或后于数据窗口）**：
+      (i) 嵌套层级漂移（objective_function/constraints 被提到顶层）——
+      gate 期发现，before-validator 提升修复，先于战役任何格落地；
+      (ii) 重复约束名（非负性按变量族拆成同名多条）——战役中 4 次冻结
+      死亡按前向方差记账（H4_Ω10 3 次、H6_Ω5 1 次），战役后落
+      `ModelComponents.dedup_constraint_names` 去重强制器 + 回归测试；
+      套件 **94 passed**。
+    - 编排/汇总脚本已实例化：`run_p4_grid.py --prob_name/--state_root/
+      --prefix`（快照目录 `{prob}__{plant}_s{seed}` 实例限定），
+      `summarize_p4_grid.py` 增 `instances` 块。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -382,10 +404,10 @@
        deepseek-flash，gap 0.0%，Practical Optimal 一次命中）。
     5. ~~Phase-4 多 plant 网格 + 稿件 measured 表刷新~~ **done
        2026-09-12**（见上；总结 `results/p4_grid/summary.md`）。
-    6. **PRIORITY（下一步，二选一或按序）：** (a) me_force verified
-       加密到 n≈40–50/臂（分辨 0.45 vs 0.25，~¥5–8）；(b) 实例族扩展
-       （smoke 之外的 horizon/Ω 配置）换取外部效度。两案都在快照模式
-       下用 `scripts/run_p4_grid.py` 同法跑；先小试 2 seed。
+    6. ~~实例族扩展~~ **done 2026-09-12**（见上；verified 子句已显著，
+       n≈40 加密的必要性下降）。可选后续：(a) DE/PD 植物的实例族复制；
+       (b) 更大网络（节点/弧维度）实例；(c) me_force n→40 加密若仍想
+       压缩 smoke 上的置信区间。
     7. 已注册的设计修订（未实施）：DE 语义故障的 provenance 证据
        （rank 不可见类，见稿件失效模式节），战役间窗口才可改。
     8. Exp-B external (Debate/Reflexion) + Exp-C — 仍冻结，用户明示后
@@ -396,49 +418,41 @@
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：verified 功效加密（me_force n→40/臂）或实例族扩展——Phase-4 之后的下一步
+# 任务：Exp-B external（Debate/Reflexion）解冻评估 或 实例族×植物扩展
 
 ## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
 
-- 引擎：**官方 DeepSeek / deepseek-flash**（.env 的 DEEPSEEK_API_KEY，
-  余额 ~¥5.3）。快照模式编排脚本 `scripts/run_p4_grid.py` 可复用
-  （可续跑/按 seed 配对/牌价上界守卫 ≈ 实际×2–3）。
-- **Phase-4 多 plant 网格已完成**（2 plant × n=10 × 3 序，¥7.42）：
-  顺序效应 = **条件复制**——对齐完全决定 first-probe（3 plant × 40
-  random 臂零例外）；"causal>reverse" 仅在 rank 可见 a\* 时成立
-  （ME 嗅探✓；PD 表面✓但 reverse 构造性对齐；DE 语义不可见→证伪）；
-  verified 全植物无显著序效应（多轮路径主导）。必读：
-  `results/p4_grid/summary.md`。
-- 稿件 measured 表已刷新（tab:exp_ablation n=20、新增
-  tab:exp_multiplant、tab:exp_baselines n=20、provenance/失效模式节），
-  编译 0 错误。Exp-C 与 Debate 仍冻结。
+- 引擎：官方 DeepSeek / deepseek-flash（余额 ~¥10.5，用户已充值）。
+  编排 `scripts/run_p4_grid.py`（--prob_name/--state_root/--prefix，
+  快照实例限定）；汇总 `scripts/summarize_p4_grid.py`（plants+instances）。
+- **Exp-A 主结论已三向稳定**：(i) smoke n=20 first-probe 强确认；
+  (ii) Phase-4 多植物条件复制（对齐=rank 可见性，见
+  results/p4_grid/summary.md）；(iii) 实例族 n=10×2 verified 子句显著
+  （池化 vs reverse p=0.0078、vs random p=0.039，见
+  results/instance_family/summary.md）。稿件三张 measured 表已更新。
+- schema 漂移防御：嵌套提升 + 重复约束名去重两个 before-validator
+  已落地（94 tests passed）；未来战役冻结成功率应回升。
 
-## 本任务（二选一或按序；先小试 2 seed 再放量）
+## 本任务（按优先级，先小试 2 seed 再放量）
 
-A. **me_force verified 加密**：s24 起补冻结 + 三臂至 40 可用 seed/序
-   （分辨 verified 0.45 vs 0.25 需 n≈40–50；预算 ~¥5–8）。
-B. **实例族扩展**：generator 出 2–3 个新 horizon/Ω 配置，me_force
-   n=10/序/实例（外部效度优先）。
-
-两案都用 `scripts/run_p4_grid.py` 同法（--plant me_force_zero_sea
---short meforcezero 或加 --instance 支持）；汇总改
-`scripts/summarize_p4_grid.py` 的 PLANTS 表。先写序贯扩样声明再跑。
+1. **DE/PD 植物的实例族复制**（外部效度 × 条件复制的交叉）：deswap
+   与 pdbal 各跑 fam_H4_Omega10 n=6-10/序（pdbal 需先过 no-plant gate；
+   deswap 注意 z*-silent 类的实例依赖率）。
+2. 或 **Exp-B external 解冻**（Debate/Reflexion）——需用户明示后开。
 
 ## 硬约束
 
 - 不跑 Debate/Reflexion，除非用户明确要求。
 - 主指标 verified_attribution_hit；战役内设计不可变；序贯扩样须披露。
 - 引擎/运行方式不与旧战役混池；manifest 溯源（自动）。
-- 预算守卫：每格先 2 seed 试运行；总花费超预算帽即停并汇报（先查
-  GET api.deepseek.com/user/balance）。
-- 已注册未实施的设计修订（DE 语义 provenance 证据）属战役间窗口，
-  单独战役再做，不与本任务混。
+- 预算守卫：先查余额（GET api.deepseek.com/user/balance），战役硬帽
+  与用户确认；每格先 2 seed 试运行。
 
 ## 验收
 
 - [ ] 所选方案全量落盘 + summary（含配对检验）入 results/ 对应目录
-- [ ] 稿件对应表/prose 刷新（若数字变化）
-- [ ] HANDOVER 更新 + 未盲开 Debate / 未超预算 / 全部提交推送
+- [ ] 稿件对应表/prose 刷新；HANDOVER 更新
+- [ ] 未盲开 Debate / 未超预算 / 全部提交推送
 ```
 
 ---
@@ -731,7 +745,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
-| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`, `scripts/summarize_p4_grid.py`；总结 `results/p4_grid/summary.md` |
+| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`（实例化：--prob_name/--state_root/--prefix）, `scripts/summarize_p4_grid.py`；总结 `results/p4_grid/summary.md`、`results/instance_family/summary.md` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |

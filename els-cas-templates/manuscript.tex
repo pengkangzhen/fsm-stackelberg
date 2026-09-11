@@ -1377,6 +1377,51 @@ Plant ($a^{\star}$) & $\omega$ & First-probe & Verified attr.\ & SSR@$K$ & Loop 
 \end{tabular}
 \end{table}
 
+\paragraph{Instance-family replication (snapshot mode; $n{=}10$/order/instance).}
+Table~\ref{tab:exp_instances} extends the model-layer plant to two
+further instances exported from the same generator with a longer horizon,
+a larger scenario set, and fresh base-data seeds (\texttt{fam\_H4\_Omega10}
+and \texttt{fam\_H6\_Omega5}; each passed a no-plant end-to-end gate at
+relative gap $0.0\%$ before faulting). The first-probe clause replicates
+at full strength: causal attains $10/10$ on both instances and reverse
+$0/10$; pooled over instances, causal versus reverse is $20{:}0$
+discordant pairs ($p=2\times10^{-6}$) and causal versus random $11{:}0$
+($p=0.001$), with the alignment audit again showing zero exceptions. The
+clause the $n{=}20$ grid could not resolve is resolved on the family:
+verified attribution is strictly higher under causal ($0.70$ and $0.50$)
+than under reverse ($0.30$ and $0.10$) and random ($0.20$ and $0.30$);
+pooled discordant pairs give causal versus reverse $8{:}0$ ($p=0.008$)
+and causal versus random $8{:}1$ ($p=0.039$). The smoke instance's
+verified tie between causal and random ($9/20$ each) does not recur,
+supporting the mechanism reading that alignment raises the probability of
+early verified attribution while multi-round refutation remains a second,
+slower route---consistent with the random arm being the most expensive in
+loop tokens on both instances while causal is the cheapest. Network size
+(nodes/arcs) is unchanged across the family, so this replicates along the
+horizon and scenario-count axes; the plant axis remains conditionally
+replicated as above.
+
+\begin{table}[t]
+\centering
+\caption{Instance-family replication, model-layer plant ---
+\textbf{measured} (snapshot mode; $n{=}10$/order/instance; $K{=}3$; hybrid
+rank; DeepSeek \texttt{deepseek-flash}; loop-token accounting).}
+\label{tab:exp_instances}
+\begin{tabular}{@{}ll c c c c@{}}
+\toprule
+Instance & $\omega$ & First-probe & Verified attr.\ & SSR@$K$ & Loop tokens \\
+\midrule
+\texttt{H4\_Omega10} & causal  & $10/10$ & $7/10$ & $8/10$ & $0.62{\times}10^{5}$ \\
+($T{=}4$)            & random  & $4/10$ & $2/10$ & $6/10$ & $0.94{\times}10^{5}$ \\
+                     & reverse & $0/10$ & $3/10$ & $5/10$ & $0.90{\times}10^{5}$ \\
+\midrule
+\texttt{H6\_Omega5}  & causal  & $10/10$ & $5/10$ & $8/10$ & $0.67{\times}10^{5}$ \\
+($T{=}6$)            & random  & $5/10$ & $3/10$ & $5/10$ & $0.86{\times}10^{5}$ \\
+                     & reverse & $0/10$ & $1/10$ & $6/10$ & $0.69{\times}10^{5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Preliminary results (status-prior $\omega$; real $n{=}5$).}
 Table~\ref{tab:exp_ablation_prelim} records the earlier status-prior run
 (last-comply attribution). The first-probe ordering is already directional

@@ -286,6 +286,27 @@ class ModelComponents(BaseModel):
     objective_function: ObjectiveFunction
     constraints: List[Constraint]
 
+    @model_validator(mode="before")
+    @classmethod
+    def dedup_constraint_names(cls, data: Any) -> Any:
+        # LLMs periodically split nonnegativity into one constraint per
+        # variable family, all named identically (seen live on
+        # fam_H4_Omega10 / fam_H6_Omega5, deepseek-flash). The names are
+        # descriptive, not semantic — rename duplicates instead of rejecting
+        # an otherwise valid formulation.
+        if isinstance(data, dict) and isinstance(data.get("constraints"), list):
+            seen: set[str] = set()
+            for c in data["constraints"]:
+                if isinstance(c, dict) and isinstance(c.get("name"), str):
+                    name = c["name"]
+                    if name in seen:
+                        k = 2
+                        while f"{name}_{k}" in seen:
+                            k += 1
+                        c["name"] = f"{name}_{k}"
+                    seen.add(c["name"])
+        return data
+
     @model_validator(mode="after")
     def validate_consistency(self) -> "ModelComponents":
         for var in self.decision_variables:
