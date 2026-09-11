@@ -358,7 +358,7 @@
     provenance 段声明 hardened 实现 + no-plant gate + 快照/loop-token
     口径 + 序贯披露；失效模式节新增"Rank-invisible semantic faults"
     家族。编译 0 错误。Exp-C 与 Debate 仍未跑。
-  - **实例族扩展 DONE（2026-09-12 凌晨，me_force × 2 新实例，快照模式，¥4.15）**：
+  - **实例族扩展 DONE（2026-09-12 凌晨，me_force × 2 新实例，快照模式，¥5.14）**：
     `fam_H4_Omega10`（T=4，|Ω|=10，seed7，z*=1,433,725.34）与
     `fam_H6_Omega5`（T=6，|Ω|=5，seed13，z*=2,633,849.94），各 n=10 可用
     seed × 3 序。**预注册 Exp-A 预期全部满足，且 smoke n=20 未分辨的
@@ -422,7 +422,7 @@ Paste the block below into a new chat to continue.
 
 ## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
 
-- 引擎：官方 DeepSeek / deepseek-flash（余额 ~¥10.5，用户已充值）。
+- 引擎：官方 DeepSeek / deepseek-flash（余额 ~¥9.6）。
   编排 `scripts/run_p4_grid.py`（--prob_name/--state_root/--prefix，
   快照实例限定）；汇总 `scripts/summarize_p4_grid.py`（plants+instances）。
 - **Exp-A 主结论已三向稳定**：(i) smoke n=20 first-probe 强确认；
@@ -710,7 +710,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
 | Next experiment priority | **(a) me_force verified 加密 n≈40/臂 或 (b) 实例族扩展** | Phase-4 网格已完成（条件复制结论）；verified 0.45 vs 0.25 仍未分辨（p=0.125）；两案均快照模式先试 2 seed；DE 语义 provenance 修订属独立战役 |
-| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 两战役实战 ~¥14.6；余额 ¥5.27（2026-09-12）；GLM 已判不适用 |
+| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 + 实例族三战役实战 ~¥19.8；余额 ¥9.55（2026-09-12，用户已再充值）；GLM 已判不适用 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
