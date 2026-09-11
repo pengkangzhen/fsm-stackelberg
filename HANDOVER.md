@@ -319,7 +319,7 @@
     token。总花费 ¥7.22（n=20 全战役），余额 ¥12.85。总结（含检验
     与保留意见）：`results/exp_ab_ds41_snapshot/summary.md`。
     **推荐下一步**：Phase-4 多 plant 网格（优先于 n=40 加密单 plant）。
-  - **Phase-4 多 plant 归因网格 DONE（2026-09-12 凌晨，快照模式，¥6.92）**：
+  - **Phase-4 多 plant 归因网格 DONE（2026-09-12 凌晨，快照模式，¥7.42）**：
     `de_swap_demand_supply_source`（a\*=DE）与 `pd_comment_out_balance`
     （a\*=PD）各 n=10 可用 seed × {causal, reverse, random}，同引擎同法
     （官方 deepseek-flash，冻结+`--resume_from` 分臂，random 带
@@ -401,9 +401,9 @@ Paste the block below into a new chat to continue.
 ## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
 
 - 引擎：**官方 DeepSeek / deepseek-flash**（.env 的 DEEPSEEK_API_KEY，
-  余额 ~¥5.6）。快照模式编排脚本 `scripts/run_p4_grid.py` 可复用
+  余额 ~¥5.3）。快照模式编排脚本 `scripts/run_p4_grid.py` 可复用
   （可续跑/按 seed 配对/牌价上界守卫 ≈ 实际×2–3）。
-- **Phase-4 多 plant 网格已完成**（2 plant × n=10 × 3 序，¥6.92）：
+- **Phase-4 多 plant 网格已完成**（2 plant × n=10 × 3 序，¥7.42）：
   顺序效应 = **条件复制**——对齐完全决定 first-probe（3 plant × 40
   random 臂零例外）；"causal>reverse" 仅在 rank 可见 a\* 时成立
   （ME 嗅探✓；PD 表面✓但 reverse 构造性对齐；DE 语义不可见→证伪）；
@@ -696,7 +696,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
 | Next experiment priority | **(a) me_force verified 加密 n≈40/臂 或 (b) 实例族扩展** | Phase-4 网格已完成（条件复制结论）；verified 0.45 vs 0.25 仍未分辨（p=0.125）；两案均快照模式先试 2 seed；DE 语义 provenance 修订属独立战役 |
-| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 两战役实战 ~¥14.1；余额 ~¥5.6（2026-09-12）；GLM 已判不适用 |
+| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 两战役实战 ~¥14.6；余额 ¥5.27（2026-09-12）；GLM 已判不适用 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
