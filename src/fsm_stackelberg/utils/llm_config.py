@@ -36,7 +36,7 @@ PROVIDER_ENV = {
 }
 
 PROVIDER_MODELS = {
-    "DeepSeek": ["deepseek-v4-pro", "deepseek-v4-flash"],
+    "DeepSeek": ["deepseek-flash", "deepseek-v4-pro", "deepseek-v4-flash"],
     "OpenRouter": ["qwen/qwen3.5-plus-02-15","qwen/qwen3.6-plus-preview:free", "deepseek/deepseek-v3.2", "minimax/minimax-m2.5:free", "z-ai/glm-5", "moonshotai/kimi-k2.5", "moonshotai/kimi-k2.6:free", "openai/gpt-oss-120b:free"],
     "MiniMax": ["MiniMax-M2.7", "MiniMax-M3"],
     "ZhipuAI": ["glm-5.3-flash", "glm-5", "glm-5.1"],
@@ -197,7 +197,9 @@ def get_llm(
     # - DashScope 百炼: enable_thinking (see Bailian OpenAI-compat sample)
     # Pipeline uses structured JSON across agents; thinking raises latency/cost and
     # often breaks json_mode. Default OFF; set FSM_ENABLE_THINKING=1 to force on.
-    is_deepseek_v4 = "deepseek" in model.lower() and "v4" in model.lower()
+    # V4.1 Flash's model id is `deepseek-flash` (no "v4" token) — match it too.
+    is_deepseek_flash = "deepseek" in model.lower() and model.lower().endswith("flash")
+    is_deepseek_v4 = ("deepseek" in model.lower() and "v4" in model.lower()) or is_deepseek_flash
     enable_thinking = os.getenv("FSM_ENABLE_THINKING", "").strip().lower() in {
         "1", "true", "yes", "on",
     }

@@ -608,7 +608,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
 | Next experiment priority | **DE contract E2E smoke** | Catalog/validator implemented; first verify one no-plant run is Practical Optimal. Do not claim the corrected v4 replay localized the original gap. |
-| 测试阶段 LLM 引擎 | **DashScope / deepseek-flash（V4.1）** | 2026-09-11 定 GLM-5.3-Flash → 实测 gate FAIL（前向 gap 17.6% + PD backward 超时，见 TL;DR）→ 回退 deepseek-flash；需先充值 DashScope；GLM 仅小上下文角色可选 |
+| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）** | 2026-09-11 用户改定官方端点（`.env` 旧 DEEPSEEK_API_KEY 已失效 401，待换新 key）；`deepseek-flash` 的 thinking 禁用分支已在 llm_config 修复；GLM 已判不适用；DashScope 为备选 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
