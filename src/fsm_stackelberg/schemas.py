@@ -399,6 +399,25 @@ class DiagnosisOutput(BaseModel):
     evidence: str = ""  # Specific observations that support the conclusion
 
 
+class DebateOutput(BaseModel):
+    """Structured output for one debate-panel voter.
+
+    Contract (agreed design note): a vote plus an argument only. Debaters
+    must not report confidence or probabilities — aggregation is majority
+    vote with a status-prior tie-break.
+    """
+
+    suspected_agent: str
+    argument: str = ""
+
+
+class ReflexionOutput(BaseModel):
+    """Structured output for the reflexion critique pass."""
+
+    suspected_agent: str
+    reflection: str = ""
+
+
 class LayerRankOutput(BaseModel):
     """Ordered layer ranking for evidence-informed Stackelberg commit.
 

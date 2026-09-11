@@ -1,10 +1,14 @@
 """DiagnosisAgent - LangChain implementation.
 
-Diagnoses execution failures and drives repair. Supports three modes:
+Diagnoses execution failures and drives repair. Supports five modes:
 - stackelberg: Inspection game — DiagnosisAgent commits a causal-order probing
   policy with executed refutation; accused agents are inspectees (default).
 - adversarial: Single-judge LLM accusation + accused-agent self-check (baseline).
 - sequential: Reverse-order backward_step chain handled by workflow routing (baseline).
+- debate: Three lens-diverse debaters vote {suspected_agent, argument};
+  majority wins, ties break to the status prior (external baseline).
+- reflexion: Single-judge attribution critiqued against episode memory
+  before confirmation (external baseline).
 """
 
 import json
@@ -18,10 +22,14 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.callbacks import get_openai_callback
 
-from ..schemas import DiagnosisOutput
+from ..schemas import DiagnosisOutput, DebateOutput, ReflexionOutput
 from ..prompts import (
     DIAGNOSIS_ROLE,
     DIAGNOSIS_PROMPT,
+    DEBATE_ROLE,
+    DEBATE_PROMPT,
+    REFLEXION_ROLE,
+    REFLEXION_PROMPT,
     get_diagnosis_prompt,
 )
 from ..utils.llm_config import get_llm, DEFAULT_PROVIDER, DEFAULT_MODEL
@@ -338,6 +346,14 @@ def diagnosis_agent_node(state: Dict) -> Dict:
             cleared_layers,
             refutation_log,
         ) = _stackelberg_diagnosis(
+            state, error_category, gurobi_status, error_info
+        )
+    elif diagnosis_mode == "debate":
+        error_agent, confidence, reason, metrics = _debate_diagnosis(
+            state, error_category, gurobi_status, error_info
+        )
+    elif diagnosis_mode == "reflexion":
+        error_agent, confidence, reason, metrics = _reflexion_diagnosis(
             state, error_category, gurobi_status, error_info
         )
     else:
@@ -698,22 +714,9 @@ def _adversarial_diagnosis(
         model=state.get("model"),
     )
 
-    # Helper function to escape curly braces for .format()
-    def _escape_braces(s: str) -> str:
-        """Escape curly braces in string to prevent .format() placeholder errors."""
-        return s.replace("{", "{{").replace("}", "}}")
-
-    # Format the prompt with enhanced context
-    task = DIAGNOSIS_PROMPT.format(
-        gurobi_status=gurobi_status,
-        stack_trace=state.get("stack_trace", "Not available"),
-        error_location=_escape_braces(json.dumps(context.get("error_location", {}), ensure_ascii=False, indent=2)),
-        python_code=context.get("agent_outputs", {}).get("python_developer", "Not available"),
-        model_expert_output=context.get("agent_outputs", {}).get("model_expert", "Not available"),
-        data_access_guide=_escape_braces(json.dumps(context.get("data_access_guide", {}), ensure_ascii=False, indent=2)),
-        error_key_analysis=_escape_braces(json.dumps(context.get("error_key_analysis", {}), ensure_ascii=False, indent=2)),
-        candidate_agents=candidate_agents,
-    )
+    # Format the prompt with the shared evidence kwargs
+    task = DIAGNOSIS_PROMPT.format(**_evidence_format_kwargs(
+        state, context, gurobi_status, candidate_agents))
 
     # Execute diagnosis with metrics tracking
     try:
@@ -745,6 +748,243 @@ def _adversarial_diagnosis(
     logger.info(f"DiagnosisAgent: tokens={metrics['total_tokens']}, duration={metrics['duration_s']:.2f}s")
 
     return error_agent, confidence, reason, metrics
+
+
+def _evidence_format_kwargs(
+    state: Dict,
+    context: Dict,
+    gurobi_status: str,
+    candidate_agents: List[str],
+) -> Dict[str, Any]:
+    """Format kwargs shared by every evidence-bearing diagnosis prompt."""
+
+    def _escape_braces(s: str) -> str:
+        return s.replace("{", "{{").replace("}", "}}")
+
+    return dict(
+        gurobi_status=gurobi_status,
+        stack_trace=state.get("stack_trace", "Not available"),
+        error_location=_escape_braces(
+            json.dumps(context.get("error_location", {}),
+                       ensure_ascii=False, indent=2)),
+        python_code=context.get("agent_outputs", {}).get(
+            "python_developer", "Not available"),
+        model_expert_output=context.get("agent_outputs", {}).get(
+            "model_expert", "Not available"),
+        data_access_guide=_escape_braces(
+            json.dumps(context.get("data_access_guide", {}),
+                       ensure_ascii=False, indent=2)),
+        error_key_analysis=_escape_braces(
+            json.dumps(context.get("error_key_analysis", {}),
+                       ensure_ascii=False, indent=2)),
+        candidate_agents=candidate_agents,
+    )
+
+
+# Three analytical lenses give the panel genuine diversity at temperature 0
+# (identical neutral prompts would return identical votes).
+DEBATE_LENSES = (
+    "Surface-evidence lens: start from the solver status, stack trace, and "
+    "error-key analysis; decide which layer's artifacts directly explain the "
+    "observed failure surface.",
+    "Formulation-consistency lens: cross-check the ModelExpert formulation "
+    "against the generated code and the balance/capacity structure; decide "
+    "whether the math, its code translation, or neither matches the failure.",
+    "Data-provenance lens: audit the data-access guide and parameter "
+    "sources; decide whether the right tables feed the right parameters "
+    "for the failing terms.",
+)
+
+
+def _aggregate_debate_votes(
+    votes: List[str],
+    candidate_agents: List[str],
+) -> Tuple[str, str]:
+    """Majority vote over valid votes; ties break to the status prior.
+
+    Design note (agreed): never trust LLM-reported confidence — the only
+    admissible aggregation is the mechanical vote count.
+    """
+    counts: Dict[str, int] = {}
+    for v in votes:
+        counts[v] = counts.get(v, 0) + 1
+    if not counts:
+        return candidate_agents[0], "no valid votes -> status prior"
+    best = max(counts.values())
+    winners = sorted(a for a, c in counts.items() if c == best)
+    if len(winners) == 1:
+        return winners[0], f"majority {best}/{len(votes)}"
+    return candidate_agents[0], f"tie {winners} -> status prior"
+
+
+def _build_reflexion_memory(state: Dict) -> str:
+    """Compact episode memory for the reflexion critique.
+
+    Prior accusations come from backtrack_history; every listed round was
+    followed by a repair attempt and re-solve after which the failure
+    persisted (otherwise no further diagnosis would run).
+    """
+    history = state.get("backtrack_history") or []
+    if not history:
+        return "(empty — this is the first diagnosis round of the episode)"
+    lines = []
+    for h in history:
+        lines.append(
+            f"- Round {h.get('retry_count')}: accused "
+            f"{h.get('error_agent')}; claimed reason: "
+            f"{str(h.get('reason'))[:160]}")
+    return ("The failure persisted after every accusation below "
+            f"(repair attempted, re-solve still failing):\n" + "\n".join(lines))
+
+
+def _debate_diagnosis(
+    state: Dict,
+    error_category: str,
+    gurobi_status: str,
+    error_info: str,
+) -> tuple:
+    """Debate baseline: three lens-diverse debaters vote, majority wins.
+
+    Each debater returns {suspected_agent, argument} only (no confidence);
+    aggregation is mechanical majority with status-prior tie-break. Invalid
+    votes (layer outside candidates) are dropped, not coerced.
+    """
+    start_time = time.time()
+    metrics = {"total_tokens": 0, "duration_s": 0.0,
+               "prompt_tokens": 0, "completion_tokens": 0}
+    candidate_agents = get_candidate_agents(gurobi_status)
+
+    if error_category == "syntax":
+        metrics["duration_s"] = time.time() - start_time
+        return ("python_developer", 1.0,
+                "Syntax errors are always caused by code generation issues",
+                metrics)
+
+    context = _build_diagnosis_context(state)
+    llm = get_llm(provider=state.get("provider"), model=state.get("model"),
+                  temperature=0)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{role}"),
+        ("human", "{task}"),
+    ])
+    chain = prompt | llm.with_structured_output(DebateOutput,
+                                                method="json_mode")
+    kwargs = _evidence_format_kwargs(state, context, gurobi_status,
+                                     candidate_agents)
+
+    votes, arguments = [], {}
+    for lens_id, lens in enumerate(DEBATE_LENSES, start=1):
+        task = DEBATE_PROMPT.format(lens_id=lens_id, lens=lens, **kwargs)
+        try:
+            with get_openai_callback() as cb:
+                out: DebateOutput = invoke_structured(chain, {
+                    "role": DEBATE_ROLE,
+                    "task": task,
+                }, node=f"diagnosis_debate_d{lens_id}")
+            metrics["total_tokens"] += cb.total_tokens
+            if out.suspected_agent in candidate_agents:
+                votes.append(out.suspected_agent)
+                arguments[out.suspected_agent] = out.argument
+            else:
+                logger.warning(
+                    "Debater %d returned invalid layer %r — vote dropped",
+                    lens_id, out.suspected_agent)
+        except Exception as e:
+            logger.error("Debater %d failed: %s", lens_id, e)
+
+    error_agent, note = _aggregate_debate_votes(votes, candidate_agents)
+    top_arg = (arguments.get(error_agent) or "")[:200]
+    share = (votes.count(error_agent) / len(votes)) if votes else 0.0
+    metrics["duration_s"] = time.time() - start_time
+    logger.info("DiagnosisAgent (debate): votes=%s -> %s (%s)",
+                votes, error_agent, note)
+    return error_agent, share, f"debate: {note}; votes={votes}; arg: {top_arg}", metrics
+
+
+def _reflexion_diagnosis(
+    state: Dict,
+    error_category: str,
+    gurobi_status: str,
+    error_info: str,
+) -> tuple:
+    """Reflexion baseline: initial single-judge call, then a reflection pass.
+
+    The critique sees the episode memory (prior accusations whose repairs
+    failed) and may revise the initial attribution. Revision uses the
+    argument, never a self-reported confidence.
+    """
+    start_time = time.time()
+    metrics = {"total_tokens": 0, "duration_s": 0.0,
+               "prompt_tokens": 0, "completion_tokens": 0}
+    candidate_agents = get_candidate_agents(gurobi_status)
+
+    if error_category == "syntax":
+        metrics["duration_s"] = time.time() - start_time
+        return ("python_developer", 1.0,
+                "Syntax errors are always caused by code generation issues",
+                metrics)
+
+    context = _build_diagnosis_context(state)
+    llm = get_llm(provider=state.get("provider"), model=state.get("model"),
+                  temperature=0)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "{role}"),
+        ("human", "{task}"),
+    ])
+    kwargs = _evidence_format_kwargs(state, context, gurobi_status,
+                                     candidate_agents)
+
+    # Initial judgement: same single-judge call as the adversarial baseline.
+    initial_chain = prompt | llm.with_structured_output(
+        DiagnosisOutput, method="json_mode")
+    try:
+        with get_openai_callback() as cb:
+            initial: DiagnosisOutput = invoke_structured(initial_chain, {
+                "role": DIAGNOSIS_ROLE,
+                "task": DIAGNOSIS_PROMPT.format(**kwargs),
+            }, node="diagnosis_reflexion_initial")
+        metrics["total_tokens"] += cb.total_tokens
+        initial_agent = (initial.suspected_agent
+                         if initial.suspected_agent in candidate_agents
+                         else candidate_agents[0])
+        initial_reason = initial.reason
+        initial_confidence = initial.confidence
+    except Exception as e:
+        logger.error("Reflexion initial call failed: %s", e)
+        initial_agent, initial_reason = candidate_agents[0], f"initial failed: {e}"
+        initial_confidence = 0.5
+
+    # Reflection pass over the episode memory.
+    reflexion_task = REFLEXION_PROMPT.format(
+        memory=_build_reflexion_memory(state),
+        initial_suspect=initial_agent,
+        initial_reason=str(initial_reason)[:300],
+        **kwargs,
+    )
+    reflexion_chain = prompt | llm.with_structured_output(
+        ReflexionOutput, method="json_mode")
+    try:
+        with get_openai_callback() as cb:
+            critique: ReflexionOutput = invoke_structured(reflexion_chain, {
+                "role": REFLEXION_ROLE,
+                "task": reflexion_task,
+            }, node="diagnosis_reflexion_critique")
+        metrics["total_tokens"] += cb.total_tokens
+        if critique.suspected_agent in candidate_agents:
+            error_agent = critique.suspected_agent
+        else:
+            logger.warning("Reflexion returned invalid layer %r — keeping initial",
+                           critique.suspected_agent)
+            error_agent = initial_agent
+        reason = (f"reflexion: initial={initial_agent} -> final={error_agent}; "
+                  f"critique: {critique.reflection[:200]}")
+    except Exception as e:
+        logger.error("Reflexion critique failed: %s", e)
+        error_agent = initial_agent
+        reason = f"reflexion critique failed, kept initial {initial_agent}: {e}"
+
+    metrics["duration_s"] = time.time() - start_time
+    return error_agent, initial_confidence, reason, metrics
 
 
 def _build_agent_outputs(state: Dict) -> Dict:

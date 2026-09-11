@@ -78,6 +78,10 @@ DIAGNOSIS_ROLE = _load_prompt("diagnosis_agent", "role")
 DIAGNOSIS_PROMPT = _load_prompt("diagnosis_agent", "forward")
 LAYER_RANK_PROMPT = _load_prompt("diagnosis_agent", "rank")
 BACKWARD_STEP_PROMPT = _load_prompt("diagnosis_agent", "backward_step")
+DEBATE_ROLE = _load_prompt("diagnosis_agent", "debate_role")
+DEBATE_PROMPT = _load_prompt("diagnosis_agent", "debate")
+REFLEXION_ROLE = _load_prompt("diagnosis_agent", "reflexion_role")
+REFLEXION_PROMPT = _load_prompt("diagnosis_agent", "reflexion")
 
 
 def get_diagnosis_prompt() -> ChatPromptTemplate:
@@ -108,6 +112,10 @@ __all__ = [
     # DiagnosisAgent
     "DIAGNOSIS_ROLE",
     "DIAGNOSIS_PROMPT",
+    "DEBATE_ROLE",
+    "DEBATE_PROMPT",
+    "REFLEXION_ROLE",
+    "REFLEXION_PROMPT",
     "LAYER_RANK_PROMPT",
     "BACKWARD_STEP_PROMPT",  # Legacy, kept for backward compatibility
     "get_diagnosis_prompt",

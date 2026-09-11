@@ -293,9 +293,12 @@ def main():
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="LLM model to use")
     parser.add_argument("--max_retries", type=int, default=3, help="Maximum backtrack retries")
     parser.add_argument("--diagnosis_mode", type=str, default="stackelberg",
-                        choices=["stackelberg", "adversarial", "sequential"],
+                        choices=["stackelberg", "adversarial", "sequential",
+                                 "debate", "reflexion"],
                         help="Diagnosis mode: stackelberg (inspection game, default), "
-                             "adversarial (single-judge baseline), or sequential (reverse-order baseline)")
+                             "adversarial (single-judge baseline), sequential "
+                             "(reverse-order baseline), debate (3-voter panel), "
+                             "or reflexion (self-critique with episode memory)")
     parser.add_argument("--probe_order", type=str, default="causal",
                         choices=["causal", "reverse", "random"],
                         help="Stackelberg commitment-order ablation: causal (default), reverse, or random")

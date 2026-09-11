@@ -77,7 +77,8 @@ def should_diagnose(state: AgentState) -> Literal["success", "diagnose"]:
 def route_after_diagnosis(state: AgentState) -> str:
     """Route after DiagnosisAgent based on diagnosis_mode.
 
-    Stackelberg / adversarial: Route to the probed (accused) agent's backward_step
+    Stackelberg / adversarial / debate / reflexion: Route to the probed
+    (accused) agent's backward_step
     Sequential: Start sequential backward_step chain from python_developer
 
     Args:
@@ -99,8 +100,8 @@ def route_after_diagnosis(state: AgentState) -> str:
         logger.warning("No error_agent from diagnosis, ending workflow")
         return "end"
 
-    # Stackelberg inspection and adversarial baseline: probe/accuse one agent
-    if diagnosis_mode in ("stackelberg", "adversarial"):
+    # Probe/accuse one agent (stackelberg + accusation-style baselines)
+    if diagnosis_mode in ("stackelberg", "adversarial", "debate", "reflexion"):
         if error_agent == "data_engineer":
             return "data_engineer_backward"
         elif error_agent == "model_expert":
@@ -118,7 +119,8 @@ def route_after_backward(state: AgentState) -> str:
     If error_resolved (inspectee complied), resume downstream — the subsequent
     solver run is the executed refutation of the repair.
     If not resolved (inspectee deflected):
-      - stackelberg / adversarial: re-enter diagnosis (next causal probe / re-accuse)
+      - stackelberg / adversarial / debate / reflexion: re-enter diagnosis
+        (next causal probe / re-accuse / re-vote / re-reflect)
       - sequential: try the next upstream agent in the reverse chain
 
     Args:
@@ -152,8 +154,8 @@ def route_after_backward(state: AgentState) -> str:
             return "solver_executor"
 
     # Error not resolved (deflection / rebuttal)
-    if diagnosis_mode in ("stackelberg", "adversarial"):
-        # Re-enter diagnosis: Stackelberg picks NextCausalLayer; adversarial re-accuses
+    if diagnosis_mode in ("stackelberg", "adversarial", "debate", "reflexion"):
+        # Re-enter diagnosis: Stackelberg picks NextCausalLayer; baselines re-accuse
         if retry_count >= max_retries:
             logger.warning("Max retries exceeded after failed backward step")
             return "end"
