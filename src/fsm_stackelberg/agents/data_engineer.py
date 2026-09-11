@@ -28,6 +28,7 @@ from ..data.data_contract import (
     format_contract_feedback,
     validate_data_engineer_output,
 )
+from ..utils.llm_invoke import invoke_structured
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +96,10 @@ def data_engineer_node(state: Dict) -> Dict:
     try:
         for contract_attempts in range(1, _MAX_CONTRACT_ATTEMPTS + 1):
             with get_openai_callback() as cb:
-                result = chain.invoke({
+                result = invoke_structured(chain, {
                     "role": DATA_ENGINEER_ROLE,
                     "task": task,
-                })
+                }, node="data_engineer_forward")
             total_prompt_tokens += cb.prompt_tokens
             total_completion_tokens += cb.completion_tokens
             total_tokens += cb.total_tokens
@@ -276,10 +277,10 @@ def data_engineer_backward_step(state: Dict) -> Dict:
 
     # Execute
     with get_openai_callback() as cb:
-        result: BackwardStepOutput = chain.invoke({
+        result: BackwardStepOutput = invoke_structured(chain, {
             "role": DATA_ENGINEER_ROLE,
             "task": task,
-        })
+        }, node="data_engineer_backward")
 
     duration = time.time() - start_time
     logger.info(f"DataEngineer backward_step: is_caused_by_you={result.is_caused_by_you}, tokens={cb.total_tokens}")

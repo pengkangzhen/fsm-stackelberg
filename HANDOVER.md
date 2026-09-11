@@ -244,6 +244,32 @@
     deepseek-flash ¥1/¥4 空闲（高峰×2）· 混元 3.0 ¥1.2/¥4（SWE-bench
     Verified 74.4%，首开送 1M tokens，3 月曾涨价 463%）· Kimi K3
     ¥20/¥100 · 豆包 Pro ¥6–15/¥26–30。
+  - **GLM-5.3-Flash 实弹测试 DONE（2026-09-11 晚）：gate FAIL，引擎结论
+    变更为"不适用于全管线"。** 用户提供了智谱 key，连续三次 no-plant
+    E2E gate（`results/mako/ZhipuAI_glm-5.3-flash/.../glm53flash_noplant_gate/`，
+    三次运行已自动归档）：
+    1. 尝试 1：DE forward 3×APITimeout @300s 默认超时 → 提高超时修复；
+    2. 尝试 2：ME forward 返回 **None**（GLM 未发起 function call，
+       langchain 解析器对无工具调用返回 None）→ 节点裸崩 → 修复见下；
+    3. 尝试 3（最远，2h）：DE✓（722s，契约一次过）→ ME 三轮渐进知识✓
+       （期间 None-retry 实战命中并救回一次）→ PD✓ → solver
+       **OPTIMAL-but-gap 17.6%**（obj 1,144,989 < z* 1,389,581，比最优
+       还便宜 = 约束缺失，Spurious Optimal 模式）→ 诊断环：ME comply
+       被执行反驳推翻 → 探 PD → **PD backward 3×APITimeout @900s 崩溃**。
+    **判定**：(i) 无种植故障前向建模 gap 17.6%（DashScope
+    deepseek-v4-flash 历史 smoke 直接命中 z*）；(ii) always-on thinking
+    （API 1210 不允许关闭，仅 low/high/max）使单次调用 12–18 分钟，PD
+    backward 大 prompt 在 900s 内无法完成非流式返回；(iii) 成本本身极低
+    （~¥0.5–1/次），但墙钟与可靠性不可行。**建议主引擎回到
+    DashScope / deepseek-flash（V4.1）**，GLM-5.3-Flash 降级为"已评估、
+    不适用于全管线"（跨模型块若仍想用 GLM 需先解决流式/超时工程）。
+    **本次留下的 harness 加固（引擎无关，全部保留）**：
+    `llm_config`：ZhipuAI GLM → `thinking_effort=low` + 900s 超时；
+    新增 `utils/llm_invoke.invoke_structured`：结构化输出返回 None 时
+    附加"必须调用工具"提醒重试一次，仍 None 则抛清晰错误——8 个调用点
+    （DE/ME/PD forward+backward、rank、diagnosis）全部接入。
+    快照机制实弹验证**延后**（GLM 跑不到 backward 修复环；离线测试
+    10/10 已覆盖机械正确性，live 验证随 deepseek gate 一并做）。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -280,11 +306,13 @@
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：用 GLM-5.3-Flash 跑 no-plant E2E gate，随后快照模式扩 n 网格
+# 任务：充值 DashScope 后用 deepseek-flash 跑 no-plant E2E gate，随后快照模式扩 n
 
-快照冻结/恢复（--snapshot_dir / --resume_from）、schema 加固、CLI 修复
-均已合入 main（91 tests passed）。测试阶段引擎已定：ZhipuAI /
-glm-5.3-flash（2026-09-11 用户拍板，见 HANDOVER TL;DR）。先读：
+快照冻结/恢复（--snapshot_dir / --resume_from）、schema 加固、CLI 修复、
+None-retry 加固均已合入 main。GLM-5.3-Flash 已实测 gate FAIL（2026-09-11，
+见 TL;DR：前向 gap 17.6% + PD backward 3×超时）——引擎回退 DashScope /
+deepseek-flash（V4.1；旧名 deepseek-v4-flash 已路由到 V4.1 并按新价）。
+智谱 key 已在 .env（ZHIPUAI_*），勿再用它跑全管线。先读：
 
 1. `HANDOVER.md` TL;DR（快照机制 + 引擎决策 + 彩排结论）
 2. `src/fsm_stackelberg/graph/snapshot.py`（冻结/恢复语义与 manifest 字段）
@@ -294,29 +322,27 @@ glm-5.3-flash（2026-09-11 用户拍板，见 HANDOVER TL;DR）。先读：
 ## 硬约束
 
 - **不要**跑 Debate/Reflexion，除非用户明确要求。
-- **预算未确认前勿调任何 API**（DashScope 余额 2026-08-29 已空；
-  GLM 需另充智谱账户，充值后由用户明确告知）。
+- **预算未确认前勿调任何 API**（DashScope 余额 2026-08-29 已空，需用户
+  充值并明确告知；智谱 key 在 .env 但引擎已判定不适用）。
 - 主指标：`verified_attribution_hit`；维持预注册纪律（战役间可改设计，
   战役内不可）。
-- **引擎切换 = 新战役冻结**：GLM 格子不与旧 DashScope
-  deepseek-v4-flash n=3 混池；每个对比块内 provider/model 固定并在
-  run_manifest 报告。
-- 预算：GLM-5.3-Flash 平价 ¥0.8/¥2.8（缓存命中 ¥0.23）；每格先小
-  smoke 后网格；沿用每网格 ¥10 熔断。
+- **引擎切换 = 新战役冻结**：deepseek-flash（V4.1）格子不与旧
+  deepseek-v4-flash-0731 n=3 混池（权重已换代）；每个对比块内
+  provider/model 固定并在 run_manifest 报告。
+- 预算：deepseek-flash 空闲 ¥1/¥4（缓存命中 ¥0.02；高峰工作日
+  9–12/14–18 翻倍）；**网格排夜间/周末**；沿用每网格 ¥10 熔断。
 
-## 立刻做（用户确认已充值智谱后）
+## 立刻做（用户确认已充值 DashScope 后）
 
-1. `.env` 加 `ZHIPUAI_API_KEY`（如无 `ZHIPUAI_BASE_URL` 则默认
-   `https://open.bigmodel.cn/api/paas/v4`）。
-2. **No-plant E2E gate（全 live，唯一 gate，不可用快照替代）**：
-   uv run python -m fsm_stackelberg.main --dataset prob_tslp_ecr_demand \
-     --prob_name smoke_H4_Omega5 --provider ZhipuAI --model glm-5.3-flash \
+1. **No-plant E2E gate（全 live，唯一 gate，不可用快照替代）**：
+   MAKO_RESULT_SUFFIX=ds41_noplant_gate uv run python -m fsm_stackelberg.main \
+     --dataset prob_tslp_ecr_demand --prob_name smoke_H4_Omega5 \
+     --provider DashScope --model deepseek-flash \
      --diagnosis_mode stackelberg --probe_order causal --knowledge progressive \
      --max_retries 3 --omega_source evidence_rank --rank_method hybrid
    验收：Practical Optimal（obj ≈ z* ≈ 1.389581e6，相对 gap < 1e-2）。
-   若结构化输出失败/卡住：智谱已走 function_calling（llm_config
-   `_fc_providers`）；仍异常则参考 DashScope-GLM 分支加
-   enable_thinking=False，并把处理写回 HANDOVER。
+   （若百炼模型 ID 未同步 V4.1，用 deepseek-v4-flash——官方已路由到
+   V4.1 并按 Flash 价计费，核实后把实际 model id 写回 HANDOVER。）
 3. **Gate PASS → 扩 n 走快照模式**（每个 plant × seed 冻结一次）：
    冻结：... --inject me_force_zero_sea --true_root_cause model_expert \
             --snapshot_dir results/snapshots/<plant>_s<seed>
@@ -582,7 +608,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
 | Next experiment priority | **DE contract E2E smoke** | Catalog/validator implemented; first verify one no-plant run is Practical Optimal. Do not claim the corrected v4 replay localized the original gap. |
-| 测试阶段 LLM 引擎 | **ZhipuAI / glm-5.3-flash** | 2026-09-11 用户拍板（平价 ¥0.8/¥2.8，能力档足够）；备选 deepseek-flash（分时段计价，避开工作日 9–12/14–18）；混元 3.0 仅为免费额度/第三 provider 备选 |
+| 测试阶段 LLM 引擎 | **DashScope / deepseek-flash（V4.1）** | 2026-09-11 定 GLM-5.3-Flash → 实测 gate FAIL（前向 gap 17.6% + PD backward 超时，见 TL;DR）→ 回退 deepseek-flash；需先充值 DashScope；GLM 仅小上下文角色可选 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---

@@ -24,6 +24,7 @@ from ..utils.utils import record_agent_output, get_last_forward_output
 from ..utils.workflow_failure import WorkflowNodeError, build_failure_state
 from ..utils.run_log import record_step_event, save_backward_artifact
 from ..utils.code_sanitize import unshadow_gurobi_model_m
+from ..utils.llm_invoke import invoke_structured
 from ..data.data_contract import (
     build_data_catalog,
     build_pd_data_access_context,
@@ -144,10 +145,10 @@ def python_developer_node(state: Dict) -> Dict:
     cb = None
     try:
         with get_openai_callback() as cb:
-            result = chain.invoke({
+            result = invoke_structured(chain, {
                 "role": PYTHON_DEVELOPER_ROLE,
                 "task": task,
-            })
+            }, node="python_developer_forward")
     except Exception as exc:
         logger.exception("PythonDeveloper failed during forward step.")
         raise WorkflowNodeError(
@@ -300,10 +301,10 @@ def python_developer_backward_step(state: Dict) -> Dict:
 
     # Execute
     with get_openai_callback() as cb:
-        result: BackwardStepOutput = chain.invoke({
+        result: BackwardStepOutput = invoke_structured(chain, {
             "role": PYTHON_DEVELOPER_ROLE,
             "task": task,
-        })
+        }, node="python_developer_backward")
 
     duration = time.time() - start_time
     logger.info(f"PythonDeveloper backward_step: is_caused_by_you={result.is_caused_by_you}, tokens={cb.total_tokens}")

@@ -26,6 +26,7 @@ from ..prompts import (
 )
 from ..utils.llm_config import get_llm, DEFAULT_PROVIDER, DEFAULT_MODEL
 from ..utils.run_log import record_step_event
+from ..utils.llm_invoke import invoke_structured
 
 logger = logging.getLogger(__name__)
 
@@ -717,10 +718,10 @@ def _adversarial_diagnosis(
     # Execute diagnosis with metrics tracking
     try:
         with get_openai_callback() as cb:
-            diagnosis: DiagnosisOutput = chain.invoke({
+            diagnosis: DiagnosisOutput = invoke_structured(chain, {
                 "role": DIAGNOSIS_ROLE,
                 "task": task,
-            })
+            }, node="diagnosis")
         metrics["total_tokens"] = cb.total_tokens
 
         error_agent = diagnosis.suspected_agent

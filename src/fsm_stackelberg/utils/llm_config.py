@@ -166,9 +166,19 @@ def get_llm(
     # GLM-5.1 on DashScope: thinking mode is on by default but incompatible
     # with function_calling (tool_choice=required). Disable it explicitly.
     # GLM-5.2 on DashScopeGLM: same issue — disable thinking.
+    # GLM-5.3-Flash on ZhipuAI direct: thinking CANNOT be disabled (API 1210:
+    # "该模型始终思考，不支持关闭思考；请使用 low、high 或 max") — set the
+    # lowest effort instead; verified 2026-09-11 that thinking_effort=low
+    # works with function_calling structured output.
     is_glm_model = "glm" in model.lower()
     if provider in ("DashScope", "DashScopeGLM") and is_glm_model:
         kwargs["extra_body"] = {"enable_thinking": False}
+    if provider == "ZhipuAI" and is_glm_model:
+        kwargs["extra_body"] = {"thinking_effort": "low"}
+        # Always-on thinking + big blackboard prompts exceed the default
+        # 300s read timeout (gate attempt 1: 3x APITimeoutError on the DE
+        # forward, 2026-09-11). Non-streaming calls need the longer budget.
+        kwargs["request_timeout"] = 900
 
     # Use function_calling for providers that produce invalid JSON under json_mode
     _fc_providers = {"ZhipuAI", "MiMo", "DashScopeGLM"}

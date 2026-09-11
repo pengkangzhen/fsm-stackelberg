@@ -19,6 +19,7 @@ from langchain_community.callbacks import get_openai_callback
 from ..prompts import DIAGNOSIS_ROLE, LAYER_RANK_PROMPT, get_diagnosis_prompt
 from ..schemas import LayerRankOutput
 from ..utils.llm_config import DEFAULT_MODEL, DEFAULT_PROVIDER, get_llm
+from ..utils.llm_invoke import invoke_structured
 
 logger = logging.getLogger(__name__)
 
@@ -284,10 +285,10 @@ def _llm_rank(state: dict, *, method_label: str = "llm_rank") -> RankResult:
     raw: dict[str, Any] = {}
     try:
         with get_openai_callback() as cb:
-            out: LayerRankOutput = chain.invoke({
+            out: LayerRankOutput = invoke_structured(chain, {
                 "role": DIAGNOSIS_ROLE,
                 "task": task,
-            })
+            }, node="rank")
         tokens = int(cb.total_tokens or 0)
         raw = out.model_dump() if hasattr(out, "model_dump") else dict(out)
         # Ignore any probability / confidence fields if present in raw dump.
