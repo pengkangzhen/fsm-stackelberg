@@ -190,6 +190,34 @@ def test_pd_comment_out_balance_guard_when_no_match():
         apply_plant({"python_code": clean_code}, "pd_comment_out_balance")
 
 
+_PD_CODE_MULTILINE = """\
+import gurobipy as gp
+
+model = gp.Model("dep")
+model.addConstr(
+    I[h, t] == I_prev + inflow - outflow,
+    name=f"Hub_Inventory_Balance[{h},{t}]")
+model.addConstr(x >= 0, name="Nonnegativity")
+model.optimize()
+"""
+
+
+def test_pd_comment_out_balance_multiline_statement():
+    # Regression (2026-09-11): real deepseek-flash PD code splits the call
+    # across lines with the balance naming on the name= continuation line;
+    # the old line-level regex matched nothing and the plant refused every
+    # freeze attempt (p4_pdbal_freeze_s1..s5).
+    out = apply_plant({"python_code": _PD_CODE_MULTILINE},
+                      "pd_comment_out_balance")
+    code = out["python_code"]
+    lines = code.splitlines()
+    assert lines[3].lstrip().startswith("# model.addConstr(")
+    assert lines[4].lstrip().startswith("# ")
+    assert lines[5].lstrip().startswith('# name=f"Hub_Inventory_Balance')
+    assert lines[6].startswith("model.addConstr(x >= 0")  # untouched
+    compile(code, "<pd>", "exec")  # still syntactically valid
+
+
 def test_plant_target_layers():
     assert get_plant("me_force_zero_sea").target_layer == "model_expert"
     assert get_plant("de_swap_demand_supply_source").target_layer == "data_engineer"

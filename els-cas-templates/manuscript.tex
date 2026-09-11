@@ -1130,9 +1130,16 @@ explicitly. Every method receives the same retry budget $K$
 
 \paragraph{Injection protocol.}
 Ground-truth root causes $a^{\star}\in\{a_1,a_2,a_3\}$ are obtained by
-controlled injection: a defect is planted at an upstream layer (DataEngineer
-or ModelExpert) so that the surface symptom often appears downstream (e.g., a
-traceback or crash locus in generated code). This matches the motivation in
+controlled injection: a defect is planted at one of the three layers
+(DataEngineer, ModelExpert, or PythonDeveloper) so that the surface
+symptom often appears downstream (e.g., a traceback or crash locus in
+generated code, or a feasible-but-wrong optimum). The measured grids use
+three plants, one per layer: \texttt{me\_force\_zero\_sea}
+($a^{\star}$=ModelExpert), \texttt{pd\_comment\_out\_balance}
+($a^{\star}$=PythonDeveloper; balance constraints commented out of
+generated code), and \texttt{de\_swap\_demand\_supply\_source}
+($a^{\star}$=DataEngineer; a contract-valid semantic swap of demand and
+supply catalog sources). This matches the motivation in
 Section~\ref{sec:stackelberg} that failure evidence records a symptom locus,
 not a certified identity of $\ell^{\star}$. The label $a^{\star}$ is used only
 for evaluation, never in agent prompts.
@@ -1142,7 +1149,9 @@ At failure time every method reads the same blackboard (solver status, stack
 trace, agent input--output history). Repair uses the same agent
 \texttt{backward\_step} maps and the same re-solve verification path;
 methods differ only in how they select or order the implicated layer. No
-method receives privileged tools beyond its diagnosis policy.
+method receives privileged tools beyond its diagnosis policy. In snapshot
+mode (below) the same-blackboard promise is exact by construction: the
+failure state is frozen once per seed and all arms resume it verbatim.
 
 \subsection{Methods compared}
 \label{sec:exp_methods}
@@ -1208,11 +1217,17 @@ order exceeded $1/5$ in the ablation
 (Table~\ref{tab:exp_ablation_prelim})---and the recorded response was a
 redesign of the commitment apparatus (evidence-informed ranking plus
 verified attribution accounting), not a re-labelling of the old runs; the
-status-prior tables are retained below only as preliminary context. Under
-thin replication ($n{=}3$ per cell) we restrict ourselves to
-\emph{directional} language---consistent sign and ordering patterns across
-cells---and reserve confirmatory claims for the expanded grid; SSR is never
-interpreted in isolation from attribution (Section~\ref{sec:exp_metrics}).
+status-prior tables are retained below only as preliminary context. The
+grid was run under sequential disclosure: an $n{=}3$ feasibility pass, an
+interim inspection at $n{=}5$, and the expanded $n{=}20$ campaign with
+unchanged expectations; freeze-phase attempts that never produce a failure
+blackboard (data-contract rejections by the deterministic validator, or
+plants not expressed in the generated model) are reported as forward
+variance and replaced with fresh seeds, never silently dropped.
+Confirmatory claims below are restricted to the clauses the expanded grid
+can power (first-probe); verified-attribution contrasts that remain
+non-significant are stated as such. SSR is never interpreted in isolation
+from attribution (Section~\ref{sec:exp_metrics}).
 
 \paragraph{Provenance and implementation versions.}
 Every measured cell is produced by a single frozen implementation. Each run
@@ -1221,16 +1236,19 @@ terminal metrics) and a per-node event log (tokens, durations,
 comply--deflect responses); tables aggregate these records, and the
 manifests and event logs---not any intermediate summary file---are the
 authority for every number reported. Implementation versions are declared
-rather than silently mixed: the measured hybrid tables below predate a
-later hardening of the data layer, a deterministic catalog and validator
-constraining the data-access guide used in forward and backward passes.
-Because that hardening touches the same paths the diagnosis loop
-exercises, post-hardening replications are not assumed poolable with the
-current cells: the expanded grid re-establishes its tables under the
-hardened implementation, preceded by a no-plant end-to-end gate confirming
-that the un-faulted pipeline still terminates in \emph{Practical Optimal};
-each table carries the campaign, and hence the implementation freeze, it
-was produced under.
+rather than silently mixed. The measured tables below were produced under
+the hardened data layer (deterministic catalog and validator constraining
+the data-access guide in forward and backward passes), re-established
+after a no-plant end-to-end gate terminated in \emph{Practical Optimal}
+(relative gap below $10^{-2}$), on provider DeepSeek /
+\texttt{deepseek-flash} (thinking disabled, temperature $0$), and in
+\emph{snapshot mode}: the failure blackboard is frozen once per seed at
+the solver$\to$diagnosis boundary and every arm resumes the identical
+board, so order arms are paired on the same failure state by construction;
+token costs are \emph{loop tokens} (total minus the frozen forward
+prefix). Earlier DashScope $n{=}3$ cells predate this campaign and are
+neither pooled nor compared numerically; each table carries the campaign,
+and hence the implementation freeze, it was produced under.
 
 \subsection{Exp-A: Commitment-order ablation}
 \label{sec:exp_ablation}
@@ -1257,31 +1275,104 @@ attribution than reverse, and at least weakly higher than random, at
 comparable token cost. If causal $\approx$ random/reverse, Proposition~1 is
 not supported and the ranking/alignment design is revised before baselines.
 
-\paragraph{Measured results (evidence-informed; thin $n{=}3$).}
-Table~\ref{tab:exp_ablation} reports the redesigned ablation on
+\paragraph{Measured results (evidence-informed; snapshot mode; $n{=}20$/order).}
+Table~\ref{tab:exp_ablation} reports the expanded ablation on
 \texttt{smoke\_H4\_Omega5} with plant \texttt{me\_force\_zero\_sea},
-$K{=}3$, provider DashScope / \texttt{deepseek-v4-flash}, and
-\texttt{rank\_method}=\texttt{hybrid} (force-zero smell tips
+$K{=}3$, provider DeepSeek / \texttt{deepseek-flash}, and
+\texttt{rank\_method}=\texttt{hybrid} (the force-zero smell tips
 \texttt{model\_expert} without inventing a second diagnosis mechanism).
-Causal commitment achieves first-probe $3/3$ and the only non-zero verified
-attribution ($1/3$); reverse and random are $0/3$ on both primary metrics.
-SSR@$K$ likewise concentrates on causal ($2/3$). These counts are
-directional under thin $n$; they are not a definitive Proposition~1 proof.
+Causal commitment attains first-probe $20/20$ versus $10/20$ under random
+and $0/20$ under reverse (paired exact McNemar: $p<10^{-4}$ and $p=0.002$):
+the registered first-probe clause is strongly supported. Verified
+attribution is $9/20$ causal, $9/20$ random, $5/20$ reverse; the
+causal-versus-reverse contrast is directionally strict ($0.45 > 0.25$) but
+not significant at this $n$ ($4{:}0$ discordant pairs, $p=0.125$), and
+causal versus random is a tie ($3{:}3$)---the weak clause is met as a
+tie. Two mechanism findings qualify these counts. First, auditing every
+random arm against its committed shuffle shows that first-probe hits
+coincide \emph{exactly} with shuffles that place the guilty layer first
+($10/10$ here; zero exceptions across all plants below): the random arm's
+naming performance is carried entirely by accidental alignment with the
+ranking. Second, $3$ of the random arm's $9$ verified attributions start
+from \emph{unaligned} shuffles and still reach the guilty layer by
+executed refutation within $K$: alignment fully determines first-probe and
+raises the chance of early verified attribution, but multi-round search
+under executed refutation is a genuine second route. Token costs are of
+the same order across orders (causal marginally lowest).
 
 \begin{table}[t]
 \centering
 \caption{Exp-A commitment-order ablation --- \textbf{measured}
-(evidence-informed; $n{=}3$/order; $K{=}3$; hybrid rank). Primary: first-probe
-hit and verified attribution.}
+(evidence-informed; snapshot mode; $n{=}20$/order; $K{=}3$; hybrid rank;
+DeepSeek \texttt{deepseek-flash}; plant \texttt{me\_force\_zero\_sea};
+loop-token accounting). Primary: first-probe hit and verified
+attribution.}
 \label{tab:exp_ablation}
 \label{tab:exp_i}
 \begin{tabular}{@{}l c c c c@{}}
 \toprule
-$\omega$ & First-probe hit & Verified attr.\ & SSR@$K$ & Mean tokens \\
+$\omega$ & First-probe hit & Verified attr.\ & SSR@$K$ & Mean loop tokens \\
 \midrule
-causal  & $3/3$ (1.00) & $1/3$ (0.33) & $2/3$ & $1.08{\times}10^{5}$ \\
-random  & $0/3$ (0.00) & $0/3$ (0.00) & $0/3$ & $1.26{\times}10^{5}$ \\
-reverse & $0/3$ (0.00) & $0/3$ (0.00) & $0/3$ & $1.15{\times}10^{5}$ \\
+causal  & $20/20$ (1.00) & $9/20$ (0.45) & $13/20$ & $0.65{\times}10^{5}$ \\
+random  & $10/20$ (0.50) & $9/20$ (0.45) & $11/20$ & $0.66{\times}10^{5}$ \\
+reverse & $0/20$ (0.00) & $5/20$ (0.25) & $10/20$ & $0.74{\times}10^{5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Multi-plant replication (Phase-4 grid; snapshot mode; $n{=}10$/order).}
+Table~\ref{tab:exp_multiplant} replicates the ablation on the two
+additional plants of Section~\ref{sec:exp_setup} under the identical
+engine and protocol. The result is a \emph{conditional} replication that
+revises the mechanism claim. On the code-layer plant
+(\texttt{pd\_comment\_out\_balance}), causal attains $9/10$ first-probe,
+significantly above random's $2/10$ ($7{:}0$ discordant pairs, $p=0.016$),
+but reverse attains $10/10$: the reversed skeleton probes the code layer
+first \emph{by construction}, so for a code-layer fault reverse is itself
+the aligned order, and the registered ``strictly above reverse'' clause
+cannot and does not hold ($0{:}1$). On the data-layer plant
+(\texttt{de\_swap\_demand\_supply\_source}), the hybrid rank never names
+the data layer (its smell rules cover force-zero and relaxed-DEP
+surfaces, not contract-valid semantic source swaps): causal and reverse
+both sit at $0/10$ first-probe and the clause is falsified there; the
+only hits ($4/10$) are random shuffles that happened to align. Across all
+three plants and all $40$ random-arm cells the alignment audit again has
+zero exceptions---first-probe hit occurs if and only if
+$\omega_1=a^{\star}$. Verified attribution shows no significant order
+effect on either new plant (seed-level repairability and multi-round
+refutation dominate at $K{=}3$). The grid also uncovered a
+plant-specific forward-variance class: in $12$ of $22$ freeze attempts
+for the data plant the swapped parameter never entered the generated
+model and the run solved to the un-faulted optimum ($\hat z = z^{\star}$
+to machine precision), leaving no failure blackboard; these attempts are
+excluded and replaced with fresh seeds, and their $55\%$ rate is itself a
+measured property of semantic data faults in LLM-generated pipelines.
+The cross-plant reading is therefore not ``causal order wins'' but
+\emph{alignment wins when the evidence ranking can see the fault layer}:
+visible for the model-layer plant through the force-zero smell and for
+the code-layer plant through the relaxed-DEP surface (and structurally
+through reverse), invisible for the semantic data fault, where naming
+fails for every fixed order and only chance alignment or multi-round
+executed refutation recovers the root cause.
+
+\begin{table}[t]
+\centering
+\caption{Phase-4 multi-plant replication --- \textbf{measured} (snapshot
+mode; $n{=}10$/order/plant; $K{=}3$; hybrid rank; DeepSeek
+\texttt{deepseek-flash}; loop-token accounting). First-probe hit / verified
+attr.\ / SSR@$K$ per order.}
+\label{tab:exp_multiplant}
+\begin{tabular}{@{}ll c c c c@{}}
+\toprule
+Plant ($a^{\star}$) & $\omega$ & First-probe & Verified attr.\ & SSR@$K$ & Loop tokens \\
+\midrule
+\texttt{pd\_comment} & causal  & $9/10$ & $5/10$ & $5/10$ & $0.85{\times}10^{5}$ \\
+(\texttt{python})    & random  & $2/10$ & $2/10$ & $4/10$ & $0.68{\times}10^{5}$ \\
+                     & reverse & $10/10$ & $5/10$ & $5/10$ & $0.51{\times}10^{5}$ \\
+\midrule
+\texttt{de\_swap}    & causal  & $0/10$ & $2/10$ & $6/10$ & $1.01{\times}10^{5}$ \\
+(\texttt{data})      & random  & $4/10$ & $6/10$ & $8/10$ & $0.82{\times}10^{5}$ \\
+                     & reverse & $0/10$ & $4/10$ & $6/10$ & $1.02{\times}10^{5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1349,36 +1440,38 @@ dominates Stackelberg on verified attribution at similar or lower cost with no
 audit gap worth claiming, the ranking/commitment design (or the paper claim)
 is revised before diagnostics scaling.
 
-\paragraph{Measured results (evidence-informed; internal only; thin $n{=}3$).}
-Table~\ref{tab:exp_baselines} reports the redesigned internal comparison on
-the same plant, model, and $K$ as Exp-A, using the Exp-A causal cells as the
-Stackelberg arm. Verified attribution is $1/3$ for causal Stackelberg and
-$0/3$ for both adversarial and sequential (gate: SB $\geq$ adversarial).
-First-probe remains $3/3$ under Stackelberg versus $1/3$ adversarial.
-SSR@$K$ is highest for Stackelberg ($2/3$) on this draw; sequential's mean
-token count is depressed by one zero-token failed episode
-(\texttt{eb\_seq\_r1}) and should be read with that caveat. Debate and
-Reflexion were not run in this pass (cost freeze until SB verified rates
-stabilize).
+\paragraph{Measured results (evidence-informed; snapshot mode; internal only; $n{=}20$).}
+Table~\ref{tab:exp_baselines} reports the expanded internal comparison on
+the same plant, engine, and $K$ as Exp-A, using the Exp-A causal cells as
+the Stackelberg arm (paired, shared snapshots). Verified attribution:
+Stackelberg $9/20$ versus adversarial $8/20$ (paired $p=1.0$; the
+registered $\geq$ clause holds as a tie) and sequential $0/20$
+($9{:}0$ discordant pairs, $p=0.004$; the $\gg$ clause holds). The cost
+dimension is decisive: adversarial matches Stackelberg's verified rate
+only by spending $1.9\times$ the loop tokens ($1.26{\times}10^{5}$ versus
+$0.65{\times}10^{5}$), and its single-judge first-probe is $12/20$
+against Stackelberg's committed $20/20$. Debate and Reflexion were not
+run in this pass (cost freeze until SB verified rates stabilize; reported
+as not run, not as wins).
 
 \begin{table}[t]
 \centering
-\caption{Exp-B internal baselines --- \textbf{measured}
-(evidence-informed; $n{=}3$; $K{=}3$). Primary: verified attribution.
-External Debate/Reflexion not run.}
+\caption{Exp-B internal baselines --- \textbf{measured} (evidence-informed;
+snapshot mode; $n{=}20$; $K{=}3$; loop-token accounting). Primary: verified
+attribution. External Debate/Reflexion not run.}
 \label{tab:exp_baselines}
 \label{tab:exp_ii}
 \label{tab:exp_iii}
 \begin{tabular}{@{}ll c c c c@{}}
 \toprule
-Family & Method & Verified attr.\ & First-probe & SSR@$K$ & Mean tokens \\
+Family & Method & Verified attr.\ & First-probe & SSR@$K$ & Mean loop tokens \\
 \midrule
 Proposed & stackelberg (causal)
-  & $1/3$ (0.33) & $3/3$ (1.00) & $2/3$ & $1.08{\times}10^{5}$ \\
+  & $9/20$ (0.45) & $20/20$ (1.00) & $13/20$ & $0.65{\times}10^{5}$ \\
 Internal & adversarial
-  & $0/3$ (0.00) & $1/3$ (0.33) & $1/3$ & $1.84{\times}10^{5}$ \\
+  & $8/20$ (0.40) & $12/20$ (0.60) & $9/20$ & $1.26{\times}10^{5}$ \\
 Internal & sequential
-  & $0/3$ (0.00) & $0/2$ (0.00) & $1/3$ & $0.61{\times}10^{5}$ \\
+  & $0/20$ (0.00) & $0/20$ (0.00) & $7/20$ & $0.61{\times}10^{5}$ \\
 External & Debate / Reflexion
   & --- & --- & --- & not run \\
 \bottomrule
@@ -1504,6 +1597,20 @@ and the re-established tables of Section~\ref{sec:exp_reporting} bound
 them before the expanded grid is interpreted, and the overturn and
 deflect diagnostics of Exp.~\ref{sec:exp_diag} will quantify them at
 scale.
+
+\paragraph{Rank-invisible semantic faults.}
+The Phase-4 data-layer plant exposes a fourth family. A contract-valid
+semantic source swap leaves every structural signal intact---the validator
+passes, the model formulates, the code runs---and the failure surface
+(OPTIMAL with a gap) is indistinguishable from a modeling fault, so the
+hybrid rank named the data layer first in $0$ of $10$ boards and causal
+naming failed across the board (Table~\ref{tab:exp_multiplant}). Worse,
+in $12$ of $22$ freeze attempts the swapped parameter never entered the
+generated model at all and the run solved to the un-faulted optimum to
+machine precision---a silent fault. Semantic data faults therefore
+require evidence beyond the current surface smells (e.g., provenance
+checks on which catalog table feeds which parameter), a design revision
+registered for future work rather than patched post hoc.
 
 \paragraph{Claim boundary.}
 Comparisons are scoped to layered-error natural-language optimization on the

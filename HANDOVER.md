@@ -319,6 +319,45 @@
     token。总花费 ¥7.22（n=20 全战役），余额 ¥12.85。总结（含检验
     与保留意见）：`results/exp_ab_ds41_snapshot/summary.md`。
     **推荐下一步**：Phase-4 多 plant 网格（优先于 n=40 加密单 plant）。
+  - **Phase-4 多 plant 归因网格 DONE（2026-09-12 凌晨，快照模式，¥6.92）**：
+    `de_swap_demand_supply_source`（a\*=DE）与 `pd_comment_out_balance`
+    （a\*=PD）各 n=10 可用 seed × {causal, reverse, random}，同引擎同法
+    （官方 deepseek-flash，冻结+`--resume_from` 分臂，random 带
+    `--probe_seed=s`）。**结论 = 顺序效应的条件复制**：
+    1. **对齐完全决定 first-probe，3 plant × 40 个 random 臂零例外**
+       （命中 ⟺ ω₁=a\*）。
+    2. "causal 严格>reverse" 依赖 rank 对 a\* 的可见性：ME 植物
+       （force-zero 嗅探）20/20 vs 0/20 强确认；PD 植物 rank 正确 tip
+       （causal 9/10）但 reverse 骨架对 code 层**构造性对齐**（10/10，
+       子句不成立；causal vs random 7:0 **p=0.0156 显著**）；DE 语义
+       植物对 rank 完全不可见 → causal=reverse=0/10，**子句被证伪**，
+       仅 random 偶然对齐命中（4/10）。
+    3. **verified 归因在所有植物均无显著序效应**（K=3 多轮执行反驳 +
+       seed 级可修复性主导；me_force 的 p=0.125 应解读为对齐优势的
+       边缘残留）。主张应修订为"承诺对齐在排名可见故障层时获胜"。
+    4. **新前向方差类（DE 植物独有）**：12/22 冻结尝试中换源参数未进
+       入生成模型 → obj 逐位=z\*（Practical Optimal，无失败黑板）→
+       计为前向方差换 seed；55% 的"植物未表达率"本身是语义数据故障
+       的实测性质。pdbal 修复后 2/17 DE 契约拒收（常规类）。
+    - **战役间 harness 修复（零数据窗口，已披露）**：pdbal 旧植物的
+      行级正则匹配不到真实 PD 生成的多行 `addConstr(...)`（name= 在
+      续行）→ s1-s5 全灭（¥0.06）；改为语句级括号配对匹配
+      （`injection/plants.py::_constr_statement_spans`）+ 回归测试后
+      重跑。deswap/me_force 植物函数未动。
+    - 1 臂（deswap s16 random 首跑）LengthFinishReasonError → 同板
+      重跑成功（n=20 战役"s15 补尾"先例）。
+    - 编排 `scripts/run_p4_grid.py`（可续跑/按 seed 配对/牌价上界守卫
+      ≈实际×2-3）；汇总 `scripts/summarize_p4_grid.py`（对 n=20 战役
+      复算逐项校验一致）。总结：`results/p4_grid/summary.md`（必读，
+      含三植物表、配对 McNemar、对齐审计、保留意见）。
+  - **稿件 measured 表已刷新（同夜）**：`tab:exp_ablation` 换 n=20
+    快照模式数字（20/10/0、9/9/5、loop-token 口径）；新增
+    `tab:exp_multiplant`（Phase-4 两植物 3×n 表）+ 条件复制 prose；
+    `tab:exp_baselines` 换 n=20（SB 0.45 ≥ adv 0.40 ≫ seq 0，adv 花
+    1.9× token）；Setup 注入协议改为三层植物网格 + 快照同板公平性；
+    provenance 段声明 hardened 实现 + no-plant gate + 快照/loop-token
+    口径 + 序贯披露；失效模式节新增"Rank-invisible semantic faults"
+    家族。编译 0 错误。Exp-C 与 Debate 仍未跑。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -339,74 +378,67 @@
        one bounded retry; derived values use `derived_parameters`. PD backward
        now uses the same deterministic guide as PD forward. Tests:
        `tests/test_data_contract.py`.
-    4. **PRIORITY (blocked on LLM budget since 2026-08-29):** DE-only smoke
-       is structurally done (`de_contract_smoke_20260730.json`); still owed a
-       no-plant E2E smoke confirming the new contract reaches Practical
-       Optimal before any re-Exp-A or expanded \(n\). **Run first after
-       recharge.**
-    5. Exp-B external (Debate/Reflexion) + Exp-C — freeze until SB verified
-       rate is stabler / PD-regen stability bounded by DE validation.
-    6. ~~Manuscript tables: replace mock with hybrid Exp-A/B numbers~~ **done**
-       (`els-cas-templates/manuscript.tex`: `tab:exp_ablation`,
-       `tab:exp_baselines`; thin-$n$ caveat; Exp-C still mock; Debate not run).
+    4. ~~No-plant E2E gate after recharge~~ **done 2026-09-11**（官方
+       deepseek-flash，gap 0.0%，Practical Optimal 一次命中）。
+    5. ~~Phase-4 多 plant 网格 + 稿件 measured 表刷新~~ **done
+       2026-09-12**（见上；总结 `results/p4_grid/summary.md`）。
+    6. **PRIORITY（下一步，二选一或按序）：** (a) me_force verified
+       加密到 n≈40–50/臂（分辨 0.45 vs 0.25，~¥5–8）；(b) 实例族扩展
+       （smoke 之外的 horizon/Ω 配置）换取外部效度。两案都在快照模式
+       下用 `scripts/run_p4_grid.py` 同法跑；先小试 2 seed。
+    7. 已注册的设计修订（未实施）：DE 语义故障的 provenance 证据
+       （rank 不可见类，见稿件失效模式节），战役间窗口才可改。
+    8. Exp-B external (Debate/Reflexion) + Exp-C — 仍冻结，用户明示后
+       才开。
 
 ### Next-agent prompt (copy-paste)
 
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：Phase-4 多 plant 归因网格（快照模式），随后稿件 measured 表刷新
+# 任务：verified 功效加密（me_force n→40/臂）或实例族扩展——Phase-4 之后的下一步
 
-## 现状（2026-09-11 深夜，全部已提交推送至 main HEAD）
+## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
 
-- 引擎已定并验证：**官方 DeepSeek / deepseek-flash**（key 在 .env 的
-  DEEPSEEK_API_KEY，余额 ~¥12.85）。GLM-5.3-Flash 已判不适用（勿用）。
-- 快照机制已实战验证：`--snapshot_dir` 冻结 / `--resume_from` 分臂，
-  manifest 自动记录 resumed_from + snapshot_forward_tokens，成本口径
-  = loop tokens。
-- **n=20 单 plant 战役已完成**（me_force_zero_sea）：first-probe 子句
-  强确认（causal 20/20 vs random 10/20 vs reverse 0/20，配对 McNemar
-  p<0.0001 / p=0.002）；verified 0.45/0.45/0.25（vs reverse 点估高但
-  p=0.125 未显著）。总结：`results/exp_ab_ds41_snapshot/summary.md`
-  （必读——含机制修正与保留意见）。
+- 引擎：**官方 DeepSeek / deepseek-flash**（.env 的 DEEPSEEK_API_KEY，
+  余额 ~¥5.6）。快照模式编排脚本 `scripts/run_p4_grid.py` 可复用
+  （可续跑/按 seed 配对/牌价上界守卫 ≈ 实际×2–3）。
+- **Phase-4 多 plant 网格已完成**（2 plant × n=10 × 3 序，¥6.92）：
+  顺序效应 = **条件复制**——对齐完全决定 first-probe（3 plant × 40
+  random 臂零例外）；"causal>reverse" 仅在 rank 可见 a\* 时成立
+  （ME 嗅探✓；PD 表面✓但 reverse 构造性对齐；DE 语义不可见→证伪）；
+  verified 全植物无显著序效应（多轮路径主导）。必读：
+  `results/p4_grid/summary.md`。
+- 稿件 measured 表已刷新（tab:exp_ablation n=20、新增
+  tab:exp_multiplant、tab:exp_baselines n=20、provenance/失效模式节），
+  编译 0 错误。Exp-C 与 Debate 仍冻结。
 
-## 本任务：两个新 plant 的同法复制（Exp-A 式顺序消融）
+## 本任务（二选一或按序；先小试 2 seed 再放量）
 
-plant = `de_swap_demand_supply_source`（a*=data_engineer）与
-`pd_comment_out_balance`（a*=python_developer），各 **n=10 seed**
-（预算 ~¥6；余额不够再找用户充值，勿超支）。
+A. **me_force verified 加密**：s24 起补冻结 + 三臂至 40 可用 seed/序
+   （分辨 verified 0.45 vs 0.25 需 n≈40–50；预算 ~¥5–8）。
+B. **实例族扩展**：generator 出 2–3 个新 horizon/Ω 配置，me_force
+   n=10/序/实例（外部效度优先）。
 
-1. 每个 plant × s1..s10：冻结一次（冻结期契约失败按前向方差记账、
-   换新 seed 补齐，直到 10 个可用——参考 s7/s12/s14 先例）：
-   MAKO_RESULT_SUFFIX=p4_<plant短名>_freeze_s$s uv run python -u -m fsm_stackelberg.main      --dataset prob_tslp_ecr_demand --prob_name smoke_H4_Omega5      --provider DeepSeek --model deepseek-flash --knowledge progressive      --max_retries 3 --omega_source evidence_rank --rank_method hybrid      --diagnosis_mode stackelberg --probe_order causal --inject <plant_id>      --snapshot_dir results/snapshots/<plant_id>_s$s
-2. 每个 seed × {causal, reverse, random}（random 带 --probe_seed $s）：
-   ... 同上参数，去掉 --inject/--snapshot_dir，改
-   --resume_from results/snapshots/<plant_id>_s$s    --probe_order <order>，MAKO_RESULT_SUFFIX=p4_<plant短名>_ea_<order>_s$s
-3. 汇总（沿用 n=20 战役的聚合方式，配对 McNemar）：
-   每个 plant 一张 3×n 表 + 与 me_force_zero_sea 的跨 plant 对照。
-   判读网格 = 稿件预注册预期，照 summary.md 的诚实风格写
-   （含 random 对齐检验：first-probe 命中是否= tip=a* 的洗牌）。
+两案都用 `scripts/run_p4_grid.py` 同法（--plant me_force_zero_sea
+--short meforcezero 或加 --instance 支持）；汇总改
+`scripts/summarize_p4_grid.py` 的 PLANTS 表。先写序贯扩样声明再跑。
 
 ## 硬约束
 
-- **不要**跑 Debate/Reflexion，除非用户明确要求。
-- 主指标 verified_attribution_hit；预注册纪律：战役间可改设计、战役内
-  不可；序贯扩样须披露（先 n=10，若需 n=20 先写明再跑）。
-- 引擎/运行方式不可与旧战役混池；每格 manifest 溯源（自动）。
-- 预算守卫：每 plant 先 2 个 seed 试运行确认健康再放量；总花费超 ¥8
-  即停并汇报。
-- Phase-4 完成后：**稿件 measured 表刷新**（tab:exp_ablation /
-  tab:exp_baselines 换 n=20 数字 + 多 plant 表，声明快照模式、
-  loop-token 口径、序贯披露与契约失败记账；random 对齐机制与
-  "多轮搜索第二路径"的修正写进 Results prose）。Exp-C 与 Debate 仍冻结。
+- 不跑 Debate/Reflexion，除非用户明确要求。
+- 主指标 verified_attribution_hit；战役内设计不可变；序贯扩样须披露。
+- 引擎/运行方式不与旧战役混池；manifest 溯源（自动）。
+- 预算守卫：每格先 2 seed 试运行；总花费超预算帽即停并汇报（先查
+  GET api.deepseek.com/user/balance）。
+- 已注册未实施的设计修订（DE 语义 provenance 证据）属战役间窗口，
+  单独战役再做，不与本任务混。
 
 ## 验收
 
-- [ ] 两 plant × 10 seed × 3 序全量落盘，summary.md（含检验）入
-      results/p4_grid/（或类似命名）
-- [ ] 跨 plant 对照结论 + 是否支持"顺序效应跨 plant 复制"写入 HANDOVER
-- [ ] 稿件表格与 Results prose 刷新（若时间允许；至少把数字备好）
-- [ ] 未盲开 Debate / 未超预算 / 全部提交推送
+- [ ] 所选方案全量落盘 + summary（含配对检验）入 results/ 对应目录
+- [ ] 稿件对应表/prose 刷新（若数字变化）
+- [ ] HANDOVER 更新 + 未盲开 Debate / 未超预算 / 全部提交推送
 ```
 
 ---
@@ -591,25 +623,34 @@ Debate design note (agreed): debaters output `{suspected_agent, argument}`
 only; aggregate by majority vote; tie-break via status prior — **do not**
 trust LLM-reported confidence.
 
-### Phase 4 — Attribution grid — OFFLINE HALF DONE (2026-08-29)
+### Phase 4 — Attribution grid — RUN DONE (2026-09-12; offline half 2026-08-29)
 
-Primary metric already fixed in manuscript. Ported from mako's
-`analyze_2d_attribution.py`:
+Primary metric already fixed in manuscript.
 
 - **Analysis:** `scripts/analyze_attribution_grid.py` auto-discovers runs
   (reads `run_manifest.json` or legacy `experiment_result.json`), and emits
   true-layer × attributed-layer confusion, surface × true matrices, and
   per-method rates. Unlike mako (which *guessed* origin from the surface),
   the true layer comes from the injected plant. Debugged on 85 historical
-  runs (`results/attribution_grid/`).
+  runs (`results/attribution_grid/`). The Phase-4 campaign itself is
+  orchestrated/aggregated by `scripts/run_p4_grid.py` +
+  `scripts/summarize_p4_grid.py` (snapshot mode, paired McNemar,
+  random-alignment audit; results: `results/p4_grid/summary.md`).
 - **Plants:** layer grid closed — `de_swap_demand_supply_source` (DE→ME
-  boundary; wrong catalog mapping under the value-free contract) and
+  boundary; wrong catalog mapping under the value-free contract; statement-
+  level matching for multi-line `addConstr` fixed 2026-09-12) and
   `pd_comment_out_balance` (PD→solver boundary; relaxed DEP, correct ME).
   `fault_injector` is now a layer-aware factory (`make_fault_injector_node`);
   global one-shot `fault_injected` flag unchanged. Tests:
   `tests/test_injection.py`.
-- **Remaining:** the grid *run* itself (plant × method × reps) — blocked on
-  LLM budget; run only after the no-plant E2E gate passes.
+- **Result (n=10/plant × 3 orders, snapshot mode):** conditional
+  replication — alignment (ω₁=a\*) fully determines first-probe (zero
+  exceptions over 3 plants × 40 random arms); "causal > reverse" holds
+  only where the hybrid rank can see a\* (ME smell yes; PD surface yes but
+  reverse is structurally aligned for code-layer faults; DE semantic swap
+  invisible → falsified there); verified attribution shows no significant
+  order effect in any plant. New forward-variance class: DE-plant silent
+  draws (12/22 freezes solved to exact z\*, no failure blackboard).
 
 ### Phase 5 — Proposition — PARTIAL
 
@@ -654,8 +695,8 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Prune CoE/OptiMUS under `baselines/` | defer | different family; not Exp-III head-to-head |
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
-| Next experiment priority | **DE contract E2E smoke** | Catalog/validator implemented; first verify one no-plant run is Practical Optimal. Do not claim the corrected v4 replay localized the original gap. |
-| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS，~¥0.15；GLM 已判不适用；余额 ¥0.34，扩 n 前需充值 |
+| Next experiment priority | **(a) me_force verified 加密 n≈40/臂 或 (b) 实例族扩展** | Phase-4 网格已完成（条件复制结论）；verified 0.45 vs 0.25 仍未分辨（p=0.125）；两案均快照模式先试 2 seed；DE 语义 provenance 修订属独立战役 |
+| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 两战役实战 ~¥14.1；余额 ~¥5.6（2026-09-12）；GLM 已判不适用 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
@@ -690,6 +731,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
+| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`, `scripts/summarize_p4_grid.py`；总结 `results/p4_grid/summary.md` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |

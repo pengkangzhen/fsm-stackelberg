@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from ..schemas import Constraint, DataEngineerOutput, ModelExpertOutput
 
@@ -57,6 +57,38 @@ _DEMAND_RE = re.compile(r"demand", re.IGNORECASE)
 _SUPPLY_RE = re.compile(r"supply", re.IGNORECASE)
 _ADD_CONSTR_RE = re.compile(r"addConstr|add_constr", re.IGNORECASE)
 _BALANCE_TOKEN_RE = re.compile(r"balance", re.IGNORECASE)
+_STR_LIT_RE = re.compile(r'"[^"\n]*"|\'[^\'\n]*\'')
+_MAX_CONSTR_SPAN_LINES = 30
+
+
+def _constr_statement_spans(lines: List[str]) -> List[tuple]:
+    """Inclusive (start, end) spans of addConstr(...) statements.
+
+    Real LLM-written code frequently splits the call across lines with the
+    ``name=`` argument (where the balance token lives) on a continuation
+    line, so matching must be statement-level, not line-level. String
+    literals are stripped before counting parentheses; a call whose
+    parentheses never balance within _MAX_CONSTR_SPAN_LINES falls back to
+    the opener line only.
+    """
+    spans = []
+    i = 0
+    while i < len(lines):
+        if _ADD_CONSTR_RE.search(lines[i]) and not lines[i].lstrip().startswith("#"):
+            depth, opened, end = 0, False, None
+            for k in range(i, min(i + _MAX_CONSTR_SPAN_LINES, len(lines))):
+                bare = _STR_LIT_RE.sub("", lines[k])
+                depth += bare.count("(") - bare.count(")")
+                if "(" in bare:
+                    opened = True
+                if opened and depth <= 0:
+                    end = k
+                    break
+            spans.append((i, end if end is not None else i))
+            i = (end if end is not None else i) + 1
+        else:
+            i += 1
+    return spans
 
 
 def _find_param_index(params, pattern) -> Optional[int]:
@@ -222,12 +254,14 @@ def _de_swap_demand_supply_source(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _pd_comment_out_balance(state: Dict[str, Any]) -> Dict[str, Any]:
-    """PD plant: comment out addConstr lines that register balance constraints.
+    """PD plant: comment out addConstr statements registering balance constraints.
 
     The solver then sees a relaxed DEP (Spurious Optimal / large gap) while the
     ME formulation on the blackboard is correct — a code-layer translation
-    fault. Guarded: refuses (raises) when no matching line exists, so a run can
-    never be silently mislabeled.
+    fault. Statements are matched paren-balanced (single- or multi-line),
+    because the ``balance`` naming usually sits on the ``name=`` continuation
+    line of a multi-line call. Guarded: refuses (raises) when no matching
+    statement exists, so a run can never be silently mislabeled.
 
     Caveat (shared with ME plants under regeneration): if diagnosis probes ME
     first and ME regenerates, PD re-codes from the clean ME output and the
@@ -238,23 +272,29 @@ def _pd_comment_out_balance(state: Dict[str, Any]) -> Dict[str, Any]:
     if not code.strip():
         raise ValueError("pd_comment_out_balance: python_code missing/empty")
     lines = code.splitlines()
-    hit = [
-        i
-        for i, ln in enumerate(lines)
-        if _ADD_CONSTR_RE.search(ln) and _BALANCE_TOKEN_RE.search(ln) and not ln.lstrip().startswith("#")
+    spans = [
+        (a, b)
+        for a, b in _constr_statement_spans(lines)
+        if _BALANCE_TOKEN_RE.search(" ".join(lines[a:b + 1]))
     ]
-    if not hit:
+    if not spans:
         raise ValueError(
-            "pd_comment_out_balance: no addConstr balance lines found — "
+            "pd_comment_out_balance: no addConstr balance statements found — "
             "plant cannot guarantee a labeled python_developer fault"
         )
+    preview = [lines[a].strip()[:60] for a, _ in spans]
+    hit = [i for a, b in spans for i in range(a, b + 1)]
     for i in hit:
+        if lines[i].lstrip().startswith("#"):
+            continue
         indent = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
         lines[i] = f"{indent}# {lines[i].lstrip()}"
     logger.warning(
-        "Fault plant pd_comment_out_balance: commented %d balance addConstr line(s): %s",
+        "Fault plant pd_comment_out_balance: commented %d balance addConstr "
+        "statement(s) spanning %d line(s): %s",
+        len(spans),
         len(hit),
-        [lines[i].strip()[:60] for i in hit],
+        preview,
     )
     new_code = "\n".join(lines)
     if code.endswith("\n"):
