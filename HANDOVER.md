@@ -305,6 +305,20 @@
     `results/exp_ab_ds41_snapshot/summary.md`。**下一步**：稿件 measured
     表换本战役数字（声明快照模式与 loop-token 口径）→ Phase-4 多 plant
     网格（同法冻结/恢复）→ Exp-B external（Debate/Reflexion）→ Exp-C。
+  - **n=20 扩样 DONE（2026-09-11 深夜，用户要求加样）**：序贯披露
+    （n=5 窥视 → 预期不变 → 扩至 20 可用 seed；冻结期契约失败 3/23
+    = s7/s12/s14，以 s21–s23 补齐）。**first-probe 子句强确认**：
+    causal 20/20 vs random 10/20 vs reverse 0/20，配对 McNemar
+    p<0.0001 / p=0.002；random 的 10 个 first-probe 命中与"洗牌后
+    ME 首位"**逐一精确对应**。verified：causal 0.45 / random 0.45 /
+    reverse 0.25——vs reverse 点估计严格高但 p=0.125 未显著（n≈40–50
+    可分辨）；vs random 平局。**机制修正**：random 的 9 个 verified
+    命中中 3 个来自未对齐洗牌——对齐完全决定 first-probe、提高
+    verified 到达率，但多轮搜索是第二条路径。Exp-B：SB 0.45 ≥ adv
+    0.40（p=1.0）≫ seq 0（p=0.0039），adv 等值 verified 花 1.93×
+    token。总花费 ¥7.22（n=20 全战役），余额 ¥12.85。总结（含检验
+    与保留意见）：`results/exp_ab_ds41_snapshot/summary.md`。
+    **推荐下一步**：Phase-4 多 plant 网格（优先于 n=40 加密单 plant）。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains

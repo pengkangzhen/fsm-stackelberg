@@ -398,6 +398,19 @@ def main():
     logger.info(f"Loading problem from dataset: {args.dataset}, prob_name: {args.prob_name}")
     problem = dataset_loader(args.dataset, args.prob_name)
 
+    # Fail fast on an unusable snapshot before any spend (e.g. the freeze run
+    # crashed in forward and never wrote a blackboard).
+    if getattr(args, "resume_from", None):
+        from fsm_stackelberg.graph.snapshot import SNAPSHOT_STATE_FILE
+        if not (Path(args.resume_from) / SNAPSHOT_STATE_FILE).exists():
+            logger.error(
+                "Resume aborted: %s/%s not found — the freeze run may have "
+                "failed before diagnosis (check its workflow.log).",
+                args.resume_from,
+                SNAPSHOT_STATE_FILE,
+            )
+            return None
+
     # Run algorithm based on selection
     if args.algorithm == "spm":
         logger.info(f"Running SPM algorithm (provider={args.provider}, model={args.model})...")
