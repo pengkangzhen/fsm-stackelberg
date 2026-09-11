@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 
 from .state import AgentState
+from .snapshot import build_resume_state, route_after_snapshot_gate, snapshot_gate_node
 from ..utils.llm_config import DEFAULT_PROVIDER, DEFAULT_MODEL
 from ..agents.data_engineer import data_engineer_node, data_engineer_backward_step
 from ..agents.knowledge_loader import knowledge_loader_node
@@ -198,7 +199,11 @@ def route_after_knowledge_loader(state: AgentState) -> Literal["model_expert", "
 # Graph Creation
 # =============================================================================
 
-def create_mako_graph() -> StateGraph:
+def create_mako_graph(
+    *,
+    snapshot_gate: bool = False,
+    start_node: str = "data_engineer",
+) -> StateGraph:
     """Create the MAKO workflow graph.
 
     The workflow supports two diagnosis modes:
@@ -219,6 +224,14 @@ def create_mako_graph() -> StateGraph:
                                                                                 ↓
                                                                      Continue downstream or end
     ```
+
+    Args:
+        snapshot_gate: Insert the freeze gate between solver and diagnosis so
+            the failure blackboard is dumped to ``state["snapshot_dir"]``
+            instead of diagnosing (freeze run for cost-controlled grids).
+        start_node: Graph entry point. ``"diagnosis_agent"`` resumes a frozen
+            failure snapshot so only the treatment path runs (see
+            ``graph/snapshot.py``).
 
     Returns:
         Compiled LangGraph StateGraph
@@ -266,15 +279,34 @@ def create_mako_graph() -> StateGraph:
     workflow.add_edge("python_developer", "fault_injector_pd")
     workflow.add_edge("fault_injector_pd", "solver_executor")
 
-    # SolverExecutor → success or diagnose
-    workflow.add_conditional_edges(
-        "solver_executor",
-        should_diagnose,
-        {
-            "success": END,
-            "diagnose": "diagnosis_agent",
-        }
-    )
+    # SolverExecutor → success or diagnose (optionally via the freeze gate)
+    if snapshot_gate:
+        workflow.add_node("snapshot_gate", snapshot_gate_node)
+        workflow.add_conditional_edges(
+            "solver_executor",
+            should_diagnose,
+            {
+                "success": END,
+                "diagnose": "snapshot_gate",
+            }
+        )
+        workflow.add_conditional_edges(
+            "snapshot_gate",
+            route_after_snapshot_gate,
+            {
+                "diagnosis_agent": "diagnosis_agent",
+                "end": END,
+            }
+        )
+    else:
+        workflow.add_conditional_edges(
+            "solver_executor",
+            should_diagnose,
+            {
+                "success": END,
+                "diagnose": "diagnosis_agent",
+            }
+        )
 
     # DiagnosisAgent → backward_step (adversarial) or sequential chain
     workflow.add_conditional_edges(
@@ -322,8 +354,8 @@ def create_mako_graph() -> StateGraph:
         }
     )
 
-    # Set entry point
-    workflow.set_entry_point("data_engineer")
+    # Set entry point (diagnosis_agent resumes a frozen snapshot; see snapshot.py)
+    workflow.set_entry_point(start_node)
 
     return workflow.compile()
 
@@ -348,6 +380,8 @@ def run_mako(
     inject_id: str = None,
     omega_source: str = "evidence_rank",
     rank_method: str = "llm_rank",
+    snapshot_dir: str = None,
+    resume_from: str = None,
 ) -> dict:
     """Run the FSM-Stackelberg optimization workflow.
 
@@ -376,6 +410,15 @@ def run_mako(
             the ME→PD boundary; seeds true_root_cause from the plant if unset.
         omega_source: "evidence_rank" (default) or legacy "status_prior".
         rank_method: "llm_rank" | "heuristic" | "hybrid" for evidence ranking.
+        snapshot_dir: When set, freeze the failure blackboard to this
+            directory at the solver→diagnosis boundary instead of diagnosing
+            (freeze run; see ``graph/snapshot.py``).
+        resume_from: When set, restore that frozen snapshot and run only the
+            diagnosis–repair loop live; ``problem_description`` / ``sample``
+            and the diagnosis-side args act as resume overrides. Note the
+            parameter defaults (stackelberg / causal / K=3 / DEFAULT_PROVIDER)
+            are applied unconditionally on resume — pass explicitly when
+            branching arms.
 
     Returns:
         Final state with results (includes episode_payoff)
@@ -384,72 +427,97 @@ def run_mako(
         from ..injection import get_plant
         true_root_cause = get_plant(inject_id).true_root_cause
 
-    graph = create_mako_graph()
+    if resume_from:
+        resume_state, _snapshot_manifest = build_resume_state(
+            resume_from,
+            diagnosis_mode=diagnosis_mode,
+            probe_order=probe_order,
+            probe_seed=probe_seed,
+            omega_source=omega_source,
+            rank_method=rank_method,
+            max_retries=max_retries,
+            provider=provider,
+            model=model,
+            temperature=temperature,
+            result_dir=result_dir,
+            run_id=run_id,
+            log_prompts=log_prompts,
+        )
+        if expected_value is not None and resume_state.get("expected_value") is None:
+            resume_state["expected_value"] = expected_value
+        if true_root_cause is not None and resume_state.get("true_root_cause") is None:
+            resume_state["true_root_cause"] = true_root_cause
 
-    # Deterministic data preprocessing — runs once, no LLM involved
-    from ..data.auto_preprocessor import auto_preprocess
-    from ..data.data_contract import build_data_catalog, format_data_catalog
+        graph = create_mako_graph(start_node="diagnosis_agent")
+        final_state = graph.invoke(resume_state)
+    else:
+        graph = create_mako_graph(snapshot_gate=bool(snapshot_dir))
 
-    preprocessed_data, data_access_guide = auto_preprocess(sample)
-    data_catalog = build_data_catalog(sample)
-    data_access_guide = (
-        f"{data_access_guide}\n\n{format_data_catalog(data_catalog)}"
-    )
-    logger.info(
-        "Auto-preprocessed data: %d fields, %d catalog IDs, "
-        "guide length: %d chars",
-        len(preprocessed_data),
-        len(data_catalog),
-        len(data_access_guide),
-    )
+        # Deterministic data preprocessing — runs once, no LLM involved
+        from ..data.auto_preprocessor import auto_preprocess
+        from ..data.data_contract import build_data_catalog, format_data_catalog
 
-    # Optional features (progressive knowledge + diagnosis mode) — pluggable
-    features = build_feature_bundle(
-        knowledge_mode=knowledge_mode,
-        diagnosis_mode=diagnosis_mode,
-        probe_order=probe_order,
-        omega_source=omega_source,
-        rank_method=rank_method,
-    )
-    feature_state = features.bootstrap_state()
+        preprocessed_data, data_access_guide = auto_preprocess(sample)
+        data_catalog = build_data_catalog(sample)
+        data_access_guide = (
+            f"{data_access_guide}\n\n{format_data_catalog(data_catalog)}"
+        )
+        logger.info(
+            "Auto-preprocessed data: %d fields, %d catalog IDs, "
+            "guide length: %d chars",
+            len(preprocessed_data),
+            len(data_catalog),
+            len(data_access_guide),
+        )
 
-    initial_state: AgentState = {
-        "problem_description": problem_description,
-        "sample": sample,
-        "schema": schema or sample,
-        "provider": provider,
-        "model": model,
-        "temperature": temperature,
-        "result_dir": result_dir,
-        "run_id": run_id,
-        "log_prompts": bool(log_prompts),
-        "preprocessed_data": preprocessed_data,
-        "data_access_guide": data_access_guide,
-        "data_catalog": data_catalog,
-        "retry_count": 0,
-        "max_retries": max_retries,
-        "backtrack_history": [],
-        # Metrics initialization
-        "step_metrics": [],
-        "node_metrics": {},
-        "agent_metrics": {},
-        "total_tokens": 0,
-        "total_duration_s": 0.0,
-        # Output history tracking
-        "current_round": 1,
-        "output_history": [],
-        "expected_value": expected_value,
-        "true_root_cause": true_root_cause,
-        "probe_seed": probe_seed,
-        "inject_id": inject_id,
-        "fault_injected": False,
-        "fault_plant_id": None,
-        "attributed_layer": None,
-        "episode_payoff": None,
-        **feature_state,
-    }
+        # Optional features (progressive knowledge + diagnosis mode) — pluggable
+        features = build_feature_bundle(
+            knowledge_mode=knowledge_mode,
+            diagnosis_mode=diagnosis_mode,
+            probe_order=probe_order,
+            omega_source=omega_source,
+            rank_method=rank_method,
+        )
+        feature_state = features.bootstrap_state()
 
-    final_state = graph.invoke(initial_state)
+        initial_state: AgentState = {
+            "problem_description": problem_description,
+            "sample": sample,
+            "schema": schema or sample,
+            "provider": provider,
+            "model": model,
+            "temperature": temperature,
+            "result_dir": result_dir,
+            "run_id": run_id,
+            "log_prompts": bool(log_prompts),
+            "preprocessed_data": preprocessed_data,
+            "data_access_guide": data_access_guide,
+            "data_catalog": data_catalog,
+            "retry_count": 0,
+            "max_retries": max_retries,
+            "backtrack_history": [],
+            # Metrics initialization
+            "step_metrics": [],
+            "node_metrics": {},
+            "agent_metrics": {},
+            "total_tokens": 0,
+            "total_duration_s": 0.0,
+            # Output history tracking
+            "current_round": 1,
+            "output_history": [],
+            "expected_value": expected_value,
+            "true_root_cause": true_root_cause,
+            "probe_seed": probe_seed,
+            "inject_id": inject_id,
+            "fault_injected": False,
+            "fault_plant_id": None,
+            "attributed_layer": None,
+            "episode_payoff": None,
+            "snapshot_dir": snapshot_dir,
+            **feature_state,
+        }
+
+        final_state = graph.invoke(initial_state)
 
     # Phase 2: record analysis-mode episode utilities on the finished trajectory.
     from ..game.payoff import finalize_episode_payoffs

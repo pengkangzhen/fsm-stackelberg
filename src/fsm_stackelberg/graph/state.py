@@ -80,6 +80,10 @@ class AgentState(TypedDict, total=False):
     fault_plant_id: Optional[str]
     probe_seed: Optional[int]
 
+    # Failure-snapshot freeze/resume (see graph/snapshot.py)
+    snapshot_dir: Optional[str]      # set to freeze the failure blackboard before diagnosis
+    snapshot_written: Optional[bool]  # set by the snapshot gate once frozen
+
     # Episode payoffs (analysis-mode Stackelberg utilities; set at run end)
     attributed_layer: Optional[str]  # Mechanism's root-cause claim â
     episode_payoff: Optional[Dict[str, Any]]  # {u_L, u_F, S, costs, ...}

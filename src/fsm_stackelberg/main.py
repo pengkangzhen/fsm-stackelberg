@@ -346,17 +346,21 @@ def main():
         help="LLM temperature (default 0; recorded in run_manifest)",
     )
     parser.add_argument(
-        "--probe_seed",
-        type=int,
-        default=None,
-        help="RNG seed for --probe_order random (reproducible shuffle)",
-    )
-    parser.add_argument(
-        "--inject",
-        dest="inject_id",
+        "--snapshot_dir",
         type=str,
         default=None,
-        help="Optional fault-plant id (logged in run_manifest when injection is used)",
+        help="Freeze the failure blackboard to this directory at the "
+             "solver→diagnosis boundary instead of diagnosing (freeze run; "
+             "branch arms later via --resume_from)",
+    )
+    parser.add_argument(
+        "--resume_from",
+        type=str,
+        default=None,
+        help="Resume a frozen failure snapshot: only the diagnosis–repair "
+             "loop runs live; diagnosis-side flags act as resume overrides "
+             "(provider/model/temperature default to the CLI defaults, not "
+             "the snapshot's — pass them explicitly to pin)",
     )
 
     args = parser.parse_args()
@@ -585,6 +589,8 @@ def main():
                 inject_id=args.inject_id,
                 omega_source=getattr(args, "omega_source", "evidence_rank"),
                 rank_method=getattr(args, "rank_method", "llm_rank"),
+                snapshot_dir=getattr(args, "snapshot_dir", None),
+                resume_from=getattr(args, "resume_from", None),
             )
         except Exception as exc:
             logger.exception("MAKO workflow crashed; recording failure result.")
@@ -645,6 +651,13 @@ def main():
             provider=args.provider,
             model=args.model,
         )
+        snapshot_forward_tokens = None
+        if getattr(args, "resume_from", None):
+            from fsm_stackelberg.graph.snapshot import read_snapshot_manifest
+            snap_manifest = read_snapshot_manifest(args.resume_from)
+            snapshot_forward_tokens = (
+                snap_manifest.get("forward_totals") or {}
+            ).get("total_tokens")
         manifest = build_run_manifest(
             exp=exp,
             state=final_state,
@@ -657,6 +670,9 @@ def main():
             inject_id=args.inject_id,
             knowledge_max_rounds=final_state.get("knowledge_max_rounds"),
             git_commit=get_git_commit(),
+            resumed_from=getattr(args, "resume_from", None),
+            snapshot_dir=getattr(args, "snapshot_dir", None),
+            snapshot_forward_tokens=snapshot_forward_tokens,
         )
         save_run_manifest(filepath, manifest)
         clear_run_logger()
