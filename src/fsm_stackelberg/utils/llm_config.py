@@ -39,7 +39,7 @@ PROVIDER_MODELS = {
     "DeepSeek": ["deepseek-v4-pro", "deepseek-v4-flash"],
     "OpenRouter": ["qwen/qwen3.5-plus-02-15","qwen/qwen3.6-plus-preview:free", "deepseek/deepseek-v3.2", "minimax/minimax-m2.5:free", "z-ai/glm-5", "moonshotai/kimi-k2.5", "moonshotai/kimi-k2.6:free", "openai/gpt-oss-120b:free"],
     "MiniMax": ["MiniMax-M2.7", "MiniMax-M3"],
-    "ZhipuAI": ["glm-5", "glm-5.1"],
+    "ZhipuAI": ["glm-5.3-flash", "glm-5", "glm-5.1"],
     # 阿里云百炼托管：含 deepseek-v4-flash（便宜默认）
     "DashScope": ["deepseek-v4-flash", "qwen3.7-plus", "glm-5.1", "kimi-k2.6"],
     "DashScopeGLM": ["glm-5.2"],
