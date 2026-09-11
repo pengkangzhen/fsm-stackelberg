@@ -270,6 +270,28 @@
     （DE/ME/PD forward+backward、rank、diagnosis）全部接入。
     快照机制实弹验证**延后**（GLM 跑不到 backward 修复环；离线测试
     10/10 已覆盖机械正确性，live 验证随 deepseek gate 一并做）。
+  - **官方 DeepSeek deepseek-flash：GATE PASS + 快照实弹验证 DONE
+    （2026-09-11 晚，全部 ~¥0.15）。** 用户提供新官方 key（旧 key 401
+    已换；余额仅 ¥0.49 也够了——V4.1 Flash + 缓存命中价极便宜）。
+    1. **No-plant E2E gate PASS**：41.5s / 80,232 tok / retries=0 /
+       **obj 1,389,581.0815 vs z\* …0841，gap 0.0%，一次命中 Practical
+       Optimal**（`results/mako/DeepSeek_deepseek-flash/.../
+       ds41_noplant_gate/`）。单次调用 7–8s（thinking 禁用生效，
+       `deepseek-flash` 无 "v4" token 的匹配坑已修）。
+    2. **快照机制 live 验证 PASS**：冻结一次（`--inject
+       me_force_zero_sea --snapshot_dir results/snapshots/
+       me_force_zero_sea_s1`，surface=INFEASIBLE，forward 71,096 tok），
+       三臂恢复（causal/reverse/random seed=1）全部从同一黑板分支出：
+       `resumed_from` + `snapshot_forward_tokens` 落盘于各 manifest；
+       loop tokens = total − snapshot 基线（93–96k/臂）；顺序对照如期
+       （causal ω=[ME,PD,DE] tip ME；reverse 固定 [PD,ME,DE]；random
+       seed=1 恰为 [ME,PD,DE]）。**同板公平承诺现已是逐字节事实。**
+    3. 单抽样观察（非论文数据）：三臂 K=3 内均未达 verified/Practical
+       Optimal（obj 1.34M/1.41M/1.41M），与 DashScope 早期抽样同类，
+       需要的是复格与调参，非机械问题。
+    **引擎定案：官方 DeepSeek / deepseek-flash（V4.1 Flash）**。余额
+    剩 ¥0.34——扩 n 网格前需充值（按今日实测：一臂 ~¥0.05，整个
+    n=5×3 序网格估 <¥2）。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -608,7 +630,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
 | Next experiment priority | **DE contract E2E smoke** | Catalog/validator implemented; first verify one no-plant run is Practical Optimal. Do not claim the corrected v4 replay localized the original gap. |
-| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）** | 2026-09-11 用户改定官方端点（`.env` 旧 DEEPSEEK_API_KEY 已失效 401，待换新 key）；`deepseek-flash` 的 thinking 禁用分支已在 llm_config 修复；GLM 已判不适用；DashScope 为备选 |
+| 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS，~¥0.15；GLM 已判不适用；余额 ¥0.34，扩 n 前需充值 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
 ---
