@@ -292,6 +292,19 @@
     **引擎定案：官方 DeepSeek / deepseek-flash（V4.1 Flash）**。余额
     剩 ¥0.34——扩 n 网格前需充值（按今日实测：一臂 ~¥0.05，整个
     n=5×3 序网格估 <¥2）。
+  - **扩样战役 DONE（2026-09-11 深夜；用户充值 ¥20 后）**：快照模式
+    29 运行（5 冻结 + 15 Exp-A 臂 + 10 Exp-B 臂）共 **¥1.70 / ~20 分钟**
+    （余额 ¥18.37 余）。**预注册 Exp-A 预期在 n=5 下全部满足**：first-
+    probe causal 5/5 > random 3/5 > reverse 0/5；verified 0.20 > 0 /
+    0.20 = 0.20 / 0；SSR 2/5 最高；成本同量级。**关键机制证据**：random
+    唯一 verified 命中恰为洗牌成 causal 同序（[ME,PD,DE]）的那格，
+    其 3 个 first-probe 命中全部是 ME 首位前缀——随机臂收益完全来自
+    偶然对齐因果序。Exp-B internal：SB = adversarial（verified 平
+    0.20）但 adversarial 花 **2.03× token**，first-probe 0.60 vs 1.00，
+    sequential 全零。总结（含逐格细节与保留意见）：
+    `results/exp_ab_ds41_snapshot/summary.md`。**下一步**：稿件 measured
+    表换本战役数字（声明快照模式与 loop-token 口径）→ Phase-4 多 plant
+    网格（同法冻结/恢复）→ Exp-B external（Debate/Reflexion）→ Exp-C。
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
