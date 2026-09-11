@@ -214,6 +214,18 @@
     arms); the no-plant E2E gate stays fully live and cannot be replayed.
     ZCode subagents may rehearse the resume path (harness validation only —
     never as paper data: workspace holds the plants/a*, no audit trail).
+  - **Subagent rehearsal DONE (2026-09-10; harness-only, not paper data).**
+    4 subagents replayed real prompt templates on a planted force-zero
+    failure (report: `results/subagent_rehearsal/REPORT.md`, gitignored).
+    Behavior matched design (rank tips ME; ME-backward complies with
+    minimal strip; ME-forward requests 4 knowledge modules round 1).
+    Machinery caught **3 schema-drift classes** real LLMs emit (param
+    indices as dict; DecisionVariable missing indices/shape + name/type
+    drift; direction "minimize") → before-validators added
+    (`pr/8-schema-coercions`, stacked on pr/7) + 9 regressions; suite
+    **91 passed**. Rehearsal re-confirmed: subagent transport has no raw
+    byte recovery (HTML-escaped final message only) — unusable as data
+    source, fine as free fixture generator.
   - **Next concrete work (ordered) — Debate still frozen:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
