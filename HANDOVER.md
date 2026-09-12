@@ -399,6 +399,20 @@
     `results/exp_b_external/summary.md`；编排
     `scripts/run_ebext_grid.py`。稿件 tab:exp_baselines 已换五方法全表
     + 外部 prose，编译 0 错误。
+  - **Exp-C DONE（2026-09-12，零成本离线重分析）**：对 smoke 网格
+    7 方法臂 × 共享 20 快照的 events.jsonl 逐轮重构（comply 后再诊断 =
+    执行反驳推翻；verified 轮 = 最后未被推翻的 comply）。**三发现**：
+    (i) attr-vs-K 是阶跃函数，阶跃位置 = a\* 序位——causal 全部 9 个
+    verified 命中在第 1 探（K=1 饱和），reverse 0@1→5@≥2，所有方法
+    K=2→3 零增量（预算 2 轮后不约束，起作用的是对齐不是预算深度）；
+    (ii) **零假抵赖**：~140 探查中 a\*=ME 从不抵赖，抵赖全来自无辜
+    PD/DE——truthful best response 日志级成立（单植物保留：ME 植物
+    罪证在其自身输出内）；(iii) comply 推翻率 46–71%（ν 承重）；
+    debate 64% 抵赖率（面板数据层指控全被 DE 抵赖）；reflexion
+    7→11 的 K=2 跳升 = 记忆修订逃离坏首归因。脚本
+    `scripts/summarize_exp_c.py`；总结 `results/exp_c/summary.md`；
+    稿件 tab:exp_diag 已换 measured 七方法表 + prose，编译 0 错。
+    K>3 未跑不外推。**至此稿件全部实验表均为 measured。**
   - **Next concrete work (ordered) — Debate unfrozen and DONE:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -437,44 +451,43 @@
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：Exp-C（诊断动力学）设计 + 离线先行，或 DE/PD 实例族复制
+# 任务：稿件写作收官（Conclusion + 摘要 + 一致性通读）
 
-## 现状（2026-09-12 凌晨，全部已提交推送至 main HEAD）
+## 现状（2026-09-12，全部已提交推送至 main HEAD）
 
-- 引擎：官方 DeepSeek / deepseek-flash（余额以 GET
-  api.deepseek.com/user/balance 实查为准）。
-- **实验主体已齐**：Exp-A n=20（smoke）+ 实例族 n=10×2（verified 子句
-  池化显著 p=0.0078/0.039）+ Phase-4 三植物条件复制 + Exp-B 五方法
-  同板 n=20 全表（SB/adv/seq/debate/reflexion：SB first-probe 8:0
-  支配全部对手；reflexion verified 0.55 点估高于 SB 0.45 但 ns 且
-  2.8× 成本）。各总结：results/exp_ab_ds41_snapshot/、
-  results/instance_family/、results/p4_grid/、results/exp_b_external/。
-- 稿件 measured 表全数落地（tab:exp_ablation / tab:exp_multiplant /
-  tab:exp_instances / tab:exp_baselines），编译 0 错误；结论与摘要仍是
-  占位符。schema 漂移防御 4 类已落地（106 tests）。
-- 编排工具链：run_p4_grid.py（实例化）/ run_ebext_grid.py（外部位）/
-  summarize_p4_grid.py + exp_b_external/summary.json。
+- **全部实验块均为 measured**：Exp-A（smoke n=20 + 实例族 n=10×2，
+  verified 子句池化显著 p=0.0078/0.039；Phase-4 三植物条件复制）、
+  Exp-B（五方法同板 n=20 统一表）、Exp-C（离线重分析：阶跃 attr-vs-K、
+  零假抵赖、comply 推翻 46-71%）。各总结在 results/{exp_ab_ds41_snapshot,
+  instance_family,p4_grid,exp_b_external,exp_c}/。
+- 稿件表全 measured（tab:exp_ablation / exp_multiplant / exp_instances /
+  exp_baselines / exp_diag），编译 0 错，套件 106/106。
+- 余额 ~¥4.5（官方 deepseek-flash）；可选增强实验需充值后另开战役。
 
-## 本任务（按优先级）
+## 本任务（写作，零 API 花费）
 
-1. **Exp-C 设计 + 离线先行**：attr vs K 曲线与 deflect-overturn 率可先
-   从既有 200+ 臂的 events.jsonl/refutation_log 离线重分析；需要补格
-   （如 K 扫描）再实跑，先 2 seed 试运行。
-2. 或 **DE/PD 植物实例族复制**（p4 结论的实例交叉）。
+1. **Conclusion 成稿**（现为 [Placeholder]）：三条主线收拢——
+   (a) 对齐机制（ω₁=a* 决定 first-probe，40 random 臂零例外）；
+   (b) 条件复制（rank 可见性：ME/PD 可见、DE 语义不可见→设计修订注册）；
+   (c) 成本/鲁棒（SB 对 debate/reflexion first-probe 8:0；reflexion
+   verified 点估 0.55>0.45 但 ns 且 2.8× token；comply 推翻率证明 ν 承重；
+   零假抵赖 = truthful best response）。主张边界按 §claim boundaries。
+2. **摘要定稿**：把 [Draft] 标记摘掉，数字与主张对齐 measured 表。
+3. **一致性通读**：全文数字 vs summary.json 逐项核对；口径声明
+   （快照模式 / loop-token / 序贯披露 / 单植物保留）无遗漏；
+   ef/\cite 检查；编译干净。
+4. 用户拍板项：venue（EJOR/C&OR vs agent 会议 vs EAAI）、系统命名。
 
 ## 硬约束
 
-- Debate/Reflexion 已解冻（用户 2026-09-12 明示）；如需新协议变体仍
-  先 subagent 彩排再花钱。
-- 主指标 verified_attribution_hit；战役内设计不可变；序贯扩样披露。
-- 引擎/运行方式不与旧战役混池；manifest 溯源。
-- 预算：先查余额，战役硬帽与用户确认；每格先 2 seed 试运行。
+- 不跑新 LLM 战役（除非用户另行要求并充值）。
+- 数字只从 results/*/summary.json 与 manifest 取，不手抄记忆。
 
 ## 验收
 
-- [ ] 所选方案产出 summary（含检验）入 results/ 对应目录
-- [ ] 稿件对应表/prose 刷新（Exp-C 现为 mock 占位）
-- [ ] HANDOVER 更新 + 未超预算 + 全部提交推送
+- [ ] Conclusion + 摘要成稿，全文无 [Placeholder]/[Draft] 残留（除声明保留者）
+- [ ] 数字一致性核对记录；编译 0 错、无 undefined refs
+- [ ] HANDOVER 更新 + 提交推送
 ```
 
 ---
@@ -769,7 +782,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
-| Phase-4 campaign orchestrator + summarizer | `scripts/run_p4_grid.py`（实例化：--prob_name/--state_root/--prefix）, `scripts/summarize_p4_grid.py`, `scripts/run_ebext_grid.py`；总结 `results/p4_grid/`、`results/instance_family/`、`results/exp_b_external/` |
+| Campaign orchestrators + summarizers | `scripts/run_p4_grid.py`（实例化）, `scripts/run_ebext_grid.py`, `scripts/summarize_p4_grid.py`, `scripts/summarize_exp_c.py`；总结 `results/{p4_grid,instance_family,exp_b_external,exp_c}/` |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |

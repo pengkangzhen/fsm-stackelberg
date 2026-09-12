@@ -1595,22 +1595,55 @@ random/reverse or non-committed baselines; deflects that contradict re-solve
 are overturned at high rate. Flat curves in $K$ or near-zero overturn rates
 indicate that commitment is not operational.
 
-\paragraph{Illustrative expected pattern (mock; not measured).}
-Table~\ref{tab:exp_diag}.
+\paragraph{Measured results (offline re-analysis of the completed grid).}
+Table~\ref{tab:exp_diag} reports an offline reconstruction of per-probe
+dynamics from the event logs of the smoke-grid campaigns above (seven
+method arms, all on the same twenty frozen blackboards; no new runs):
+verified-at-round-$k$ is read cumulatively within the completed $K{=}3$
+episodes, a comply is \emph{overturned} when the executed re-solve
+re-enters diagnosis, and a deflect is \emph{false} when it comes from the
+eventually verified layer. Three readings follow. First, the curves are
+step functions positioned by where the guilty layer sits in the order:
+under causal commitment all nine verified attributions occur at the
+\emph{first} probe ($9/20$ at $K{=}1$, saturated), reverse reaches zero at
+$K{=}1$ and its full $5/20$ only at $K{\ge}2$, and random lies between
+($6$ aligned hits at $K{=}1$, $9$ by $K{=}2$). The registered ``rises
+faster under causal'' clause thus holds in the step-function sense, and
+the deeper diagnostic is that no method gains anything from $K{=}2$ to
+$K{=}3$: within this budget the operative variable is the alignment of
+$\omega_1$ with $a^{\star}$, not budget depth (a $K{>}3$ sweep was not run
+and is not claimed). Second, deflects are truthful: across roughly one
+hundred and forty probes by seven methods, the guilty layer never
+deflected---every deflect came from an innocent downstream layer---which
+is the truthful-best-response behaviour the commitment-plus-refutation
+mechanism is designed to induce (single-plant caveat: the model-layer
+plant's guilt is visible in its own output). Third, executed refutation
+is load-bearing: $46$--$71\%$ of complies are overturned by the re-solve
+(the repair claimed success but the objective did not recover), so a
+comply is never taken on trust. Debate's $64\%$ deflect rate is the
+panel's data-layer accusations being rejected by the data layer's own
+backward check; Reflexion's $7\to11$ jump between $K{=}1$ and $K{=}2$
+reflects its memory-driven revision escaping bad first attributions,
+consistent with its multi-round profile in the external comparison.
 
 \begin{table}[t]
 \centering
-\caption{Exp-C diagnostics --- \textbf{illustrative mock} (verified attr.\ vs.\ $K$;
-deflect overturn under causal Stackelberg).}
+\caption{Exp-C diagnostics --- \textbf{measured} (offline re-analysis of
+the completed smoke-grid episodes; $n{=}20$ shared blackboards per method;
+verified attr.\ cumulative within the completed $K{=}3$ episodes).}
 \label{tab:exp_diag}
 \label{tab:exp_iv}
-\begin{tabular}{@{}l c c c c@{}}
+\begin{tabular}{@{}l c c c c c c@{}}
 \toprule
-Method / $K$ & $K{=}1$ & $K{=}2$ & $K{=}3$ & Deflect overturn \\
+Method & $K{=}1$ & $K{=}2$ & $K{=}3$ & Probes/cell & Deflect & Comply overturn \\
 \midrule
-stackelberg causal & 0.45 & 0.60 & 0.70 & 0.75 \\
-adversarial        & 0.50 & 0.55 & 0.60 & --- \\
-sequential         & 0.10 & 0.15 & 0.20 & --- \\
+stackelberg causal & $9/20$ & $9/20$ & $9/20$ & 1.9 & 29\% & 52\% \\
+stackelberg random & $6/20$ & $8/20$ & $9/20$ & 2.1 & 32\% & 46\% \\
+stackelberg reverse& $0/20$ & $5/20$ & $5/20$ & 2.3 & 22\% & 71\% \\
+adversarial        & $7/20$ & $8/20$ & $8/20$ & 2.1 & 10\% & 55\% \\
+sequential         & $0/20$ & $0/20$ & $0/20$ & 2.4 & 4\%  & 56\% \\
+debate             & $6/20$ & $7/20$ & $7/20$ & 2.4 & 64\% & 47\% \\
+reflexion          & $7/20$ & $11/20$& $11/20$& 2.1 & 10\% & 53\% \\
 \bottomrule
 \end{tabular}
 \end{table}
