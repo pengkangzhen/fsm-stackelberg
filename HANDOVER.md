@@ -413,6 +413,16 @@
     `scripts/summarize_exp_c.py`；总结 `results/exp_c/summary.md`；
     稿件 tab:exp_diag 已换 measured 七方法表 + prose，编译 0 错。
     K>3 未跑不外推。**至此稿件全部实验表均为 measured。**
+  - **写作收官 DONE（2026-09-12，零 API 花费）**：Conclusion 成稿
+    （三段：committed-alignment 机制与条件复制 / 量化图景——SB 对
+    debate/reflexion naming 8:0、实例族 verified 池化 0.60 vs 0.20
+    p=0.008、K=2→3 零增量 / 边界与已注册后续）；摘要去 [Draft] 定稿
+    （机制主张 + 关键实测：零例外对齐、8:0、有罪层零抵赖、46-71%
+    comply 推翻、条件复制与设计修订声明）；highlights 换 measured 版。
+    一致性核对：五张 measured 表数字 vs results/*/summary.json 逐项
+    一致（程序化核对 17 项）；全文零 [Placeholder]/[Draft] 残留；
+    编译 0 错、无 undefined/multiply-defined refs，**21 页**。
+    **待用户拍板**：venue（EJOR/C&OR vs agent 会议 vs EAAI）、系统命名。
   - **Next concrete work (ordered) — Debate unfrozen and DONE:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -451,42 +461,33 @@
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：稿件写作收官（Conclusion + 摘要 + 一致性通读）
+# 任务：投稿决策后的格式化与 cover letter（或可选增强实验）
 
 ## 现状（2026-09-12，全部已提交推送至 main HEAD）
 
-- **全部实验块均为 measured**：Exp-A（smoke n=20 + 实例族 n=10×2，
-  verified 子句池化显著 p=0.0078/0.039；Phase-4 三植物条件复制）、
-  Exp-B（五方法同板 n=20 统一表）、Exp-C（离线重分析：阶跃 attr-vs-K、
-  零假抵赖、comply 推翻 46-71%）。各总结在 results/{exp_ab_ds41_snapshot,
-  instance_family,p4_grid,exp_b_external,exp_c}/。
-- 稿件表全 measured（tab:exp_ablation / exp_multiplant / exp_instances /
-  exp_baselines / exp_diag），编译 0 错，套件 106/106。
-- 余额 ~¥4.5（官方 deepseek-flash）；可选增强实验需充值后另开战役。
+- **稿件完整成稿**：全部实验表 measured（Exp-A smoke n=20 / 实例族
+  n=10×2 / Phase-4 三植物 / Exp-B 五方法 / Exp-C 离线重分析），
+  Conclusion + 摘要 + highlights 已定稿，21 页编译 0 错、零占位符，
+  数字与 results/*/summary.json 程序化核对一致。
+- 实验口径全部声明：快照模式、loop-token、序贯披露、契约/植物未表达
+  前向方差、单植物保留、K≤3、单引擎。
+- 余额 ~¥4.5；增强实验需充值另开战役。
 
-## 本任务（写作，零 API 花费）
+## 本任务（等用户拍板 venue 与系统命名后）
 
-1. **Conclusion 成稿**（现为 [Placeholder]）：三条主线收拢——
-   (a) 对齐机制（ω₁=a* 决定 first-probe，40 random 臂零例外）；
-   (b) 条件复制（rank 可见性：ME/PD 可见、DE 语义不可见→设计修订注册）；
-   (c) 成本/鲁棒（SB 对 debate/reflexion first-probe 8:0；reflexion
-   verified 点估 0.55>0.45 但 ns 且 2.8× token；comply 推翻率证明 ν 承重；
-   零假抵赖 = truthful best response）。主张边界按 §claim boundaries。
-2. **摘要定稿**：把 [Draft] 标记摘掉，数字与主张对齐 measured 表。
-3. **一致性通读**：全文数字 vs summary.json 逐项核对；口径声明
-   （快照模式 / loop-token / 序贯披露 / 单植物保留）无遗漏；
-   ef/\cite 检查；编译干净。
-4. 用户拍板项：venue（EJOR/C&OR vs agent 会议 vs EAAI）、系统命名。
+1. els-cas 按目标期刊格式要求微调（double-column/单栏、highlights
+   字数、abstract 限制）；cover letter（贡献三句话 + 数据可得性）。
+2. 可选增强（需充值+新战役）：DE/PD 实例族复制 / 更大网络实例 /
+   K>3 预算扫描 / DE 语义 provenance 修订（已注册设计修订）。
 
 ## 硬约束
 
-- 不跑新 LLM 战役（除非用户另行要求并充值）。
-- 数字只从 results/*/summary.json 与 manifest 取，不手抄记忆。
+- 不跑新 LLM 战役，除非用户明示并充值。
+- 数字只从 results/*/summary.json 与 manifest 取。
 
 ## 验收
 
-- [ ] Conclusion + 摘要成稿，全文无 [Placeholder]/[Draft] 残留（除声明保留者）
-- [ ] 数字一致性核对记录；编译 0 错、无 undefined refs
+- [ ] 投稿包（tex + pdf + cover letter）就绪
 - [ ] HANDOVER 更新 + 提交推送
 ```
 

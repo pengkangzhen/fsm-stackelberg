@@ -57,33 +57,39 @@
 \begin{abstract}
 % TODO: full abstract once experiments land. Method = diagnosis--repair redesign;
 % application = demand-uncertainty TSLP ECR (Section~\ref{sec:ecr_model}).
-[Draft] We recast the error diagnosis and repair stage of an LLM multi-agent
+We recast the error diagnosis and repair stage of an LLM multi-agent
 pipeline for Empty Container Repositioning (ECR) optimization as a Stackelberg
 \emph{inspection game} defined on a state machine. A LangGraph finite-state machine orchestrates role-specialized
 agents (Data Engineer $\to$ Model Expert $\to$ Python Developer $\to$ Solver)
 and serves as the stage-game apparatus. When a solve fails, the diagnosis
 agent acts as an \emph{inspector} (the Stackelberg leader) that commits, first
-and observably, to an inspection policy: a probing order following the
-pipeline's causal dependency (data $\tri$ model $\tri$ code) together with
-\emph{executed refutation} --- verifying every response by a real re-solve
-rather than by cheap talk. The accused agents are \emph{inspectees} (the
-followers): because a downstream layer is routinely implicated by an upstream
-defect it did not cause, each accused agent has a genuine private incentive to
-deflect blame and avoid wasted repair, so its interests are not aligned with
-truthful attribution. We show that the inspector's committed causal-order,
-executed-refutation policy induces the truthful best response --- a guilty
-layer complies and repairs, an innocent layer's deflection is verified ---
-replacing the baseline's single-judge LLM accusation. We formalize the
-mechanism, state a proposition on causal-order inspection, and instantiate it
+and observably, to an inspection policy: an evidence-ranked probing order
+together with \emph{executed refutation} --- verifying every response by a
+real re-solve rather than by cheap talk. The accused agents are
+\emph{inspectees} (the followers): because a downstream layer is routinely
+implicated by an upstream defect it did not cause, each accused agent has a
+genuine private incentive to deflect blame, so its interests are not aligned
+with truthful attribution. We formalize the mechanism and state a proposition
+linking committed inspection to a reduced viable root-cause set, then test it
 on a \emph{demand-uncertainty} sea--land ECR problem formulated as a two-stage
-stochastic linear program.
+stochastic linear program: three fault plants (one per layer), three problem
+instances, five diagnosis protocols, and shared frozen failure blackboards.
+The measured mechanism is precise: alignment of the committed order with the
+guilty layer fully determines first-probe attribution (zero exceptions over
+every random arm), causal commitment dominates single-judge, debate, and
+reflexion naming ($8{:}0$ discordant pairs) at the lowest token cost, the
+guilty layer never deflects under commitment, and $46$--$71\%$ of complying
+repairs are overturned by the re-solve --- executed verification, not talk,
+carries attribution. The order advantage replicates conditionally on the
+ranking's ability to see the fault layer; for rank-invisible semantic data
+faults we register a design revision rather than a post-hoc fix.
 \end{abstract}
 
 \begin{highlights}
 \item Diagnosis--repair is cast as a Stackelberg inspection game defined on a LangGraph state machine as the stage-game apparatus.
-\item The diagnosis agent is an inspector that commits, first-mover, to a causal-order (data $\tri$ model $\tri$ code) probing policy with executed refutation.
-\item Accused agents are inspectees with a genuine deflection incentive; the inspector's commitment induces truthful attribution.
-\item A proposition links causal-order inspection to a strictly smaller viable root-cause set than single-judge diagnosis.
+\item The inspector commits, first-mover, to an evidence-ranked probing policy with executed refutation of every repair by re-solve.
+\item Alignment of the committed order with the guilty layer fully determines first-probe attribution --- zero exceptions across all random arms.
+\item Committed inspection dominates single-judge, debate, and reflexion naming at the lowest token cost; guilty layers never deflect under commitment.
 \end{highlights}
 
 \begin{keywords}
@@ -1725,8 +1731,52 @@ regime above.
 %==============================================================================
 \section{Conclusion}
 \label{sec:conclusion}
-[Placeholder] To follow once Exp-A--C report attribution, cost, and
-mechanism diagnostics.
+
+We recast diagnosis--repair in an LLM optimization pipeline as a
+Stackelberg inspection game and asked what the inspector's commitment
+is actually worth. The empirical answer, across three fault plants,
+three problem instances, five diagnosis protocols, and one hundred and
+forty reconstructable probe rounds, is precise about the mechanism:
+\emph{committed alignment carries the information}. First-probe
+attribution occurs exactly when the committed $\omega_1$ equals the
+guilty layer --- with zero exceptions over every random arm ever run ---
+and the ranking that feeds the commitment sees the model layer (through
+symptom signatures) and the code layer (through relaxed-solve surfaces)
+but not contract-valid semantic data faults, for which naming failed for
+every fixed order. The order-effect claim is therefore conditionally
+replicated, not universal, and we register the corresponding design
+revision (provenance-style evidence for the data layer) rather than
+patching it post hoc.
+
+The quantitative picture is consistent with that mechanism. On the
+shared frozen blackboards of the main grid, causal Stackelberg attains
+first-probe attribution on every board and dominates single-judge,
+debate, and reflexion naming ($8{:}0$ discordant pairs each); verified
+attribution reaches $0.60$ versus $0.20$ under reverse commitment on the
+instance family (pooled paired $p=0.008$); and the budget diagnostics
+show that within $K{=}3$ nothing improves after the second round ---
+the guilty layer's position, not budget depth, is what the curves
+respond to. External multi-call protocols do not overturn the design:
+debate and reflexion name no better than one judge, and reflexion's
+non-significant verified edge ($0.55$ versus $0.45$) costs $2.8\times$
+the loop tokens without a committed order or its audit trail. Two
+mechanism checks close the loop between theory and logs: the guilty
+layer never deflected under commitment with executed refutation
+(truthful best response as designed), while $46$--$71\%$ of complying
+repairs were overturned by the re-solve --- verification, not cheap
+talk, is what carries attribution.
+
+The claims are bounded accordingly: the truthful-deflect result is
+established on the model-layer plant (whose guilt is visible in its own
+output), the instance family varies horizon and scenario count at fixed
+network size, all campaigns run a single engine under a frozen
+implementation, and $K$ is capped at three. Within those bounds the
+contribution stands as a mechanism, a proposition with matching
+dynamics, and a measured protocol: commitment buys naming accuracy and
+cheaper verifiable attribution precisely when the committed ranking can
+see the fault --- and the logs show why. Extending visibility to the
+semantic data layer, scaling the network, and testing cross-engine
+robustness of the ranking are the registered next steps.
 
 %==============================================================================
 \begin{thebibliography}{99}
