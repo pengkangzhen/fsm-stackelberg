@@ -16,7 +16,7 @@ such).
 
 Usage:
   uv run --no-sync python scripts/summarize_p4_grid.py   # writes
-  results/p4_grid/summary.md + summary.json
+  results/p4_grid/summary.json (summary.md is hand-maintained)
 """
 
 from __future__ import annotations
