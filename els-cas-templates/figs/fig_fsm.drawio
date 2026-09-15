@@ -1,0 +1,147 @@
+<mxfile host="app.diagrams.net" agent="fsm-stackelberg" version="24.7.5">
+  <diagram id="fig-fsm" name="Fig1-FSM">
+    <mxGraphModel dx="1200" dy="620" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== design tokens =====
+             type scale: 13px node names / 11px bold band+block titles / 10px labels
+             strokes: boxes 1pt; forward edges 1pt #666666; cycle edges 1.5pt #1A1A1A; bb stubs dotted #B3B3B3
+             layer hues (Okabe-Ito): data #0072B2 / model #009E73 / code #D55E00, fills 6-8% tints
+        -->
+
+        <!-- ================= shared blackboard band (top, de-boxed) ================= -->
+        <mxCell id="bb" value="" style="rounded=1;arcSize=4;fillColor=#F5F5F5;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="8" y="8" width="752" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="bbTitle" value='&lt;b style="font-size: 11px;"&gt;Shared blackboard S&lt;/b&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#000000;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="24" y="8" width="136" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="bbC1" value='&lt;b style="font-size: 11px;"&gt;control&lt;/b&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;retry &amp;middot; round &amp;middot; implicated agent &amp;middot; K&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="176" y="8" width="168" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="bbC2" value='&lt;b style="font-size: 11px;"&gt;payload&lt;/b&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;agent outputs &amp;middot; error evidence &amp;middot; metrics&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="368" y="8" width="168" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="bbC3" value='&lt;b style="font-size: 11px;"&gt;history &amp;Rightarrow; evidence base E&lt;/b&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;append-by-field {(x&lt;sup&gt;(i)&lt;/sup&gt;, y&lt;sup&gt;(i)&lt;/sup&gt;)}&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#333333;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="560" y="8" width="184" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- ================= forward chain ================= -->
+        <mxCell id="qDE" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;DE&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;DataEngineer&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072B2;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="64" y="128" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qME" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;ME&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;ModelExpert&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EAF6F1;strokeColor=#009E73;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="208" y="128" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qPD" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;PD&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;PythonDeveloper&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FBEFE6;strokeColor=#D55E00;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="416" y="128" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qSE" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;SE&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;SolverExecutor&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#4D4D4D;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="560" y="128" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qEnd" value='&lt;span style="font-size: 13px;"&gt;End&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4D4D4D;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="704" y="128" width="52" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qKL" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;KL&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;KnowledgeLoader&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#4D4D4D;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="312" y="224" width="104" height="48" as="geometry" />
+        </mxCell>
+        <!-- knowledge note: borderless annotation -->
+        <mxCell id="kb" value='&lt;span style="font-size: 10px;"&gt;&lt;i&gt;TSLP knowledge base &amp;mdash; catalog &amp;middot; inject on request&lt;/i&gt;&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#4D4D4D;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="264" y="292" width="200" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- ================= diagnosis-repair band (de-boxed) ================= -->
+        <mxCell id="cycle" value="" style="rounded=1;arcSize=4;fillColor=#F7F7F7;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="56" y="352" width="368" height="104" as="geometry" />
+        </mxCell>
+        <mxCell id="cycleLabel" value='&lt;span style="font-size: 10px;"&gt;&lt;i&gt;backward (repair) states q&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/i&gt;&lt;/span&gt;' style="text;html=1;align=left;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#4D4D4D;" vertex="1" parent="1">
+          <mxGeometry x="72" y="352" width="216" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="qDG" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;DG&lt;/sub&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;DiagnosisAgent&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#1A1A1A;strokeWidth=1.5;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="560" y="368" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="qDEm" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;DE&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;repair a&lt;sub&gt;1&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F2F8FC;strokeColor=#0072B2;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="80" y="392" width="96" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qMEm" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;ME&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;repair a&lt;sub&gt;2&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F1FAF7;strokeColor=#009E73;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="192" y="392" width="96" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qPDm" value='&lt;span style="font-size: 13px;"&gt;q&lt;sub&gt;PD&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;repair a&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;&amp;#8722;&lt;/sup&gt;&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FCF4ED;strokeColor=#D55E00;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="304" y="392" width="96" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ================= forward edges (1pt gray) ================= -->
+        <mxCell id="eStart" value='start q&lt;sub&gt;0&lt;/sub&gt;' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" target="qDE">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="16" y="152" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eDEME" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qDE" target="qME">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eMEPD" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qME" target="qPD">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ePDSE" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qPD" target="qSE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eSEEnd" value='success | K exhausted' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qSE" target="qEnd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- optional knowledge-load branch -->
+        <mxCell id="eMEKL" value='requested' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qME" target="qKL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eKLME" value='knowledge added' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qKL" target="qME">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eKLPD" value='else' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qKL" target="qPD">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= diagnosis-repair cycle edges (1.5pt dark) ================= -->
+        <mxCell id="eFailure" value='failure' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="qSE" target="qDG">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eVerdict" value='verdict &amp;#8467;*' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qDG" target="cycle">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eResume" value='&amp;#946;=0: resume downstream' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.1;exitDx=0;exitDy=0;" edge="1" parent="1" source="cycle" target="eDEME">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="40" y="152" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eRediag" value='&amp;#946;=1: re-diagnose' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.45;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="cycle" target="qDG">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="612" y="496" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eTerm" value='terminate' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontStyle=2;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.05;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="cycle" target="qEnd">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="74" y="520" />
+              <mxPoint x="730" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= blackboard stubs (dotted) ================= -->
+        <mxCell id="bb1" style="endArrow=block;endFill=0;endSize=4;startArrow=block;startFill=0;startSize=4;strokeColor=#B3B3B3;strokeWidth=1;dashed=1;dashPattern=1 3;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.144;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qDE" target="bb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bb2" style="endArrow=block;endFill=0;endSize=4;startArrow=block;startFill=0;startSize=4;strokeColor=#B3B3B3;strokeWidth=1;dashed=1;dashPattern=1 3;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.334;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qME" target="bb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bb3" style="endArrow=block;endFill=0;endSize=4;startArrow=block;startFill=0;startSize=4;strokeColor=#B3B3B3;strokeWidth=1;dashed=1;dashPattern=1 3;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.611;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qPD" target="bb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

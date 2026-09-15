@@ -1,6 +1,4 @@
 %% fsm-stackelberg — manuscript draft (cas-sc)
-%% Status: Proposed Method section is the focus of this draft; Introduction,
-%%         Conclusion remains a placeholder; experiment \emph{results} pending.
 %% Compile: latexmk -pdf manuscript.tex  (run inside els-cas-templates/)
 
 \PassOptionsToPackage{hyperfootnotes=false}{hyperref}
@@ -17,19 +15,8 @@
 \usepackage{algpseudocodex}
 \usepackage{xcolor}
 \usepackage[most]{tcolorbox}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,calc,fit,shapes.geometric}
 
-\graphicspath{{figs/}}
-
-%% Graceful figure fallback: draws a labelled placeholder when the artwork
-%% is not yet available, so the document always compiles.
-\newcommand{\figplaceholder}[2][0.9\linewidth]{%
-  \begin{tikzpicture}
-    \draw[thick,dashed,gray!55,fill=gray!4] (0,0) rectangle (#1,4.6cm);
-    \node[gray!60,font=\itshape\small,align=center,text width=0.85\linewidth]
-      at (0.5*#1,2.3cm) {#2};
-  \end{tikzpicture}}
+\graphicspath{{figs/}{../figures/}}
 
 %% Semi-formal proposition box (avoids depending on a theorem environment).
 \newtcolorbox{propbox}[1][]{enhanced,breakable,
@@ -50,9 +37,35 @@
 
 \title[mode=title]{A Stackelberg Inspection Game for Diagnosis--Repair in LLM-Based Empty Container Repositioning Optimization}
 
-\author[dlmu]{Kangzhen Peng}\ead{pengkangzhen@dlmu.edu.cn}
+\author[dlmu]{Kangzhen Peng}
+\ead{pengkangzhen@dlmu.edu.cn}
+
+\author[dlmu]{Siqi Duan}
+\ead{duansiqi@dlmu.edu.cn}
+
+\author[nbu]{Yuhong Wang}
+\ead{wangyuhong@nbu.edu.cn}
+
+\author[lnut]{Jiaxin Cai}
+\ead{jgcaijx@lnut.edu.cn}
+
+\author[djtu]{Shida Xu}
+\ead{xushida@djtu.edu.cn}
+
+\author[dlmu]{Zhihong Jin\corref{cor1}}
+\ead{jinzhihong@dlmu.edu.cn}
+\ead[url]{https://orcid.org/0000-0003-4342-1561}
+
+\cortext[cor1]{Corresponding author. Tel.: +86; fax: +86.}
+
 \affiliation[dlmu]{organization={College of Transportation Engineering, Dalian Maritime University},
   addressline={No. 1 Linghai Road}, city={Dalian}, postcode={116026}, state={Liaoning}, country={China}}
+\affiliation[nbu]{organization={Faculty of Maritime and Transportation, Ningbo University},
+  addressline={No. 169, Qixing South Road}, city={Ningbo}, postcode={315211}, state={Ningbo}, country={China}}
+\affiliation[lnut]{organization={School of Economics and Management, Liaoning University of Technology},
+  addressline={}, city={Jinzhou}, postcode={121001}, state={Liaoning}, country={China}}
+\affiliation[djtu]{organization={College of Economics and Management, Dalian Jiaotong University},
+  addressline={}, city={Dalian}, postcode={116028}, state={Liaoning}, country={China}}
 
 \begin{abstract}
 We recast the error diagnosis and repair stage of an LLM multi-agent
@@ -75,7 +88,8 @@ instances, five diagnosis protocols, and shared frozen failure blackboards.
 The measured mechanism is precise: alignment of the committed order with the
 guilty layer fully determines first-probe attribution (zero exceptions over
 every random arm), causal commitment dominates single-judge, debate, and
-reflexion naming ($8{:}0$ discordant pairs) at the lowest token cost, the
+reflexion naming (paired across all twenty shared boards without a single
+discordance) at the lowest token cost, the
 guilty layer never deflects under commitment, and $46$--$71\%$ of complying
 repairs are overturned by the re-solve --- executed verification, not talk,
 carries attribution. The order advantage replicates conditionally on the
@@ -201,8 +215,8 @@ Section~\ref{sec:related} reviews ECR research and the shift to agentic
 NLO. Section~\ref{sec:ecr_model} gives the ECR problem description and
 mathematical formulation.
 Section~\ref{sec:method} develops the inspection mechanism.
-Section~\ref{sec:experiments} states the experimental protocol; results and
-the Conclusion follow the campaign.
+Section~\ref{sec:experiments} reports the experimental campaign and
+results; Section~\ref{sec:conclusion} concludes.
 
 %==============================================================================
 \section{Related Work}
@@ -294,6 +308,10 @@ coordination, and Stackelberg resource
 governance~\citep{yi2025econ,stackelberg2026resource,du2023improving}.
 Classical inspection games analyze an inspector who commits to a monitoring
 policy and an inspectee who best-responds~\citep{avenhaus2002inspection,maschler1966inspection}.
+In AI, the same leader-commitment logic underpins deployed Stackelberg
+security games, where a defender commits to a randomized patrolling or
+scheduling policy and adversaries best-respond after
+surveillance~\citep{korzhyk2011security,tambe2011security}.
 We use that template for layered NLO diagnosis--repair: the diagnosis agent
 is the inspector; data/model/code agents are inspectees; commitment is to
 causal-order probing plus executed refutation on the ECR blackboard. This
@@ -625,7 +643,7 @@ downstream and contaminate downstream signals; we do not claim gains for
 general LLM reasoning.
 
 %------------------------------------------------------------------------------
-\subsection{Agent Definitions}
+\subsection{Agent definitions}
 \label{sec:agents}
 
 We retain the baseline's role-specialized agents. Let
@@ -664,7 +682,7 @@ where $f_i$ selects the necessary dependencies. The backward map is invoked
 only on the agent implicated by diagnosis (Section~\ref{sec:stackelberg}).
 
 %------------------------------------------------------------------------------
-\subsection{Multi-Agent Architecture and State-Machine Orchestration}
+\subsection{Multi-agent architecture and state-machine orchestration}
 \label{sec:architecture}
 
 The agents of Section~\ref{sec:agents} are composed into an extended
@@ -687,11 +705,22 @@ the lone terminal is $\textsc{End}$. Figure~\ref{fig:fsm} depicts $M$.
 
 \begin{figure}[pos=htbp]
 \centering
-\figplaceholder{Figure placeholder: the finite-state machine $M$.\\
-Forward chain $q_{\textsc{de}}\!\to\!q_{\textsc{me}}\!\to\!\{q_{\textsc{kl}}\}\!\to\!q_{\textsc{pd}}\!\to\!q_{\textsc{se}}$;\\
-diagnosis--repair cycle $q_{\textsc{se}}\!\to\!q_{\textsc{dg}}\!\to\!q^{-}\!\to\!(\text{resume}\,/\,\text{re-diagnose}\,/\,\textsc{End})$.\\
-\emph{Artwork to be supplied.}}
-\caption{The extended finite-state machine $M=(\Qcal,q_0,\Delta,\Scal,K)$. Solid arrows: the forward chain (including an optional ModelExpert knowledge-load branch). Dashed arrows: the diagnosis--repair cycle, whose return edge is determined by the Stackelberg verdict (Section~\ref{sec:stackelberg}).}
+\includegraphics[width=0.95\linewidth]{fig_fsm.pdf}
+\caption{The extended finite-state machine $M=(\Qcal,q_0,\Delta,\Scal,K)$.
+Node colors mark the causally ordered correctable layers
+data $\tri$ model $\tri$ code. $q_{\textsc{kl}}$ injects, on demand from a
+catalogued TSLP knowledge base (two-stage structure; stage-1 sea and
+stage-2 inland decisions $[\mathrm{D1}]/[\mathrm{D2}]$; network nodes;
+demand scenarios $\Omega$; exogenous supply $\xi$; data layout), the
+modules ModelExpert requests. Thin gray arrows: the forward chain. Bold
+dark arrows: the
+diagnosis--repair cycle --- the diagnosis verdict $\hat{\ell}^{\star}$
+selects the backward state, and the return transition $\delta^{-}$ routes on
+the executed Stackelberg verdict (Section~\ref{sec:stackelberg}): resume
+downstream of the repaired agent ($\beta{=}0$), re-enter diagnosis
+($\beta{=}1$), or terminate. Dotted stubs: every state reads from and
+writes to the shared blackboard $\Scal$ only, whose append-by-field history
+constitutes the evidence base $\Ecal$ of the inspection game.}
 \label{fig:fsm}
 \end{figure}
 
@@ -738,7 +767,7 @@ Section~\ref{sec:stackelberg}; without this formalization, the FSM would be
 indistinguishable from generic graph orchestration.
 
 %------------------------------------------------------------------------------
-\subsection{Inter-Agent Communication via a Shared Blackboard}
+\subsection{Inter-agent communication via a shared blackboard}
 \label{sec:comm}
 
 Agents never exchange messages pairwise. All communication is mediated by a
@@ -776,7 +805,7 @@ Section~\ref{sec:stackelberg} is defined, and its completeness is what makes
 blame attributable rather than heuristic.
 
 %------------------------------------------------------------------------------
-\subsection{The Stackelberg Diagnosis--Repair Game as an Inspection Game}
+\subsection{The Stackelberg diagnosis--repair game as an inspection game}
 \label{sec:stackelberg}
 
 We cast the diagnosis--repair stage as a
@@ -808,6 +837,24 @@ locus typically marks where the pipeline \emph{broke}, most often in
 generated code, rather than where the defect was \emph{introduced}. The
 failure surface therefore motivates an \emph{inspection} protocol rather than
 a one-shot classification of the traceback locus.
+Figure~\ref{fig:layering} sketches this structure.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=0.95\linewidth]{fig2_causal_layering.pdf}
+\caption{Causal layering of defects and the deflection incentive
+(Section~\ref{sec:layered}). A defect introduced at layer $\ell^{\star}$
+(star) propagates strictly downstream and may manifest at any layer
+$j\ge\ell$; the SolverExecutor failure surface records the symptom locus
+(often generated code), not the certified root cause. Reading the traceback
+locus therefore implicates $a_3$ heuristically (dashed arrow). An
+implicated-but-innocent layer strictly prefers to \emph{deflect} (bold
+arrow): a local repair cannot succeed and only consumes tokens, so
+complying at the wrong layer fails re-solve ($\times$). A guilty layer may
+likewise defect to dodge the repair cost --- this misalignment is what turns
+diagnosis into an inspection game rather than a classification.}
+\label{fig:layering}
+\end{figure}
 
 Causal layering of defects does not merely make attribution ambiguous; it
 gives the accused agents \emph{misaligned private incentives}, which is what
@@ -1024,7 +1071,7 @@ empirical validation --- centered on the commitment-order ablation --- are
 deferred to the experimental section. $\square$
 
 %------------------------------------------------------------------------------
-\subsection{The Diagnosis--Repair Algorithm}
+\subsection{The diagnosis--repair algorithm}
 \label{sec:algorithm}
 
 Algorithm~\ref{alg:fsm_stackelberg} unifies the architecture and the repair
@@ -1304,6 +1351,22 @@ executed refutation within $K$: alignment fully determines first-probe and
 raises the chance of early verified attribution, but multi-round search
 under executed refutation is a genuine second route. Token costs are of
 the same order across orders (causal marginally lowest).
+Figure~\ref{fig:expa} summarizes the ablation and the alignment audit.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=0.85\linewidth]{fig5_exp_a_ablation.pdf}
+\caption{Exp-A commitment-order ablation and alignment audit (measured;
+snapshot mode; $n{=}20$/order; plant \texttt{me\_force\_zero\_sea}).
+(a) First-probe hit, verified attribution, and SSR@$K$ by probe order.
+(b) Seed-level alignment audit of the random arm: a first-probe hit
+occurs if and only if the committed shuffle places the guilty layer first
+($\omega_1=a^{\star}$; $10/10$ with zero exceptions) --- the random arm's
+naming performance is carried entirely by accidental alignment with the
+ranking. Seeds 7, 12, 14 had no completed run manifest and are outside
+the campaign's $n{=}20$.}
+\label{fig:expa}
+\end{figure}
 
 \begin{table}[t]
 \centering
@@ -1359,6 +1422,24 @@ the code-layer plant through the relaxed-DEP surface (and structurally
 through reverse), invisible for the semantic data fault, where naming
 fails for every fixed order and only chance alignment or multi-round
 executed refutation recovers the root cause.
+Figure~\ref{fig:visibility} condenses this conditional pattern.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=0.72\linewidth]{fig6_visibility_matrix.pdf}
+\caption{First-probe hit rate by plant/instance and probe order
+(measured; snapshot mode; $K{=}3$; DeepSeek \texttt{deepseek-flash}). The
+commitment-order effect is gated by fault visibility. Model-layer faults
+(smoke plant and both instance replications) are visible to the causal
+rank: causal $=1.0$, random $\approx 0.4$--$0.5$, reverse $=0$. The
+code-layer fault is visible through the relaxed-DEP surface from
+\emph{both} ordered endpoints (causal $9/10$, reverse $10/10$ by
+construction) while random fails ($2/10$). The rank-invisible semantic
+data fault defeats every fixed order (causal $=$ reverse $=0/10$); only
+chance alignment (random $4/10$) or multi-round executed refutation
+recovers it.}
+\label{fig:visibility}
+\end{figure}
 
 \begin{table}[t]
 \centering
@@ -1510,8 +1591,10 @@ baseline ($0{:}0$ discordant pairs) --- and verified attribution $7/20$ at
 $3.7\times$ Stackelberg's loop tokens. Reflexion (single-judge accusation
 critiqued against episode memory) also attains first-probe $12/20$
 (cell-for-cell identical again), with verified attribution $11/20$
-($0.55$): a point estimate above Stackelberg's $0.45$ that is not
-significant ($0{:}2$ discordant pairs, $p=0.5$) and is bought at
+($0.55$, Wilson 95\% CI $[0.34, 0.74]$): a point estimate above
+Stackelberg's $0.45$ (95\% CI $[0.26, 0.66]$), where the two intervals
+overlap over most of their range and the paired difference is not
+significant ($0{:}2$ discordant pairs, $p=0.5$), bought at
 $2.8\times$ the loop tokens without a committed order or its audit
 structure. Against Stackelberg, both external protocols lose first-probe
 naming decisively ($8{:}0$ discordant pairs each, $p=0.008$). The
@@ -1521,7 +1604,22 @@ therefore not triggered: multi-calling the diagnoser neither improves
 naming over a single judge nor delivers verified attribution at
 competitive cost, although Reflexion's non-significant verified edge is
 reported as an honest caveat against over-reading the Stackelberg
-advantage.
+advantage. Figure~\ref{fig:expb} shows the accuracy--cost trade-off.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=0.55\linewidth]{fig4_exp_b_pareto.pdf}
+\caption{Verified attribution versus mean loop-token cost across the five
+Exp-B methods ($n{=}20$ shared frozen blackboards each; error bars:
+Wilson 95\% CIs). Stackelberg sits on the efficient frontier at the
+lowest token cost; adversarial matches its point estimate only at
+$1.9\times$ the cost, and the external multi-call protocols cost
+$2.8\times$ (Reflexion) to $3.7\times$ (Debate). Reflexion's higher
+point estimate ($0.55$ vs $0.45$) is not significant --- its interval
+overlaps Stackelberg's over most of its range ($0{:}2$ discordant pairs,
+$p=0.5$).}
+\label{fig:expb}
+\end{figure}
 
 \begin{table}[t]
 \centering
@@ -1611,12 +1709,14 @@ step functions positioned by where the guilty layer sits in the order:
 under causal commitment all nine verified attributions occur at the
 \emph{first} probe ($9/20$ at $K{=}1$, saturated), reverse reaches zero at
 $K{=}1$ and its full $5/20$ only at $K{\ge}2$, and random lies between
-($6$ aligned hits at $K{=}1$, $9$ by $K{=}2$). The registered ``rises
-faster under causal'' clause thus holds in the step-function sense, and
-the deeper diagnostic is that no method gains anything from $K{=}2$ to
-$K{=}3$: within this budget the operative variable is the alignment of
-$\omega_1$ with $a^{\star}$, not budget depth (a $K{>}3$ sweep was not run
-and is not claimed). Second, deflects are truthful: across roughly one
+($6$ aligned hits at $K{=}1$, $8$ by $K{=}2$, $9$ at $K{=}3$). The
+registered ``rises faster under causal'' clause thus holds in the
+step-function sense, and the deeper diagnostic is that every method
+\emph{except} random is flat from $K{=}2$ to $K{=}3$ (random's single
+$K{=}3$ recovery is one more shuffle whose order reaches the guilty layer
+only on the third probe): within this budget the operative variable is the
+alignment of $\omega_1$ with $a^{\star}$, not budget depth (a $K{>}3$ sweep
+was not run and is not claimed). Second, deflects are truthful: across roughly one
 hundred and forty probes by seven methods, the guilty layer never
 deflected---every deflect came from an innocent downstream layer---which
 is the truthful-best-response behaviour the commitment-plus-refutation
@@ -1629,6 +1729,22 @@ panel's data-layer accusations being rejected by the data layer's own
 backward check; Reflexion's $7\to11$ jump between $K{=}1$ and $K{=}2$
 reflects its memory-driven revision escaping bad first attributions,
 consistent with its multi-round profile in the external comparison.
+Figure~\ref{fig:expc} plots the step curves.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=0.6\linewidth]{fig3_exp_c_steps.pdf}
+\caption{Verified attribution as a function of probe budget $K$ (Exp-C
+offline re-analysis; $n{=}20$ shared blackboards per method; cumulative
+within the completed $K{=}3$ episodes). The curves are step functions
+positioned by the rank of the guilty layer in the committed order
+$\omega$: causal commitment saturates at $K{=}1$ ($9/20$), reverse reaches
+its plateau only at $K{\ge}2$, sequential never leaves zero, and
+Reflexion's $7\to11$ jump between $K{=}1$ and $K{=}2$ reflects
+memory-driven revision of bad first attributions. Every method except
+random is flat from $K{=}2$ to $K{=}3$.}
+\label{fig:expc}
+\end{figure}
 
 \begin{table}[t]
 \centering
@@ -1777,6 +1893,12 @@ semantic data layer, scaling the network, and testing cross-engine
 robustness of the ranking are the registered next steps.
 
 %==============================================================================
+\section*{Data and code availability}
+The frozen instance data, fault-injection plants, run manifests, and
+per-node event logs supporting every measured table, together with the
+pipeline implementation, will be released upon acceptance.
+
+%==============================================================================
 \begin{thebibliography}{99}
 \bibitem[Wu et al.(2024)]{wu2024autogen} Q.~Wu et al. AutoGen: Enabling next-gen LLM applications via multi-agent conversation. In \emph{COLM}, 2024.
 \bibitem[Xiao et al.(2024)]{xiao2023coe} Y.~Xiao et al. Chain-of-experts: When LLMs meet complex operations research problems. In \emph{ICLR}, 2024. \url{https://openreview.net/forum?id=HobyL1B9CZ}.
@@ -1795,6 +1917,8 @@ robustness of the ranking are the registered next steps.
 \bibitem[von Stackelberg(1952)]{stackelberg1952} H.~von~Stackelberg. \emph{The Theory of the Market Economy}. Oxford University Press, 1952.
 \bibitem[Avenhaus et al.(2002)]{avenhaus2002inspection} R.~Avenhaus, B.~von~Stengel, S.~Zamir. Inspection games. In R.~J.~Aumann and S.~Hart (eds.), \emph{Handbook of Game Theory with Economic Applications}, vol.~3, ch.~51, pp.~1947--1987. Elsevier, 2002.
 \bibitem[Maschler(1966)]{maschler1966inspection} M.~Maschler. A price leadership method for solving the inspector's non-constant-sum game. \emph{Naval Research Logistics Quarterly}, 13(1):11--33, 1966.
+\bibitem[Korzhyk et al.(2011)]{korzhyk2011security} D.~Korzhyk, Z.~Yin, C.~Kiekintveld, V.~Conitzer, M.~Tambe. Stackelberg vs.\ Nash in security games: An extended investigation of interchangeability, equivalence, and uniqueness. \emph{Journal of Artificial Intelligence Research}, 41:297--327, 2011. \url{https://doi.org/10.1613/jair.3269}.
+\bibitem[Tambe(2011)]{tambe2011security} M.~Tambe. \emph{Security and Game Theory: Algorithms, Deployed Systems, Lessons Learned}. Cambridge University Press, 2011.
 \bibitem[Littman(1994)]{littman1994markov} M.~L.~Littman. Markov games as a framework for multi-agent reinforcement learning. In \emph{ICML}, 1994.
 \bibitem[Poiani et al.(2024)]{poiani2024ecr} R.~Poiani, C.~Stirbu, A.~M.~Metelli, M.~Restelli. Optimizing empty container repositioning and fleet deployment via configurable Semi-POMDPs. \emph{IEEE Transactions on Intelligent Transportation Systems}, 25(5):4704--4711, 2024. \url{https://doi.org/10.1109/TITS.2023.3329677}.
 \bibitem[Wang et al.(2025a)]{wang2025ecrslot} W.~Wang, C.~Diao, W.~He, Z.~Jin, Z.~Yang. Collaborative optimization of container liner slot allocation and empty container repositioning within port clusters. \emph{Journal of Marine Science and Engineering}, 13(1):159, 2025. \url{https://doi.org/10.3390/jmse13010159}.

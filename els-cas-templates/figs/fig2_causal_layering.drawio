@@ -1,0 +1,95 @@
+<mxfile host="app.diagrams.net" agent="fsm-stackelberg" version="24.7.5">
+  <diagram id="fig-layering" name="Fig2-CausalLayering">
+    <mxGraphModel dx="1200" dy="620" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== design tokens (same family as fig_fsm) =====
+             type scale: 13px node names / 10px sublines+labels
+             strokes: boxes 1pt; forward edges 1pt #666666; game-relevant edges 1.5pt #1A1A1A
+             layer hues: data #0072B2 / model #009E73 / code #D55E00; execution neutral
+        -->
+
+        <!-- ================= agent chain ================= -->
+        <mxCell id="a1" value='&lt;span style="font-size: 13px;"&gt;DataEngineer&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;data layer (a&lt;sub&gt;1&lt;/sub&gt;)&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072B2;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="48" y="72" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value='&lt;span style="font-size: 13px;"&gt;ModelExpert&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;model layer (a&lt;sub&gt;2&lt;/sub&gt;)&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#EAF6F1;strokeColor=#009E73;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="200" y="72" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value='&lt;span style="font-size: 13px;"&gt;PythonDeveloper&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;code layer (a&lt;sub&gt;3&lt;/sub&gt;)&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FBEFE6;strokeColor=#D55E00;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="352" y="72" width="104" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value='&lt;span style="font-size: 13px;"&gt;SolverExecutor&lt;/span&gt;&lt;br&gt;&lt;span style="font-size: 10px;"&gt;execution (a&lt;sub&gt;4&lt;/sub&gt;) &amp;middot; failure surface&lt;/span&gt;' style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#4D4D4D;strokeWidth=1;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="504" y="72" width="104" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- fault marker + manifestation arc -->
+        <mxCell id="star" value='&lt;span style="font-size: 16px; color: #1A1A1A;"&gt;&amp;#9733;&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="240" y="36" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="starLabel" value='&lt;span style="font-size: 10px;"&gt;&lt;i&gt;defect introduced at &amp;#8467;*&lt;/i&gt;&lt;/span&gt;' style="text;html=1;align=left;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="268" y="36" width="150" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="eManifest" value='&lt;i&gt;manifests at any layer j &amp;#8805; &amp;#8467;&lt;/i&gt;' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="a4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="sourcePoint" x="252" y="48" />
+            <Array as="points">
+              <mxPoint x="556" y="24" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- forward flow -->
+        <mxCell id="f12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="a1" target="a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f23" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="a2" target="a3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f34" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="a3" target="a4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- single-judge implication (heuristic blame, dashed) -->
+        <mxCell id="eImply" value='&lt;i&gt;traceback locus implicates a&lt;sub&gt;3&lt;/sub&gt;&lt;/i&gt;' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;dashed=1;dashPattern=4 3;html=1;fontFamily=Times New Roman;fontSize=10;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.9;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="a4" target="a3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="556" y="192" />
+              <mxPoint x="446" y="192" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- deflection (innocent layer's best response, bold dark) -->
+        <mxCell id="eDeflect" value='&lt;i&gt;deflect &amp;mdash; blame upstream&lt;/i&gt;' style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#1A1A1A;strokeWidth=1.5;html=1;fontFamily=Times New Roman;fontSize=10;fontColor=#4D4D4D;labelBackgroundColor=#FFFFFF;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="a3" target="a2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="378" y="164" />
+              <mxPoint x="252" y="164" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- comply at wrong layer (dominated, thin) -->
+        <mxCell id="eComply" style="edgeStyle=orthogonalEdgeStyle;rounded=1;endArrow=block;endFill=1;endSize=4;strokeColor=#666666;strokeWidth=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="a3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="targetPoint" x="430" y="172" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="crossMark" value='&lt;span style="font-size: 13px; color: #1A1A1A;"&gt;&amp;#10007;&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=top;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="422" y="174" width="16" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="complyLabel" value='&lt;span style="font-size: 10px;"&gt;&lt;i&gt;comply at wrong layer:&lt;br&gt;local repair cannot succeed&lt;/i&gt;&lt;/span&gt;' style="text;html=1;align=left;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#4D4D4D;" vertex="1" parent="1">
+          <mxGeometry x="444" y="136" width="150" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- payoff note -->
+        <mxCell id="payoff" value='&lt;span style="font-size: 10px;"&gt;&lt;i&gt;An innocent implicated layer strictly prefers to deflect; a guilty layer may also defect &amp;mdash; diagnosis becomes a game, not a classification.&lt;/i&gt;&lt;/span&gt;' style="text;html=1;align=center;verticalAlign=middle;fontFamily=Times New Roman;fontColor=#4D4D4D;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="112" y="216" width="536" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
