@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fsm_stackelberg.graph import run_mako
+from fsm_stackelberg.constants import GAP_THRESHOLD
 from fsm_stackelberg.utils.utils import dataset_loader, save_workflow_result_with_history, _archive_existing_results
 from fsm_stackelberg.utils.llm_config import DEFAULT_PROVIDER, DEFAULT_MODEL
 from fsm_stackelberg.utils.experiment_result import ExperimentResult
@@ -174,10 +175,10 @@ def _build_experiment_result(state: dict, args, filepath: Path, expected_value=N
     if execution_result.get("result"):
         obj_value = execution_result["result"].get("objective_value")
 
-    # Success: OPTIMAL + relative gap <= 1%
+    # Success: OPTIMAL + relative gap within GAP_THRESHOLD (single source of truth)
     is_success = is_optimal
     if is_success and obj_value is not None and expected_value is not None and expected_value != 0:
-        is_success = abs(obj_value - expected_value) / abs(expected_value) <= 0.01
+        is_success = abs(obj_value - expected_value) / abs(expected_value) <= GAP_THRESHOLD
 
     # Ensure episode payoffs exist (crash paths may skip run_mako finalization)
     episode_payoff = state.get("episode_payoff")

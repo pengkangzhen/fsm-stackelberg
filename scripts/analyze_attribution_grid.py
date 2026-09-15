@@ -33,7 +33,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-GAP_THRESHOLD = 0.01
+from fsm_stackelberg.constants import GAP_THRESHOLD, within_threshold
 LAYERS = ["data_engineer", "model_expert", "python_developer"]
 
 SURFACES = ["OPTIMAL_OK", "OPTIMAL_GAP", "INFEASIBLE", "UNBOUNDED", "ERROR", "NO_SOLVER"]
@@ -69,10 +69,11 @@ def _classify_surface(row: Dict[str, Any], error_msg: str) -> str:
         return "ERROR"
     if gs == "OPTIMAL":
         gap = row.get("gap_pct")
-        if row.get("practical_optimal") or row.get("status"):
-            return "OPTIMAL_OK"
         if gap is not None:
             return "OPTIMAL_OK" if gap <= GAP_THRESHOLD * 100 else "OPTIMAL_GAP"
+        # No measurable gap: fall back to the stored classification.
+        if row.get("practical_optimal") or row.get("status"):
+            return "OPTIMAL_OK"
         return "OPTIMAL_GAP"
     if gs in ("INFEASIBLE", "UNBOUNDED"):
         return gs
@@ -96,6 +97,7 @@ def _row_from_manifest(m: dict, run_dir: Path) -> Dict[str, Any]:
         "true_root_cause": cfg.get("true_root_cause"),
         "gurobi_status": out.get("gurobi_status", ""),
         "practical_optimal": out.get("practical_optimal"),
+        "solver_optimal": out.get("solver_optimal"),
         "status": out.get("status"),
         "error_category": out.get("error_category", "none"),
         "first_probe_layer": insp.get("first_probe_layer"),
@@ -147,6 +149,31 @@ def _row_from_legacy(d: dict, run_dir: Path) -> Dict[str, Any]:
     return row
 
 
+def _reclassify_strict_success(row: Dict[str, Any]) -> None:
+    """Re-derive strict-success flags from the measured gap.
+
+    Stored flags (practical_optimal / status / verified hits) reflect the
+    threshold live at run time; the measured gap is the authority, so a
+    threshold change re-derives every verdict offline. Rows without a
+    measurable gap keep their stored classification.
+    """
+    gap = row.get("gap_pct")
+    if gap is None or within_threshold(gap) is None:
+        return
+    within = bool(within_threshold(gap))
+    if row.get("format") == "manifest":
+        solver_ok = row.get("solver_optimal")
+        if solver_ok is None:
+            solver_ok = (row.get("gurobi_status") or "").upper() == "OPTIMAL"
+    else:
+        solver_ok = (row.get("gurobi_status") or "").upper() == "OPTIMAL"
+    practical = bool(solver_ok) and within
+    row["practical_optimal"] = practical
+    row["status"] = practical
+    if row.get("verified_attribution_hit"):
+        row["verified_attribution_hit"] = practical
+
+
 def extract_row(run_dir: Path) -> Optional[Dict[str, Any]]:
     manifest = _load_json(run_dir / "run_manifest.json")
     if manifest is not None:
@@ -156,6 +183,7 @@ def extract_row(run_dir: Path) -> Optional[Dict[str, Any]]:
         if legacy is None:
             return None
         row = _row_from_legacy(legacy, run_dir)
+    _reclassify_strict_success(row)
     row["surface"] = _classify_surface(row, "")
     return row
 
@@ -184,7 +212,9 @@ def attribution_matrix(rows: List[dict]) -> Dict[str, Dict[str, int]]:
     for r in rows:
         if not r.get("true_root_cause"):
             continue  # no-plant runs carry no ground truth for the grid
-        attributed = r.get("verified_attributed_layer") or r.get("attributed_layer")
+        attributed = (r.get("verified_attributed_layer")
+                      if r.get("verified_attribution_hit") else None
+                      ) or r.get("attributed_layer")
         matrix[_fmt_layer(r["true_root_cause"])][_fmt_layer(attributed)] += 1
     return {k: dict(v) for k, v in matrix.items()}
 

@@ -28,6 +28,7 @@ import gurobipy
 
 from ..utils.utils import record_agent_output
 from ..utils.run_log import record_step_event
+from ..constants import GAP_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -386,15 +387,15 @@ def solver_executor_node(state: Dict) -> Dict:
     exec_report = sandbox_exec_code(data, python_code)
 
     # --- NEW: Ground truth gap validation ---
-    GAP_THRESHOLD = 1.0  # 1%
+    # gap is in percent; GAP_THRESHOLD is a fraction (single source of truth).
     if exec_report.get("execution_successful") and exec_report.get("gurobi_status") == "OPTIMAL":
         expected_value = state.get("expected_value")
         obj_value = exec_report.get("result", {}).get("objective_value")
         if expected_value is not None and obj_value is not None:
             gap = abs(obj_value - expected_value) / abs(expected_value) * 100
-            if gap > GAP_THRESHOLD:
+            if gap > GAP_THRESHOLD * 100:
                 logger.warning(
-                    f"Solution OPTIMAL but gap={gap:.2f}% > threshold {GAP_THRESHOLD}%. "
+                    f"Solution OPTIMAL but gap={gap:.2f}% > threshold {GAP_THRESHOLD * 100}%. "
                     f"Triggering diagnosis ( obj={obj_value})"
                 )
                 exec_report["diagnosis_required"] = True

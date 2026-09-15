@@ -22,6 +22,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from fsm_stackelberg.constants import within_threshold
+
 REPO = Path(__file__).resolve().parent.parent
 RESULTS = (REPO / "results" / "mako" / "DeepSeek_deepseek-flash"
            / "prob_tslp_ecr_demand_k3" / "smoke_H4_Omega5")
@@ -68,8 +70,15 @@ def probe_sequence(evs: list[dict]) -> list[dict]:
 
 
 def verified_round(manifest: dict, probes: list[dict]) -> int | None:
-    if not manifest["inspection"]["episode_payoff"].get(
-            "verified_attribution_hit"):
+    # Verified attribution requires comply + strict success; the strict
+    # success verdict is re-derived from the measured gap under the current
+    # GAP_THRESHOLD (stored flags reflect the run-time threshold).
+    outcome = manifest.get("outcome") or {}
+    practical = bool(outcome.get("solver_optimal")) and bool(
+        within_threshold(outcome.get("gap_percent"),
+                         bool(outcome.get("practical_optimal"))))
+    if not (manifest["inspection"]["episode_payoff"].get(
+            "verified_attribution_hit") and practical):
         return None
     finals = [p for p in probes if p["comply_resolved"]
               and not p["overturned"]]

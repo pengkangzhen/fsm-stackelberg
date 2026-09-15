@@ -39,7 +39,7 @@ EXPECTED = {
     "sb_causal":   (9, 20, 65234),
     "adversarial": (8, 20, 126132),
     "sequential":  (0, 20, 60942),
-    "debate":      (7, 20, 240660),
+    "debate":      (6, 20, 240660),
     "reflexion":   (11, 20, 180211),
 }
 

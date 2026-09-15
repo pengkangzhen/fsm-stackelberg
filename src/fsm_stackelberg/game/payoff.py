@@ -24,6 +24,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
 
+from ..constants import GAP_THRESHOLD
+
 
 @dataclass(frozen=True)
 class PayoffConfig:
@@ -34,7 +36,7 @@ class PayoffConfig:
     mu_k: float = 0.05  # leader: cost per probe round
     mu_c: float = 0.10  # leader: token-cost weight
     c0: float = 10_000.0  # token normalization scale
-    gap_tol: float = 0.01  # relative gap for strict success (matches main.py)
+    gap_tol: float = GAP_THRESHOLD  # relative gap for strict success (single source of truth)
 
 
 DEFAULT_PAYOFF_CONFIG = PayoffConfig()

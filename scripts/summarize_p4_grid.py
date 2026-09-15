@@ -26,6 +26,8 @@ import json
 import math
 from pathlib import Path
 
+from fsm_stackelberg.constants import within_threshold
+
 REPO = Path(__file__).resolve().parent.parent
 SMOKE = "smoke_H4_Omega5"
 SNAPSHOTS = REPO / "results" / "snapshots"
@@ -91,13 +93,19 @@ def load_cell(prob_name: str, suffix: str) -> dict | None:
     ep = insp.get("episode_payoff") or {}
     cost = m.get("cost") or {}
     cfg = m.get("config") or {}
+    outcome = m.get("outcome") or {}
     forward = cfg.get("snapshot_forward_tokens") or 0
     total = cost.get("total_tokens") or 0
+    # Strict success is re-derived from the measured gap under the current
+    # GAP_THRESHOLD; stored flags only survive when no gap is measurable.
+    practical = bool(outcome.get("solver_optimal")) and bool(
+        within_threshold(outcome.get("gap_percent"),
+                         bool(outcome.get("practical_optimal"))))
     return {
         "suffix": suffix,
         "first_probe_hit": bool(insp.get("first_probe_hit")),
-        "verified": bool(ep.get("verified_attribution_hit")),
-        "ssr": bool((m.get("outcome") or {}).get("practical_optimal")),
+        "verified": bool(ep.get("verified_attribution_hit")) and practical,
+        "ssr": practical,
         "omega": insp.get("committed_omega") or [],
         "first_probe_layer": insp.get("first_probe_layer"),
         "probe_seed": cfg.get("probe_seed"),
