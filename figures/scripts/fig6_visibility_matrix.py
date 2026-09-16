@@ -33,7 +33,7 @@ ORDERS = ["causal", "random", "reverse"]
 
 # Figure-contract self-check: (group, key) -> order -> (first_probe, n).
 EXPECTED = {
-    ("plants", "meforcezero"): {"causal": (20, 20), "random": (10, 20), "reverse": (0, 20)},
+    ("plants", "meforcezero"): {"causal": (30, 30), "random": (15, 30), "reverse": (0, 30)},
     ("instances", "famH4O10_mefz"): {"causal": (10, 10), "random": (4, 10), "reverse": (0, 10)},
     ("instances", "famH6O5_mefz"): {"causal": (10, 10), "random": (5, 10), "reverse": (0, 10)},
     ("plants", "pdbal"): {"causal": (9, 10), "random": (2, 10), "reverse": (10, 10)},

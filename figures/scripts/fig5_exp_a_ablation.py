@@ -52,9 +52,9 @@ def load_agg():
 
 def check_panel_a(table):
     expected = {
-        "first_probe": {"causal": 20, "random": 10, "reverse": 0},
-        "verified": {"causal": 9, "random": 9, "reverse": 5},
-        "ssr": {"causal": 13, "random": 11, "reverse": 10},
+        "first_probe": {"causal": 30, "random": 15, "reverse": 0},
+        "verified": {"causal": 14, "random": 13, "reverse": 7},
+        "ssr": {"causal": 21, "random": 17, "reverse": 15},
     }
     ok = True
     for metric, by_order in expected.items():
@@ -102,12 +102,16 @@ def draw_panel_a(ax, table):
 def load_audit():
     """Read random-arm manifests; return (records, skipped seeds).
 
-    Scan seed ids 1..23: the n=20 campaign in summary.json uses every seed in
-    1..23 that produced a run_manifest.json (seeds 7/12/14 crashed before the
-    manifest was written and have no record).
+    Seed set = every usable me_force_zero_sea snapshot (the campaign's
+    shared blackboards); seeds whose random-arm manifest is missing are
+    reported as skipped.
     """
+    seeds = sorted(
+        int(p.name.rsplit("_s", 1)[1])
+        for p in (ROOT / "results" / "snapshots").glob("me_force_zero_sea_s*")
+        if (p / "snapshot_state.json").exists())
     records, skipped = [], []
-    for s in range(1, 24):
+    for s in seeds:
         p = MANIFEST_DIR / f"ds41_ea_random_s{s}" / "run_manifest.json"
         if not p.exists():
             skipped.append(s)
@@ -131,10 +135,10 @@ def check_panel_b(records):
     print(f"[panel b] crosstab (rows=omega_1 aligned, cols=first-probe hit):")
     print(f"          aligned  & hit = {tt}   aligned & miss = {tf}")
     print(f"          misalign & hit = {ft}   misalign & miss = {ff}")
-    if (tt, tf, ft, ff) == (10, 0, 0, 10):
-        print("[panel b] diagonal crosstab 10/0/0/10 as expected (rows coincide).")
+    if (tt, tf, ft, ff) == (15, 0, 0, 15):
+        print("[panel b] diagonal crosstab 15/0/0/15 as expected (rows coincide).")
     else:
-        print("WARNING [panel b]: DATA DISAGREES WITH EXPECTED 10/0/0/10 — plotted true values.")
+        print("WARNING [panel b]: DATA DISAGREES WITH EXPECTED 15/0/0/15 — plotted true values.")
     return tt, tf, ft, ff
 
 
@@ -161,8 +165,12 @@ def draw_panel_b(ax, records):
     ax.scatter(x_mis, [0] * len(x_mis), marker="s", s=16, facecolors="none",
                edgecolors=C_GRAY, linewidths=0.7, zorder=3)
 
+    # 30 seed columns no longer fit one label each: tick every column,
+    # label 1 and every 5th seed only.
+    lab_every = 5
     ax.set_xticks(xs)
-    ax.set_xticklabels(seeds)
+    ax.set_xticklabels([str(s) if (s == 1 or s % lab_every == 0) else ""
+                        for s in seeds])
     ax.tick_params(axis="x", labelsize=6)
     ax.set_xlim(0.4, len(records) + 0.6)
     ax.set_ylim(-0.6, 1.6)

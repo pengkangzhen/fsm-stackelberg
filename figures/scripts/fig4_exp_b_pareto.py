@@ -36,11 +36,11 @@ STYLE = {
 
 # Figure-contract self-check: key -> (verified, n, mean_loop_tokens).
 EXPECTED = {
-    "sb_causal":   (9, 20, 65234),
-    "adversarial": (8, 20, 126132),
-    "sequential":  (0, 20, 60942),
-    "debate":      (6, 20, 240660),
-    "reflexion":   (11, 20, 180211),
+    "sb_causal":   (14, 30, 63768),
+    "adversarial": (10, 30, 136010),
+    "sequential":  (0, 30, 51301),
+    "debate":      (7, 30, 257924),
+    "reflexion":   (15, 30, 184469),
 }
 
 
