@@ -521,7 +521,13 @@ git status 确认提交状态）
 
 ## 本任务
 
-1. 修 M7 + 次要 1–9（加固战役已收尾）。
+1. ~~修 M7 + 次要 1–9~~ **done 2026-09-16**（M7=层内单 plant 威胁已入
+   Claim boundary/结论 bounds/注册后续；次要：stackelberg1952 补引、
+   littman1994markov 删除、yi2025econ 补作者（arXiv 2506.08292 核实）、
+   占位电话删除（待 Jin 导师真实号码，如期刊要求再补）、texttt 断行修复
+   （Overfull 43pt 消除，余 1 处为 cas 模板内部不可见盒）、Metrics 首现处
+   补 loop-token 定义、Exp-A 首探检验补 30:0/15:0 配对数；次要 6/8/9
+   经对照已被此前改稿覆盖）。
 3. 等用户拍板 venue 与系统命名后：els-cas 格式微调 + cover letter。
 
 ## 硬约束

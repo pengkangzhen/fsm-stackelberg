@@ -56,7 +56,7 @@
 \ead{jinzhihong@dlmu.edu.cn}
 \ead[url]{https://orcid.org/0000-0003-4342-1561}
 
-\cortext[cor1]{Corresponding author. Tel.: +86; fax: +86.}
+\cortext[cor1]{Corresponding author.}
 
 \affiliation[dlmu]{organization={College of Transportation Engineering, Dalian Maritime University},
   addressline={No. 1 Linghai Road}, city={Dalian}, postcode={116026}, state={Liaoning}, country={China}}
@@ -191,7 +191,8 @@ downstream layer to deflect blame.
 
 \paragraph{Thesis.}
 We argue that diagnosis--repair under layered ECR modeling errors is a
-Stackelberg \emph{inspection game}~\citep{avenhaus2002inspection,maschler1966inspection}.
+Stackelberg~\citep{stackelberg1952} \emph{inspection
+game}~\citep{avenhaus2002inspection,maschler1966inspection}.
 A diagnosis agent acts as inspector (leader) and commits, first and
 observably, to a policy $\sigma=(\omega,\nu)$: a probing order $\omega$
 aligned with causal dependence, and a verification rule $\nu$ of
@@ -1198,7 +1199,7 @@ protocol (measured below); Exp-C remains unrun at the time of writing.
 \paragraph{Data.}
 All methods use the demand-uncertainty TSLP ECR model of
 Section~\ref{sec:ecr_model} on the exported dataset
-\texttt{prob\_tslp\_ecr\_demand}. We start from the smoke instance
+\texttt{prob\_\allowbreak tslp\_\allowbreak ecr\_\allowbreak demand}. We start from the smoke instance
 \texttt{smoke\_H4\_Omega5} and extend to a small family of
 horizon/scenario configurations from the same generator. The forward
 pipeline, blackboard schema, strict-success rule
@@ -1288,7 +1289,8 @@ guilty layer complies and its repair passes the executed re-solve at the
 first probe (equivalently, verified attribution at $K{=}1$). Confirmation
 requires alignment \emph{and} repairability, and the gap between the two
 metrics locates the repair path's failure modes. Secondary
-metrics are SSR@$K$, probe rounds, and tokens. SSR counts only
+metrics are SSR@$K$, probe rounds, and loop tokens (total minus the
+frozen forward prefix, Section~\ref{sec:exp_reporting}). SSR counts only
 \emph{Practical Optimal} outcomes in Table~\ref{tab:outcome_taxonomy}; a bare
 \textsc{Optimal} that fails the $z^{\star}$ gap test
 (\emph{Spurious Optimal}) does not contribute. For
@@ -1398,9 +1400,10 @@ $K{=}3$, provider DeepSeek / \texttt{deepseek-flash}, and
 \texttt{rank\_method}=\texttt{hybrid} (the force-zero smell tips
 \texttt{model\_expert} without inventing a second diagnosis mechanism).
 Causal commitment attains first-probe $30/30$ versus $15/30$ under random
-and $0/30$ under reverse (paired exact McNemar: $p=1.9\times10^{-9}$ and
-$p=6.1\times10^{-5}$): the registered first-probe clause is strongly
-supported. Verified attribution is $14/30$ causal, $13/30$ random, $7/30$
+and $0/30$ under reverse (paired exact McNemar: $30{:}0$ discordant
+pairs, $p=1.9\times10^{-9}$, and $15{:}0$, $p=6.1\times10^{-5}$): the
+registered first-probe clause is strongly supported. Verified
+attribution is $14/30$ causal, $13/30$ random, $7/30$
 reverse; the causal-versus-reverse contrast is significant
 ($8{:}1$ discordant pairs, $p=0.039$), and causal versus random remains a
 near-tie ($5{:}4$, $p=1.0$)---the weak clause is met as a tie. Two
@@ -1967,7 +1970,14 @@ The intended positive claim is that evidence-informed causal-order committed
 inspection matches (or exceeds) strong single-judge naming accuracy while
 improving verifiable attribution and auditability relative to unordered
 commitment and to non-committed verification baselines under the injection
-regime above.
+regime above. The visibility reading carries one further threat: each fault
+layer is represented by a \emph{single} plant, so ``the model layer is
+visible to the rank / the semantic data layer is not'' is established for
+the tested plant families, not for layers as such --- a different model-layer
+plant without a symptom signature could be as rank-invisible as the
+semantic swap. Within-layer plant replication is therefore registered
+alongside the data-layer evidence revision before the visibility claim is
+read as a layer property.
 
 %==============================================================================
 \section{Conclusion}
@@ -2027,14 +2037,18 @@ arms, follow an overturned repair) and is silent on the semantic data
 plant, whose $55\%$
 silent-fault rate means most injected faults never produced a failure
 board and deflect behaviour was never exercised; the instance family
-varies horizon and scenario count at fixed network size, all campaigns
-run a single engine under a frozen implementation, and $K$ is capped at
-three. Within those bounds the
+varies horizon and scenario count at fixed network size, the main
+campaigns run a single engine under a frozen implementation (the
+second-engine spot-check covers five boards), $K$ is capped at three
+(five for the Reflexion challenger), and each fault layer is represented
+by one plant, so visibility is a property of the tested plant families
+rather than of layers as such. Within those bounds the
 contribution stands as a mechanism, a proposition with matching
 dynamics, and a measured protocol: commitment buys naming accuracy and
 cheaper verifiable attribution precisely when the committed ranking can
 see the fault --- and the logs show why. Extending visibility to the
-semantic data layer, scaling the network, and a full cross-engine
+semantic data layer, replicating within layers across additional plants,
+scaling the network, and a full cross-engine
 campaign (a second-engine spot-check already replicates the
 commitment-side alignment structure with zero exceptions) are the
 registered next steps.
@@ -2059,14 +2073,13 @@ pipeline implementation, will be released upon acceptance.
 \bibitem[Chen et al.(2026)]{chen2026traceelephant} M.~Chen, J.~Wang, F.~Mu, et al. Seeing the whole elephant: A benchmark for failure attribution in LLM-based multi-agent systems. In \emph{ACL}, 2026. \url{https://arxiv.org/abs/2604.22708}.
 \bibitem[Wang et al.(2026)]{wang2026chief} Y.~Wang, W.~Wu, J.~Wang, Q.~Wang. From flat logs to causal graphs: Hierarchical failure attribution for LLM-based multi-agent systems. \emph{arXiv:2602.23701}, 2026.
 \bibitem[Shah(2026)]{shah2026car} J.~Shah. Causal Agent Replay: Counterfactual attribution for LLM-agent failures. \emph{arXiv:2606.08275}, 2026.
-\bibitem[Yi et al.(2025)]{yi2025econ} From debate to equilibrium: Belief-driven multi-agent LLM reasoning via Bayesian Nash equilibrium. In \emph{ICML}, 2025. \url{https://proceedings.mlr.press/v267/yi25c.html}.
+\bibitem[Yi et al.(2025)]{yi2025econ} X.~Yi, Z.~Zhou, C.~Cao, Q.~Niu, et al. From debate to equilibrium: Belief-driven multi-agent LLM reasoning via Bayesian Nash equilibrium. In \emph{ICML}, 2025. \url{https://proceedings.mlr.press/v267/yi25c.html}.
 \bibitem[Wang(2026)]{stackelberg2026resource} B.~Wang. A Stackelberg framework for resource-aware LLM agents: Learning, repair, and conditional guarantees. \emph{arXiv:2606.23026}, 2026.
 \bibitem[von Stackelberg(1952)]{stackelberg1952} H.~von~Stackelberg. \emph{The Theory of the Market Economy}. Oxford University Press, 1952.
 \bibitem[Avenhaus et al.(2002)]{avenhaus2002inspection} R.~Avenhaus, B.~von~Stengel, S.~Zamir. Inspection games. In R.~J.~Aumann and S.~Hart (eds.), \emph{Handbook of Game Theory with Economic Applications}, vol.~3, ch.~51, pp.~1947--1987. Elsevier, 2002.
 \bibitem[Maschler(1966)]{maschler1966inspection} M.~Maschler. A price leadership method for solving the inspector's non-constant-sum game. \emph{Naval Research Logistics Quarterly}, 13(1):11--33, 1966.
 \bibitem[Korzhyk et al.(2011)]{korzhyk2011security} D.~Korzhyk, Z.~Yin, C.~Kiekintveld, V.~Conitzer, M.~Tambe. Stackelberg vs.\ Nash in security games: An extended investigation of interchangeability, equivalence, and uniqueness. \emph{Journal of Artificial Intelligence Research}, 41:297--327, 2011. \url{https://doi.org/10.1613/jair.3269}.
 \bibitem[Tambe(2011)]{tambe2011security} M.~Tambe. \emph{Security and Game Theory: Algorithms, Deployed Systems, Lessons Learned}. Cambridge University Press, 2011.
-\bibitem[Littman(1994)]{littman1994markov} M.~L.~Littman. Markov games as a framework for multi-agent reinforcement learning. In \emph{ICML}, 1994.
 \bibitem[Poiani et al.(2024)]{poiani2024ecr} R.~Poiani, C.~Stirbu, A.~M.~Metelli, M.~Restelli. Optimizing empty container repositioning and fleet deployment via configurable Semi-POMDPs. \emph{IEEE Transactions on Intelligent Transportation Systems}, 25(5):4704--4711, 2024. \url{https://doi.org/10.1109/TITS.2023.3329677}.
 \bibitem[Wang et al.(2025a)]{wang2025ecrslot} W.~Wang, C.~Diao, W.~He, Z.~Jin, Z.~Yang. Collaborative optimization of container liner slot allocation and empty container repositioning within port clusters. \emph{Journal of Marine Science and Engineering}, 13(1):159, 2025. \url{https://doi.org/10.3390/jmse13010159}.
 \bibitem[Cai et al.(2025)]{cai2025ecrjoint} J.~Cai, Y.~Huang, C.~Diao, Z.~Jin. Joint optimization of multi-period empty container repositioning and inventory control based on adaptive particle swarm algorithm. \emph{Journal of Marine Science and Engineering}, 13(6):1113, 2025. \url{https://doi.org/10.3390/jmse13061113}.
