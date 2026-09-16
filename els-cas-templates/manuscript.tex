@@ -85,12 +85,19 @@ linking committed inspection to a reduced viable root-cause set, then test it
 on a \emph{demand-uncertainty} sea--land ECR problem formulated as a two-stage
 stochastic linear program: three fault plants (one per layer), three problem
 instances, five diagnosis protocols, and shared frozen failure blackboards.
-The measured mechanism is precise: alignment of the committed order with the
-guilty layer fully determines first-probe attribution (zero exceptions over
-every random arm), causal commitment dominates single-judge, debate, and
-reflexion naming (paired across all twenty shared boards without a single
+The measured mechanism is precise: probing is bound to the committed
+order, so first-probe naming is exactly the ranking's alignment --- which
+holds on every model-layer board and fails only for rank-invisible
+semantic data faults --- while on the main grid only $14$ of the $30$
+aligned first probes are confirmed by the round-one re-solve ($9$
+overturned repairs, $7$ attributions stolen by downstream regeneration),
+and a misaligned probe can conversely absorb an upstream fault outright;
+causal commitment dominates single-judge, debate, and
+reflexion naming (paired across all thirty shared boards without a single
 discordance) at the lowest token cost, the
-guilty layer never deflects under commitment, and $46$--$71\%$ of complying
+guilty layer complies at first contact under commitment (the rare
+deflections observed all sit in non-committed arms and follow an
+overturned repair), and $43$--$71\%$ of complying
 repairs are overturned by the re-solve --- executed verification, not talk,
 carries attribution. The order advantage replicates conditionally on the
 ranking's ability to see the fault layer; for rank-invisible semantic data
@@ -100,8 +107,8 @@ faults we register a design revision rather than a post-hoc fix.
 \begin{highlights}
 \item Diagnosis--repair is cast as a Stackelberg inspection game defined on a LangGraph state machine as the stage-game apparatus.
 \item The inspector commits, first-mover, to an evidence-ranked probing policy with executed refutation of every repair by re-solve.
-\item Alignment of the committed order with the guilty layer fully determines first-probe attribution --- zero exceptions across all random arms.
-\item Committed inspection dominates single-judge, debate, and reflexion naming at the lowest token cost; guilty layers never deflect under commitment.
+\item Probing is bound to the committed order, so first-probe naming equals the ranking's alignment; round-one confirmation is separately gated by the repair passing the re-solve.
+\item Committed inspection dominates single-judge, debate, and reflexion naming at the lowest token cost; guilty layers comply at first contact under commitment, and the rare deflections observed (all in non-committed arms) follow an overturned repair.
 \end{highlights}
 
 \begin{keywords}
@@ -203,10 +210,11 @@ Stackelberg inspection game on a finite-state machine.
 (ii)~We specify an inspector commitment to causal-order probing with
 executed refutation, inducing verifiable attribution rather than
 confidence-routed accusation.
-(iii)~We state a proposition that causal-order inspection strictly reduces
-the viable root-cause set relative to single-judge play without dropping
-the true layer, and test it with commitment-order ablations and baselines
-on demand-uncertainty ECR.
+(iii)~We state a proposition that, under explicit premises on causal
+layering and repair-path behaviour, causal-order inspection strictly
+reduces the viable root-cause set relative to single-judge play without
+dropping the true layer, and test it with commitment-order ablations and
+baselines on demand-uncertainty ECR.
 (iv)~We separate progressive domain-knowledge injection (necessary for ECR
 solvability) from the game-theoretic diagnosis claim (necessary for
 auditable repair).
@@ -1037,40 +1045,64 @@ that aligns individually optimal responses with correct root-cause
 localization. Without commitment, deflection is cheap talk and truthful
 attribution is not incentive-compatible.
 
+\emph{Information assumption.} The best-response analysis above assumes
+the inspectee observes its own type ($\ell$ versus $\ell^{\star}$) before
+responding. For LLM inspectees this is a behavioural idealization, not an
+implementation fact: a comply/deflect output is one model reading the
+blackboard evidence. The assumption is grounded exactly when the defect is
+visible in the layer's own artifact --- a model-layer fault is inspectable
+in the emitted formulation, so evidence-reading behaviour approximates the
+informed best response --- and defeated by rank-invisible semantic data
+faults. The measured comply/deflect profile (Section~\ref{sec:exp_diag})
+is therefore read as evidence of how closely the implemented agents
+approximate this intended equilibrium, not as a proof of it.
+
 \subsubsection{Proposition}
 \label{sec:proposition}
 
 \begin{propbox}[title={Proposition 1 (Causal-order inspection lowers mis-attribution)}]
-Under strict causal layering of defects and an inspector committed to a
-causal-order, executed-refutation policy, each probe is \emph{decisive}: it
-either confirms the probed layer (a compliance whose re-solve passes) or
-clears it (a false confession refuted, or a truthful deflection upheld).
-Consequently, causal-order inspection strictly reduces the per-round set of
-viable root-cause hypotheses relative to simultaneous (single-judge) play, and
-never eliminates the true layer. Formally, let $V_{\text{sim}}$ and
-$V_{\text{ins}}$ be the sets of root-cause layers that remain consistent with
-the failure observation after one round of, respectively, simultaneous
-diagnosis and causal-order inspection; then $V_{\text{ins}}\subseteq
-V_{\text{sim}}$ with $\ell^{\star}\in V_{\text{ins}}$, and the inclusion is
-strict whenever a probed layer $\ell<\ell^{\star}$ is cleared.
+\emph{Premises.}
+(A1)~Strict causal layering of defects (Section~\ref{sec:layered}): a defect
+at layer $\ell$ cannot cause a symptom that requires only layers ${<}\ell$.
+(A2)~No absorption: a repair emitted by an \emph{innocent} layer cannot pass
+the executed re-solve.
+(A3)~Repair sufficiency: a complying repair emitted by the \emph{guilty}
+layer passes the executed re-solve.
+
+\emph{Claim.} Under A1--A3 and an inspector committed to a causal-order,
+executed-refutation policy, each probe is \emph{decisive} --- it confirms or
+clears the probed layer --- and cleared layers are innocent, so the true
+layer is never eliminated. Relative to a single-judge round, which produces
+an unverified point hypothesis and therefore changes no layer's status,
+every cleared probe strictly shrinks the viable root-cause set. Formally,
+with $V_{\text{sim}}$ and $V_{\text{ins}}$ the sets of layers consistent
+with the failure observation after one round of, respectively, single-judge
+play (hence the full observationally-equivalent cone) and causal-order
+inspection, $V_{\text{ins}}\subseteq V_{\text{sim}}$ with
+$\ell^{\star}\in V_{\text{ins}}$, and the inclusion is strict whenever a
+layer $\ell<\ell^{\star}$ is probed and cleared.
 \end{propbox}
 
-\emph{Sketch.} Under simultaneous play the diagnostician selects a hypothesis
-without observing any committed, verified response, so every layer consistent
-with the downstream observation is a candidate; the viable set is the full
-observationally-equivalent upstream cone. Under committed inspection the
-inspectee at the probed layer $\ell$ must respond and the response is settled
-by executed refutation. If $\ell<\ell^{\star}$, no local repair can pass the
-re-solve (strict causal layering of defects), so a compliance is refuted and a
-deflection upheld --- either way $\ell$ is cleared and removed from the viable
-set. If $\ell=\ell^{\star}$, the incentive analysis of
-Section~\ref{sec:deterrence} makes compliance the best response and the re-solve
-passes, so the true layer is confirmed and never wrongly eliminated. Causal
-ordering guarantees layers are cleared from the top of the upstream cone
-downward, so each cleared probe strictly shrinks $V$ while simultaneous play
-can only guess within it. A formal bound on the mis-attribution rate and its
-empirical validation --- centered on the commitment-order ablation --- are
-deferred to the experimental section. $\square$
+\emph{Proof.} An innocent probed layer cannot pass the re-solve by A2: its
+compliance is refuted and its truthful deflection upheld, and either way it
+is cleared --- so only innocent layers are ever cleared. For the guilty
+layer, compliance is the best response (Section~\ref{sec:deterrence}) and
+by A3 its repair passes, so it is confirmed and $\ell^{\star}$ is never
+eliminated. A single-judge round executes no test, so no layer changes
+status and $V_{\text{sim}}$ is the full observationally-equivalent cone;
+inspection removes from it every cleared layer. $\square$
+
+\emph{Status of the premises.} A1 is the structural assumption of
+Section~\ref{sec:layered}; A2 and A3 are empirical regularities of the
+implemented repair path, not axioms, and the measured campaign prices both.
+Absorption (A2 failure) occurs on eight reverse-arm boards, where an
+innocent code layer's free regeneration silently drops the upstream
+constraint and passes the re-solve; repair insufficiency (A3 failure)
+occurs on nine causal boards, where the guilty layer's complying repair is
+overturned and the search moves past the true layer (both quantified in
+the Exp-A mechanism findings, Section~\ref{sec:exp_ablation}).
+The proposition delimits what commitment buys when the repair path
+cooperates; the funnel measures how often it does.
 
 %------------------------------------------------------------------------------
 \subsection{The diagnosis--repair algorithm}
@@ -1180,7 +1212,9 @@ $10^{-3}$ threshold): the solver's \textsc{Optimal} status was therefore
 \paragraph{Model and budget $K$.}
 Provider and model are held fixed within each comparison block and reported
 explicitly. Every method receives the same retry budget $K$
-(\texttt{max\_retries}).
+(\texttt{max\_retries}); the single declared exception is the Reflexion
+budget-tilted challenger sweep at $K{=}5$
+(Section~\ref{sec:exp_baselines}).
 
 \paragraph{Injection protocol.}
 Ground-truth root causes $a^{\star}\in\{a_1,a_2,a_3\}$ are obtained by
@@ -1243,7 +1277,17 @@ The primary metric is \emph{verified} root-cause attribution accuracy
 $\mathbf{1}\{\hat{a}=a^{\star}\}$ where $\hat{a}$ is the layer supported by
 executed refutation (not merely last-comply credit), optionally stratified by
 injected origin and solver-status surface. For commitment-order contrasts we
-also report first-probe hit $\mathbf{1}\{\omega_1=a^{\star}\}$. Secondary
+also report the first-probe hit $\mathbf{1}\{\omega_1=a^{\star}\}$ --- a
+\emph{commitment-side} quantity: under the committed policy the engine
+routes every probe to the first not-yet-cleared layer of $\omega$, so the
+executed first probe coincides with $\omega_1$ by construction and the
+metric reads out whether the committed order --- rank-aligned (causal),
+reversed, or shuffled (random) --- targeted the true layer. Its
+outcome-side complement is \emph{first-probe confirmation}: the probed
+guilty layer complies and its repair passes the executed re-solve at the
+first probe (equivalently, verified attribution at $K{=}1$). Confirmation
+requires alignment \emph{and} repairability, and the gap between the two
+metrics locates the repair path's failure modes. Secondary
 metrics are SSR@$K$, probe rounds, and tokens. SSR counts only
 \emph{Practical Optimal} outcomes in Table~\ref{tab:outcome_taxonomy}; a bare
 \textsc{Optimal} that fails the $z^{\star}$ gap test
@@ -1273,8 +1317,9 @@ redesign of the commitment apparatus (evidence-informed ranking plus
 verified attribution accounting), not a re-labelling of the old runs; the
 status-prior tables are retained below only as preliminary context. The
 grid was run under sequential disclosure: an $n{=}3$ feasibility pass, an
-interim inspection at $n{=}5$, and the expanded $n{=}20$ campaign with
-unchanged expectations; freeze-phase attempts that never produce a failure
+interim inspection at $n{=}5$, an expanded $n{=}20$ campaign, and a further
+densification to $n{=}30$, all with unchanged expectations; freeze-phase
+attempts that never produce a failure
 blackboard (data-contract rejections by the deterministic validator, or
 plants not expressed in the generated model) are reported as forward
 variance and replaced with fresh seeds, never silently dropped.
@@ -1307,9 +1352,9 @@ and hence the implementation freeze, it was produced under. One
 classification parameter was tightened during analysis and is disclosed
 here rather than silently applied: the strict-success gap threshold moved
 from $10^{-2}$ to $10^{-3}$. The choice is data-driven rather than
-arbitrary: across the $258$ measured runs with a computable gap the
-distribution is sharply bimodal---exactly $0.0000\%$ for $152$ runs and at
-least $1.66\%$ for $103$, with only three cells in between ($0.03\%$,
+arbitrary: across the $316$ measured runs with a computable gap the
+distribution is sharply bimodal---exactly $0.0000\%$ for $184$ runs and at
+least $1.01\%$ for $129$, with only three cells in between ($0.03\%$,
 $0.53\%$, $0.99\%$)---and the instances are LPs whose deterministic
 equivalents two exact solvers agree on to $\sim10^{-9}$ relative, so the
 in-between cells are real model deviations rather than solver noise. All
@@ -1342,54 +1387,74 @@ do not reuse the rank tip), isolating order from naming skill.
 \paragraph{Expected conclusion.}
 Causal $\omega$ yields strictly higher first-probe hit and verified
 attribution than reverse, and at least weakly higher than random, at
-comparable token cost. If causal $\approx$ random/reverse, Proposition~1 is
-not supported and the ranking/alignment design is revised before baselines.
+comparable token cost. If causal $\approx$ random/reverse,
+Proposition~1 carries no empirical bite and the ranking/alignment design
+is revised before baselines.
 
-\paragraph{Measured results (evidence-informed; snapshot mode; $n{=}20$/order).}
+\paragraph{Measured results (evidence-informed; snapshot mode; $n{=}30$/order).}
 Table~\ref{tab:exp_ablation} reports the expanded ablation on
 \texttt{smoke\_H4\_Omega5} with plant \texttt{me\_force\_zero\_sea},
 $K{=}3$, provider DeepSeek / \texttt{deepseek-flash}, and
 \texttt{rank\_method}=\texttt{hybrid} (the force-zero smell tips
 \texttt{model\_expert} without inventing a second diagnosis mechanism).
-Causal commitment attains first-probe $20/20$ versus $10/20$ under random
-and $0/20$ under reverse (paired exact McNemar: $p<10^{-4}$ and $p=0.002$):
-the registered first-probe clause is strongly supported. Verified
-attribution is $9/20$ causal, $9/20$ random, $5/20$ reverse; the
-causal-versus-reverse contrast is directionally strict ($0.45 > 0.25$) but
-not significant at this $n$ ($4{:}0$ discordant pairs, $p=0.125$), and
-causal versus random is a tie ($3{:}3$)---the weak clause is met as a
-tie. Two mechanism findings qualify these counts. First, auditing every
-random arm against its committed shuffle shows that first-probe hits
-coincide \emph{exactly} with shuffles that place the guilty layer first
-($10/10$ here; zero exceptions across all plants below): the random arm's
-naming performance is carried entirely by accidental alignment with the
-ranking. Second, $3$ of the random arm's $9$ verified attributions start
-from \emph{unaligned} shuffles and still reach the guilty layer by
-executed refutation within $K$: alignment fully determines first-probe and
-raises the chance of early verified attribution, but multi-round search
-under executed refutation is a genuine second route. Token costs are of
-the same order across orders (causal marginally lowest).
-Figure~\ref{fig:expa} summarizes the ablation and the alignment audit.
+Causal commitment attains first-probe $30/30$ versus $15/30$ under random
+and $0/30$ under reverse (paired exact McNemar: $p=1.9\times10^{-9}$ and
+$p=6.1\times10^{-5}$): the registered first-probe clause is strongly
+supported. Verified attribution is $14/30$ causal, $13/30$ random, $7/30$
+reverse; the causal-versus-reverse contrast is significant
+($8{:}1$ discordant pairs, $p=0.039$), and causal versus random remains a
+near-tie ($5{:}4$, $p=1.0$)---the weak clause is met as a tie. Two
+mechanism findings qualify these counts. First, first-probe naming is
+commitment-side by construction
+(Section~\ref{sec:exp_metrics}): the executed first probe equals
+$\omega_1$ on every board, verified event-by-event against the logs, so
+the hit counts measure which orders targeted the guilty layer --- the
+hybrid rank names the model layer on all $30$ boards, and exactly the
+$15$ random shuffles that placed it first hit. The outcome-side quantity
+is the confirmation funnel: of causal's $30$ aligned first probes, $14$
+confirm (guilty-layer comply, re-solve passes); the remaining $16$ split
+into $9$ whose model-layer repair is overturned by the re-solve and the
+run ends in terminal failure (final relative gaps $1.7$--$55.8\%$), and
+$7$ where the model repair is correct but the downstream code
+regeneration injects a fresh defect, the next probe credits the code
+layer, and the run terminates \emph{Practical Optimal} without verified
+attribution --- the whole of causal's SSR margin ($21{=}14{+}7$). Random
+mirrors the funnel on its aligned half ($9$ of $15$ confirm; the other
+$6$ are overturned terminal failures), and reverse exposes the converse
+hazard: on $8$ boards an \emph{unaligned} first probe absorbs the
+model-layer fault outright --- the regenerated code silently drops the
+injected constraint, the re-solve passes, and the credit settles on the
+code layer; these eight boards are more than half of reverse's SSR
+($8$ of $15$) and none is a verified attribution. Second, $4$ of the
+random arm's $13$ verified attributions start from \emph{unaligned}
+shuffles and still reach the guilty layer by executed refutation within
+$K$: alignment raises the chance of early verified attribution, but
+multi-round search under executed refutation is a genuine second route.
+Token costs are of the same order across orders (causal marginally
+lowest). Figure~\ref{fig:expa} summarizes the ablation and the alignment
+audit.
 
 \begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=0.85\linewidth]{fig5_exp_a_ablation.pdf}
 \caption{Exp-A commitment-order ablation and alignment audit (measured;
-snapshot mode; $n{=}20$/order; plant \texttt{me\_force\_zero\_sea}).
+snapshot mode; $n{=}30$/order; plant \texttt{me\_force\_zero\_sea}).
 (a) First-probe hit, verified attribution, and SSR@$K$ by probe order.
-(b) Seed-level alignment audit of the random arm: a first-probe hit
-occurs if and only if the committed shuffle places the guilty layer first
-($\omega_1=a^{\star}$; $10/10$ with zero exceptions) --- the random arm's
+(b) Seed-level audit of the random arm: the executed first probe equals
+the committed $\omega_1$ on every board (probing is bound to the
+commitment), so naming hits are exactly the shuffles that place the
+guilty layer first ($15/15$) --- the random arm's
 naming performance is carried entirely by accidental alignment with the
-ranking. Seeds 7, 12, 14 had no completed run manifest and are outside
-the campaign's $n{=}20$.}
+ranking. Freeze attempts that produced no failure blackboard (seeds 7,
+12, 14, 24, 25, 27, 28; data-contract rejections) are outside the
+campaign's $n{=}30$.}
 \label{fig:expa}
 \end{figure}
 
 \begin{table}[t]
 \centering
 \caption{Exp-A commitment-order ablation --- \textbf{measured}
-(evidence-informed; snapshot mode; $n{=}20$/order; $K{=}3$; hybrid rank;
+(evidence-informed; snapshot mode; $n{=}30$/order; $K{=}3$; hybrid rank;
 DeepSeek \texttt{deepseek-flash}; plant \texttt{me\_force\_zero\_sea};
 loop-token accounting). Primary: first-probe hit and verified
 attribution.}
@@ -1399,9 +1464,9 @@ attribution.}
 \toprule
 $\omega$ & First-probe hit & Verified attr.\ & SSR@$K$ & Mean loop tokens \\
 \midrule
-causal  & $20/20$ (1.00) & $9/20$ (0.45) & $13/20$ & $0.65{\times}10^{5}$ \\
-random  & $10/20$ (0.50) & $9/20$ (0.45) & $11/20$ & $0.66{\times}10^{5}$ \\
-reverse & $0/20$ (0.00) & $5/20$ (0.25) & $10/20$ & $0.74{\times}10^{5}$ \\
+causal  & $30/30$ (1.00) & $14/30$ (0.47) & $21/30$ & $0.64{\times}10^{5}$ \\
+random  & $15/30$ (0.50) & $13/30$ (0.43) & $17/30$ & $0.67{\times}10^{5}$ \\
+reverse & $0/30$ (0.00) & $7/30$ (0.23) & $15/30$ & $0.74{\times}10^{5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1422,9 +1487,11 @@ the data layer (its smell rules cover force-zero and relaxed-DEP
 surfaces, not contract-valid semantic source swaps): causal and reverse
 both sit at $0/10$ first-probe and the clause is falsified there; the
 only hits ($4/10$) are random shuffles that happened to align. Across all
-three plants and all $40$ random-arm cells the alignment audit again has
-zero exceptions---first-probe hit occurs if and only if
-$\omega_1=a^{\star}$. Verified attribution shows no significant order
+three plants and all $40$ random-arm cells the executed first probe again
+equals $\omega_1$ on every board, so the hits remain exactly the shuffles
+that target $a^{\star}$ --- the empirical variable is which layer the
+shuffle places first, not whether execution obeys the commitment.
+Verified attribution shows no significant order
 effect on either new plant (seed-level repairability and multi-round
 refutation dominate at $K{=}3$). The grid also uncovered a
 plant-specific forward-variance class: in $12$ of $22$ freeze attempts
@@ -1490,13 +1557,16 @@ relative gap $0.0\%$ before faulting). The first-probe clause replicates
 at full strength: causal attains $10/10$ on both instances and reverse
 $0/10$; pooled over instances, causal versus reverse is $20{:}0$
 discordant pairs ($p=2\times10^{-6}$) and causal versus random $11{:}0$
-($p=0.001$), with the alignment audit again showing zero exceptions. The
-clause the $n{=}20$ grid could not resolve is resolved on the family:
+($p=0.001$), with the executed first probe again equal to $\omega_1$ on
+every board. The clause the $n{=}20$ grid could not resolve is resolved on
+the family and, after densification to $n{=}30$, on the main grid as well
+(causal versus reverse $8{:}1$ discordant pairs, $p=0.039$):
 verified attribution is strictly higher under causal ($0.70$ and $0.50$)
 than under reverse ($0.30$ and $0.10$) and random ($0.20$ and $0.30$);
 pooled discordant pairs give causal versus reverse $8{:}0$ ($p=0.008$)
 and causal versus random $8{:}1$ ($p=0.039$). The smoke instance's
-verified tie between causal and random ($9/20$ each) does not recur,
+verified near-tie between causal and random ($14/30$ versus $13/30$) does
+not recur,
 supporting the mechanism reading that alignment raises the probability of
 early verified attribution while multi-round refutation remains a second,
 slower route---consistent with the random arm being the most expensive in
@@ -1589,60 +1659,86 @@ dominates Stackelberg on verified attribution at similar or lower cost with no
 audit gap worth claiming, the ranking/commitment design (or the paper claim)
 is revised before diagnostics scaling.
 
-\paragraph{Measured results (evidence-informed; snapshot mode; internal only; $n{=}20$).}
+\paragraph{Measured results (evidence-informed; snapshot mode; internal only; $n{=}30$).}
 Table~\ref{tab:exp_baselines} reports the expanded internal comparison on
 the same plant, engine, and $K$ as Exp-A, using the Exp-A causal cells as
 the Stackelberg arm (paired, shared snapshots). Verified attribution:
-Stackelberg $9/20$ versus adversarial $8/20$ (paired $p=1.0$; the
-registered $\geq$ clause holds as a tie) and sequential $0/20$
-($9{:}0$ discordant pairs, $p=0.004$; the $\gg$ clause holds). The cost
-dimension is decisive: adversarial matches Stackelberg's verified rate
-only by spending $1.9\times$ the loop tokens ($1.26{\times}10^{5}$ versus
-$0.65{\times}10^{5}$), and its single-judge first-probe is $12/20$
-against Stackelberg's committed $20/20$.
+Stackelberg $14/30$ versus adversarial $10/30$ ($6{:}2$ discordant pairs,
+$p=0.29$; the registered $\geq$ clause holds directionally) and sequential
+$0/30$ ($14{:}0$ discordant pairs, $p=1\times10^{-4}$; the $\gg$ clause
+holds). The cost dimension is decisive: adversarial's verified rate sits
+below Stackelberg's only non-significantly, yet it spends $2.1\times$ the
+loop tokens ($1.36{\times}10^{5}$ versus $0.64{\times}10^{5}$), and its
+single-judge first-probe is $19/30$ against Stackelberg's committed
+$30/30$.
 
-The external rows extend the comparison on the identical twenty frozen
+The external rows extend the comparison on the identical thirty frozen
 blackboards. Debate (three lens-diverse voters, single round, mechanical
 majority with status-prior tie-break; no LLM-reported confidence) attains
-first-probe $12/20$ --- \emph{cell-for-cell identical} to the single-judge
-baseline ($0{:}0$ discordant pairs) --- and verified attribution $6/20$ at
-$3.7\times$ Stackelberg's loop tokens. Reflexion (single-judge accusation
-critiqued against episode memory) also attains first-probe $12/20$
-(cell-for-cell identical again), with verified attribution $11/20$
-($0.55$, Wilson 95\% CI $[0.34, 0.74]$): a point estimate above
-Stackelberg's $0.45$ (95\% CI $[0.26, 0.66]$), where the two intervals
-overlap over most of their range and the paired difference is not
-significant ($0{:}2$ discordant pairs, $p=0.5$), bought at
-$2.8\times$ the loop tokens without a committed order or its audit
+first-probe $19/30$ --- \emph{cell-for-cell identical} to the single-judge
+baseline ($0{:}0$ discordant pairs) --- and verified attribution $7/30$,
+now significantly below Stackelberg's ($8{:}1$ discordant pairs,
+$p=0.039$), at $4.0\times$ Stackelberg's loop tokens. Reflexion
+(single-judge accusation critiqued against episode memory) also attains
+first-probe $19/30$ (cell-for-cell identical again), with verified
+attribution $15/30$ ($0.50$, Wilson 95\% CI $[0.33, 0.67]$): a point
+estimate above Stackelberg's $0.47$ (95\% CI $[0.30, 0.64]$), where the
+two intervals overlap over most of their range and the paired difference
+is not significant ($3{:}4$ discordant pairs, $p=1.0$), bought at
+$2.9\times$ the loop tokens without a committed order or its audit
 structure. Against Stackelberg, both external protocols lose first-probe
-naming decisively ($8{:}0$ discordant pairs each, $p=0.008$). The
+naming decisively ($11{:}0$ discordant pairs each, $p=0.001$). The
 registered revision clause --- an external protocol strictly dominating
 Stackelberg on verified attribution at similar or lower cost --- is
-therefore not triggered: multi-calling the diagnoser neither improves
-naming over a single judge nor delivers verified attribution at
-competitive cost, although Reflexion's non-significant verified edge is
-reported as an honest caveat against over-reading the Stackelberg
-advantage. Figure~\ref{fig:expb} shows the accuracy--cost trade-off.
+therefore not triggered: on the tested engine, multi-calling the
+diagnoser neither improves naming over a single judge nor delivers
+verified attribution at competitive cost, although Reflexion's
+non-significant verified edge is reported as an honest caveat against
+over-reading the Stackelberg advantage. Two scope conditions qualify the
+no-gain reading. First, all five arms share one engine
+(\texttt{deepseek-flash}, thinking disabled): whether multi-calling a
+diagnoser helps is the kind of question whose answer grows with judge
+capability, so the no-gain finding is claimed for this engine class, not
+for stronger judges; a full cross-engine campaign is registered future
+work. A registered spot-check on a second engine
+(\texttt{qwen3.8-flash}, five shared blackboards $\times$ three order
+arms, resuming the identical frozen boards) replicates the
+commitment-side structure with zero exceptions --- causal first-probe
+$5/5$, random $3/5$ with every hit again exactly the aligned shuffle,
+reverse $0/5$ --- while verified attribution is uniformly rarer there
+($\le 1/5$ per order), consistent with the funnel decomposition: naming
+is commitment-side and engine-robust, round-one confirmation rides on the
+repair path and is engine-sensitive; the cells are never pooled across
+engines.
+Second, the common budget $K{=}3$ is the least favourable to Reflexion's
+memory-based revision, so a \emph{budget-tilted challenger sweep} re-ran
+Reflexion alone with $K{=}5$ on all thirty boards: verified attribution is
+unchanged at $15/30$ ($9$ at $K{=}1$, $15$ by $K{=}2$, flat through
+$K{=}5$; paired against Stackelberg's $K{=}3$ cells, $3{:}2$ discordant
+pairs, $p=1.0$) while mean loop tokens rise to $3.1\times$ Stackelberg's
+--- budget depth is not what limits Reflexion here, and the revision
+clause stays untriggered.
+Figure~\ref{fig:expb} shows the accuracy--cost trade-off.
 
 \begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=0.55\linewidth]{fig4_exp_b_pareto.pdf}
 \caption{Verified attribution versus mean loop-token cost across the five
-Exp-B methods ($n{=}20$ shared frozen blackboards each; error bars:
+Exp-B methods ($n{=}30$ shared frozen blackboards each; error bars:
 Wilson 95\% CIs). Stackelberg sits on the efficient frontier at the
-lowest token cost; adversarial matches its point estimate only at
-$1.9\times$ the cost, and the external multi-call protocols cost
-$2.8\times$ (Reflexion) to $3.7\times$ (Debate). Reflexion's higher
-point estimate ($0.55$ vs $0.45$) is not significant --- its interval
-overlaps Stackelberg's over most of its range ($0{:}2$ discordant pairs,
-$p=0.5$).}
+lowest token cost; adversarial trails its point estimate only
+non-significantly at $2.1\times$ the cost, and the external multi-call
+protocols cost $2.9\times$ (Reflexion) to $4.0\times$ (Debate).
+Reflexion's higher point estimate ($0.50$ vs $0.47$) is not significant
+--- its interval overlaps Stackelberg's over most of its range
+($3{:}4$ discordant pairs, $p=1.0$).}
 \label{fig:expb}
 \end{figure}
 
 \begin{table}[t]
 \centering
 \caption{Exp-B unified baselines --- \textbf{measured} (evidence-informed;
-snapshot mode; $n{=}20$; $K{=}3$; shared frozen blackboards across all
+snapshot mode; $n{=}30$; $K{=}3$; shared frozen blackboards across all
 methods; loop-token accounting). Primary: verified attribution.}
 \label{tab:exp_baselines}
 \label{tab:exp_ii}
@@ -1652,15 +1748,15 @@ methods; loop-token accounting). Primary: verified attribution.}
 Family & Method & Verified attr.\ & First-probe & SSR@$K$ & Mean loop tokens \\
 \midrule
 Proposed & stackelberg (causal)
-  & $9/20$ (0.45) & $20/20$ (1.00) & $13/20$ & $0.65{\times}10^{5}$ \\
+  & $14/30$ (0.47) & $30/30$ (1.00) & $21/30$ & $0.64{\times}10^{5}$ \\
 Internal & adversarial
-  & $8/20$ (0.40) & $12/20$ (0.60) & $9/20$ & $1.26{\times}10^{5}$ \\
+  & $10/30$ (0.33) & $19/30$ (0.63) & $13/30$ & $1.36{\times}10^{5}$ \\
 Internal & sequential
-  & $0/20$ (0.00) & $0/20$ (0.00) & $7/20$ & $0.61{\times}10^{5}$ \\
+  & $0/30$ (0.00) & $0/30$ (0.00) & $10/30$ & $0.51{\times}10^{5}$ \\
 External & debate (3-voter panel)
-  & $6/20$ (0.30) & $12/20$ (0.60) & $6/20$ & $2.41{\times}10^{5}$ \\
+  & $7/30$ (0.23) & $19/30$ (0.63) & $7/30$ & $2.58{\times}10^{5}$ \\
 External & reflexion (memory critique)
-  & $11/20$ (0.55) & $12/20$ (0.60) & $11/20$ & $1.80{\times}10^{5}$ \\
+  & $15/30$ (0.50) & $19/30$ (0.63) & $16/30$ & $1.84{\times}10^{5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1718,47 +1814,59 @@ indicate that commitment is not operational.
 \paragraph{Measured results (offline re-analysis of the completed grid).}
 Table~\ref{tab:exp_diag} reports an offline reconstruction of per-probe
 dynamics from the event logs of the smoke-grid campaigns above (seven
-method arms, all on the same twenty frozen blackboards; no new runs):
-verified-at-round-$k$ is read cumulatively within the completed $K{=}3$
-episodes, a comply is \emph{overturned} when the executed re-solve
+method arms, all on the same thirty frozen blackboards; re-analysis adds
+no runs): verified-at-round-$k$ is read cumulatively within the completed
+$K{=}3$ episodes, a comply is \emph{overturned} when the executed re-solve
 re-enters diagnosis, and a deflect is \emph{false} when it comes from the
 eventually verified layer. Three readings follow. First, the curves are
 step functions positioned by where the guilty layer sits in the order:
-under causal commitment all nine verified attributions occur at the
-\emph{first} probe ($9/20$ at $K{=}1$, saturated), reverse reaches zero at
-$K{=}1$ and its full $5/20$ only at $K{\ge}2$, and random lies between
-($6$ aligned hits at $K{=}1$, $8$ by $K{=}2$, $9$ at $K{=}3$). The
+under causal commitment all fourteen verified attributions occur at the
+\emph{first} probe ($14/30$ at $K{=}1$, saturated --- the first-probe
+confirmations of Section~\ref{sec:exp_metrics}), reverse reaches zero at
+$K{=}1$ and its full $7/30$ only at $K{\ge}2$, and random lies between
+($9$ hits at $K{=}1$, $12$ by $K{=}2$, $13$ at $K{=}3$). The
 registered ``rises faster under causal'' clause thus holds in the
 step-function sense, and the deeper diagnostic is that every method
 \emph{except} random is flat from $K{=}2$ to $K{=}3$ (random's single
 $K{=}3$ recovery is one more shuffle whose order reaches the guilty layer
 only on the third probe): within this budget the operative variable is the
-alignment of $\omega_1$ with $a^{\star}$, not budget depth (a $K{>}3$ sweep
-was not run and is not claimed). Second, deflects are truthful: across roughly one
-hundred and forty probes by seven methods, the guilty layer never
-deflected---every deflect came from an innocent downstream layer---which
-is the truthful-best-response behaviour the commitment-plus-refutation
-mechanism is designed to induce (single-plant caveat: the model-layer
-plant's guilt is visible in its own output). Third, executed refutation
-is load-bearing: $46$--$71\%$ of complies are overturned by the re-solve
-(the repair claimed success but the objective did not recover), so a
-comply is never taken on trust. Debate's $64\%$ deflect rate is the
-panel's data-layer accusations being rejected by the data layer's own
-backward check; Reflexion's $7\to11$ jump between $K{=}1$ and $K{=}2$
-reflects its memory-driven revision escaping bad first attributions,
-consistent with its multi-round profile in the external comparison.
-Figure~\ref{fig:expc} plots the step curves.
+alignment of $\omega_1$ with $a^{\star}$, not budget depth (for the
+non-Reflexion methods a $K{>}3$ sweep was not run; Reflexion was swept to
+$K{=}5$ as the budget-tilted challenger of Section~\ref{sec:exp_baselines}
+and gains nothing beyond round two). Second, deflects are near-truthful with
+one qualified exception: across all $465$ recorded probes by the seven
+methods --- the complete event-log population ($208$ of the $210$
+episodes contribute probes; the remaining two crashed at the execution
+stage before any probe) --- $116$ deflects were recorded, $113$ of them
+from innocent downstream layers, and within the three committed order
+arms the guilty layer complied at first contact on every board. The
+exception is instructive: the only three guilty-layer deflections (two
+Debate cells, one Reflexion cell) all occur \emph{after} the guilty
+layer's round-one complying repair was overturned by the re-solve ---
+late-stage re-accusation defences arguing that a passing solver status
+leaves no error to own, not concealment of visible guilt. This is still
+the truthful-best-response behaviour the commitment-plus-refutation
+mechanism is designed to induce where it binds (single-plant caveat: the
+model-layer plant's guilt is visible in its own output). Third, executed
+refutation is load-bearing: $43$--$71\%$ of complies are overturned by
+the re-solve (the repair claimed success but the objective did not
+recover), so a comply is never taken on trust. Debate's $56\%$ deflect
+rate is the panel's data-layer accusations being rejected by the data
+layer's own backward check; Reflexion's $9\to15$ jump between $K{=}1$ and
+$K{=}2$ reflects its memory-driven revision escaping bad first
+attributions, consistent with its multi-round profile in the external
+comparison. Figure~\ref{fig:expc} plots the step curves.
 
 \begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=0.6\linewidth]{fig3_exp_c_steps.pdf}
 \caption{Verified attribution as a function of probe budget $K$ (Exp-C
-offline re-analysis; $n{=}20$ shared blackboards per method; cumulative
+offline re-analysis; $n{=}30$ shared blackboards per method; cumulative
 within the completed $K{=}3$ episodes). The curves are step functions
 positioned by the rank of the guilty layer in the committed order
-$\omega$: causal commitment saturates at $K{=}1$ ($9/20$), reverse reaches
+$\omega$: causal commitment saturates at $K{=}1$ ($14/30$), reverse reaches
 its plateau only at $K{\ge}2$, sequential never leaves zero, and
-Reflexion's $7\to11$ jump between $K{=}1$ and $K{=}2$ reflects
+Reflexion's $9\to15$ jump between $K{=}1$ and $K{=}2$ reflects
 memory-driven revision of bad first attributions. Every method except
 random is flat from $K{=}2$ to $K{=}3$.}
 \label{fig:expc}
@@ -1767,7 +1875,7 @@ random is flat from $K{=}2$ to $K{=}3$.}
 \begin{table}[t]
 \centering
 \caption{Exp-C diagnostics --- \textbf{measured} (offline re-analysis of
-the completed smoke-grid episodes; $n{=}20$ shared blackboards per method;
+the completed smoke-grid episodes; $n{=}30$ shared blackboards per method;
 verified attr.\ cumulative within the completed $K{=}3$ episodes).}
 \label{tab:exp_diag}
 \label{tab:exp_iv}
@@ -1775,13 +1883,13 @@ verified attr.\ cumulative within the completed $K{=}3$ episodes).}
 \toprule
 Method & $K{=}1$ & $K{=}2$ & $K{=}3$ & Probes/cell & Deflect & Comply overturn \\
 \midrule
-stackelberg causal & $9/20$ & $9/20$ & $9/20$ & 1.9 & 29\% & 52\% \\
-stackelberg random & $6/20$ & $8/20$ & $9/20$ & 2.1 & 32\% & 46\% \\
-stackelberg reverse& $0/20$ & $5/20$ & $5/20$ & 2.3 & 22\% & 71\% \\
-adversarial        & $7/20$ & $8/20$ & $8/20$ & 2.1 & 10\% & 55\% \\
-sequential         & $0/20$ & $0/20$ & $0/20$ & 2.4 & 4\%  & 56\% \\
-debate             & $6/20$ & $6/20$ & $6/20$ & 2.4 & 64\% & 47\% \\
-reflexion          & $7/20$ & $11/20$& $11/20$& 2.1 & 10\% & 53\% \\
+stackelberg causal & $14/30$ & $14/30$ & $14/30$ & 1.8 & 26\% & 49\% \\
+stackelberg random & $9/30$ & $12/30$ & $13/30$ & 2.1 & 32\% & 43\% \\
+stackelberg reverse& $0/30$ & $7/30$ & $7/30$ & 2.2 & 22\% & 71\% \\
+adversarial        & $8/30$ & $10/30$ & $10/30$ & 2.3 & 16\% & 60\% \\
+sequential         & $0/30$ & $0/30$ & $0/30$ & 2.4 & 7\%  & 56\% \\
+debate             & $7/30$ & $7/30$ & $7/30$ & 2.5 & 56\% & 64\% \\
+reflexion          & $9/30$ & $15/30$& $15/30$& 2.2 & 14\% & 55\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1827,9 +1935,10 @@ correct model-layer repair: a code-layer regeneration can fail outright
 gap despite a correct strip); one sequential grid cell terminated before
 any model call; and replicate variance remains high---the adversarial arm
 reached a verified attribution in a single-run smoke but $0/3$ on the
-grid. Success can also occur without attribution: one causal cell reached
-\emph{Practical Optimal} through a downstream repair while its attributed
-layer settled on the code layer. These residuals concentrate in the paths
+grid. Success can also occur without attribution: seven causal cells
+reached \emph{Practical Optimal} through a downstream repair while their
+attributed layer settled on the code layer (the stolen-attribution branch
+of the Exp-A confirmation funnel). These residuals concentrate in the paths
 the deterministic data-layer contract now constrains; the no-plant gate
 and the re-established tables of Section~\ref{sec:exp_reporting} bound
 them before the expanded grid is interpreted, and the overturn and
@@ -1867,48 +1976,68 @@ regime above.
 We recast diagnosis--repair in an LLM optimization pipeline as a
 Stackelberg inspection game and asked what the inspector's commitment
 is actually worth. The empirical answer, across three fault plants,
-three problem instances, five diagnosis protocols, and one hundred and
-forty reconstructable probe rounds, is precise about the mechanism:
-\emph{committed alignment carries the information}. First-probe
-attribution occurs exactly when the committed $\omega_1$ equals the
-guilty layer --- with zero exceptions over every random arm ever run ---
-and the ranking that feeds the commitment sees the model layer (through
+three problem instances, five diagnosis protocols, and the $465$ probe
+rounds recorded across the seven arms of the shared grid, is precise
+about the mechanism:
+\emph{committed alignment carries the information}. Probing is bound to
+the committed order --- the executed first probe equals $\omega_1$ on
+every board ever run --- so first-probe naming is exactly the ranking's
+alignment, and the ranking sees the model layer (through
 symptom signatures) and the code layer (through relaxed-solve surfaces)
 but not contract-valid semantic data faults, for which naming failed for
-every fixed order. The order-effect claim is therefore conditionally
+every fixed order. Naming is not confirmation: on the main grid only
+$14$ of the $30$ aligned first probes are settled by the round-one
+re-solve ($9$ overturned repairs, $7$ attributions stolen by downstream
+regeneration), while on the reverse arm $8$ misaligned probes absorbed
+the upstream fault outright and succeeded without verified attribution.
+The order-effect claim is therefore conditionally
 replicated, not universal, and we register the corresponding design
 revision (provenance-style evidence for the data layer) rather than
 patching it post hoc.
 
 The quantitative picture is consistent with that mechanism. On the
-shared frozen blackboards of the main grid, causal Stackelberg attains
-first-probe attribution on every board and dominates single-judge,
-debate, and reflexion naming ($8{:}0$ discordant pairs each); verified
+shared frozen blackboards of the main grid, causal Stackelberg names
+the guilty layer with its first probe on every board and dominates single-judge,
+debate, and reflexion naming ($11{:}0$ discordant pairs each); verified
 attribution reaches $0.60$ versus $0.20$ under reverse commitment on the
-instance family (pooled paired $p=0.008$); and the budget diagnostics
-show that within $K{=}3$ nothing improves after the second round ---
+instance family (pooled paired $p=0.008$) and $0.47$ versus $0.23$ on the
+densified main grid ($8{:}1$, $p=0.039$); and the budget diagnostics
+show that nothing improves after the second round within the budgets
+tested ($K{=}3$ for all arms; $K{=}5$ for Reflexion as the tilted
+challenger) ---
 the guilty layer's position, not budget depth, is what the curves
-respond to. External multi-call protocols do not overturn the design:
-debate and reflexion name no better than one judge, and reflexion's
-non-significant verified edge ($0.55$ versus $0.45$) costs $2.8\times$
-the loop tokens without a committed order or its audit trail. Two
-mechanism checks close the loop between theory and logs: the guilty
-layer never deflected under commitment with executed refutation
-(truthful best response as designed), while $46$--$71\%$ of complying
+respond to. On the single tested engine, external multi-call protocols
+do not overturn the design: debate and reflexion name no better than one
+judge, debate's verified attribution is significantly lower
+($8{:}1$, $p=0.039$) at $4.0\times$ the loop tokens, and reflexion's
+non-significant verified edge ($0.50$ versus
+$0.47$) costs $2.9\times$ the loop tokens without a committed order or
+its audit trail. Two
+mechanism checks close the loop between theory and logs: under
+commitment the guilty layer complied at first contact on every
+committed-arm board (the three deflections observed, all in external
+arms, follow an overturned repair), while $43$--$71\%$ of complying
 repairs were overturned by the re-solve --- verification, not cheap
 talk, is what carries attribution.
 
-The claims are bounded accordingly: the truthful-deflect result is
-established on the model-layer plant (whose guilt is visible in its own
-output), the instance family varies horizon and scenario count at fixed
-network size, all campaigns run a single engine under a frozen
-implementation, and $K$ is capped at three. Within those bounds the
+The claims are bounded accordingly: the first-contact-compliance result
+is established on the model-layer plant (whose guilt is visible in its own
+output; the three guilty-layer deflections observed, all in external
+arms, follow an overturned repair) and is silent on the semantic data
+plant, whose $55\%$
+silent-fault rate means most injected faults never produced a failure
+board and deflect behaviour was never exercised; the instance family
+varies horizon and scenario count at fixed network size, all campaigns
+run a single engine under a frozen implementation, and $K$ is capped at
+three. Within those bounds the
 contribution stands as a mechanism, a proposition with matching
 dynamics, and a measured protocol: commitment buys naming accuracy and
 cheaper verifiable attribution precisely when the committed ranking can
 see the fault --- and the logs show why. Extending visibility to the
-semantic data layer, scaling the network, and testing cross-engine
-robustness of the ranking are the registered next steps.
+semantic data layer, scaling the network, and a full cross-engine
+campaign (a second-engine spot-check already replicates the
+commitment-side alignment structure with zero exceptions) are the
+registered next steps.
 
 %==============================================================================
 \section*{Data and code availability}

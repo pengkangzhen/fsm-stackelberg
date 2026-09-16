@@ -46,7 +46,7 @@ PROVIDER_MODELS = {
     "Moonshot": ["kimi-k2.5"],
     "MiMo": ["mimo-v2.5-pro"],
     "NVIDIA": ["z-ai/glm-5.1"],
-    "Qwen": ["qwen3.7-plus"],
+    "Qwen": ["qwen3.7-plus", "qwen3.8-flash"],
     "Gemini": ["gemini-3.1-pro"],
 }
 
