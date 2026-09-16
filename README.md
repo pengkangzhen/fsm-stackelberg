@@ -15,7 +15,7 @@ commitment order follows data ⊳ model ⊳ code — not a single-judge LLM accu
 
 ```bash
 uv sync
-cp /path/to/mako/.env .env          # API keys + Gurobi license env vars
+cp /path/to/mako/.env .env          # API keys (DEEPSEEK_API_KEY 主引擎; QWEN_*/ZHIPUAI_* 可选) + Gurobi license env vars
 
 # (Re)export the smoke TSLP instance if needed
 uv run python -m generator.cli \
@@ -25,9 +25,13 @@ uv run python -m generator.cli \
 uv run python -m fsm_stackelberg.main \
   --algorithm mako --dataset prob_tslp_ecr_demand \
   --prob_name smoke_H4_Omega5 \
-  --provider DeepSeek --model deepseek-chat \
+  --provider DeepSeek --model deepseek-flash \
   --diagnosis_mode stackelberg --knowledge progressive --max_retries 3
 ```
+
+Engine discipline: the validated main engine is official DeepSeek
+`deepseek-flash` (thinking disabled, temperature 0). Switching engine =
+starting a new campaign freeze; never pool cells across engines.
 
 `--knowledge progressive` (default; `enable` is an alias) is **catalog-first
 on-demand** injection — not dump-all, not RAG. Use `--knowledge disable` only

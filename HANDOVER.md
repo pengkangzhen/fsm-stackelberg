@@ -24,7 +24,7 @@
   (all six `pr/*` branches merged 2026-09-05 in dependency order 1→6; only
   conflict was binary `manuscript.pdf`, resolved to the pr/6 build; suite
   72 passed on merged main).
-- **Current state (2026-07-27).**
+- **Current state (滚动日志，最新 2026-09-16；以下条目按时间顺序，晚条目覆盖早条目的"当前"说法).**
   - Phase 0 skipped; Phase 1 Stackelberg PoC **done**; Phase 2 analysis-mode
     payoffs **done** (`src/fsm_stackelberg/game/payoff.py`), with Exp-I
     diagnostics: `first_probe_hit` / `kill_hit` / `committed_omega`.
@@ -40,8 +40,8 @@
     (human mirror only). Summarize / Exp-I scripts should read those files.
   - Default dataset: `prob_tslp_ecr_demand` / `smoke_H4_Omega5`.
   - **Smoke E2E on TSLP done** (2026-07-22): `--knowledge progressive`,
-    historically Qwen/`qwen3.7-plus`; **current cheap default =
-    DashScope/`deepseek-v4-flash`**. Final **Practical Optimal** vs GT
+    historically Qwen/`qwen3.7-plus`; ~~cheap default DashScope/
+    `deepseek-v4-flash`~~（已被官方 DeepSeek `deepseek-flash` 取代，见 2026-09-11 定案条目）. Final **Practical Optimal** vs GT
     \(z^\star\approx 1.389581\times 10^{6}\) (solver `OPTIMAL` alone is not
     enough — see manuscript `tab:outcome_taxonomy`).
   - **Fault injection + Exp-I pilot infra done** (`--inject`,
@@ -109,8 +109,8 @@
         (`verified_attribution_hit=False`; ~111k tok).
       - Notes: `results/evidence_informed_smoke/SUMMARY.md`.
     - Gate: **structural pass**; **verified-attr miss** on that draw.
-  - **Provider (2026-07-24+, 历史记录——测试阶段已被 2026-09-11
-    GLM-5.3-Flash 决策取代):** cost-gated redesigned runs prefer
+  - **Provider (2026-07-24+, 历史记录——已被 2026-09-11 引擎定案取代：
+    GLM 试测当晚即判不适用，终局引擎 = 官方 DeepSeek `deepseek-flash`):** cost-gated redesigned runs prefer
     **DashScope / `deepseek-v4-flash`** (百炼 OpenAI-compat;
     `QWEN_*` or `DASHSCOPE_API_KEY`; `enable_thinking` default **off** —
     set `FSM_ENABLE_THINKING=1` for Bailian chat-style thinking).
@@ -423,6 +423,37 @@
     一致（程序化核对 17 项）；全文零 [Placeholder]/[Draft] 残留；
     编译 0 错、无 undefined/multiply-defined refs，**21 页**。
     **待用户拍板**：venue（EJOR/C&OR vs agent 会议 vs EAAI）、系统命名。
+  - **n=30 加密 DONE（2026-09-15/16，用户要求；审稿加固）**：smoke 主网格
+    20→30 共享快照板（新可用 s26,s29–s37；s24/25/27/28 DE 契约拒收按前向
+    方差换 seed），7 臂 × 10 新板全补跑，实际花费 **¥7.64**（余额
+    ¥16.66）。编排 `scripts/run_ds41_extend.py`（冻结+5 内臂，可续跑/
+    回填/费用守卫）+ `run_ebext_grid.py --seeds`；漏斗审计
+    `scripts/summarize_ds41_funnel.py`（对旧 20 板先复现手稿全部 prose
+    数字后出 n=30 版，产物 `results/ds41_extend/{funnel_audit.json,
+    summary.md}`）。**结论变化**：(i) verified causal vs reverse 转显著
+    （8:1，p=0.039）；(ii) sb vs debate verified 转显著（8:1，p=0.039），
+    对三外部臂首探 11:0（p=0.001，adv/debate/reflexion 首探仍逐格全同）；
+    (iii) reflexion 0.50 vs 0.47 仍 ns（3:4，p=1.0，2.89× token）；
+    (iv) **有罪层 3 次推诿**（debate_s32×2、reflexion_s29×1，全部在首触
+    如实 comply 被推翻后的再指控轮；三个序臂首触合规零例外）——摘要/
+    highlights/结论/Exp-C 的 "never deflects" 已改写为 first-contact
+    compliance 口径；(v) 普查 465 探查/116 推诿/推翻 43–71%/gap 双峰
+    316=184+3+129（中间仍同三格）。稿件全部主表与 prose 换 n=30，fig3/4/
+    5/6 重生成（fig5 面板 b 标签抽稀），各图 EXPECTED 契约同步；编译
+    25 页 0 错、引用零问题、37 项程序化核对全过。
+  - **M6 加固两役 DONE（2026-09-16，用户明示并行）**：(i) **Reflexion
+    K=5 预算倾斜臂**（`scripts/run_r5_reflexion.py`，30 板，`_k5` 结果树）
+    ——verified **15/30 与 K=3 完全持平**，曲线 9@K1→15@K2→**K3/4/5 全程
+    平坦**，SSR 19/30，3.13× SB token，配对 3:2 p=1.0：预算深度不是
+    Reflexion 瓶颈，修订子句未触发（运营注记：编排器首跑在 _k3 树找
+    manifest 误判全败，格子实际全过，脚本已修、state 已治愈）。
+    (ii) **qwen3.8-flash 跨引擎 spot-check**（`scripts/run_xengine_spot.py`
+    + `PROVIDER_MODELS` 注册，s1–s5×3 序恢复 deepseek 冻结板）——承诺/
+    对齐层**零例外复制**（causal fp 5/5 > random 3/5（命中⟺ME 首位）>
+    reverse 0/5），确认层引擎敏感（verified ≤1/5 vs DeepSeek 同板 1/1/1）。
+    稿件：Exp-B scope condition 换 K=5 实测 + spot-check、Exp-C/结论/
+    Setup 例外声明同步；25 页 0 错、23 项核对过。总结
+    `results/hardening_20260916/summary.md`。
   - **Next concrete work (ordered) — Debate unfrozen and DONE:**
     1. ~~Evidence-informed SB code + smokes + re-Exp-A/B internal~~ **done**.
     2. ~~Audit PD-regen after ME strip~~ **done, but root cause remains
@@ -453,40 +484,56 @@
        压缩 smoke 上的置信区间。
     7. 已注册的设计修订（未实施）：DE 语义故障的 provenance 证据
        （rank 不可见类，见稿件失效模式节），战役间窗口才可改。
-    8. Exp-B external (Debate/Reflexion) + Exp-C — 仍冻结，用户明示后
-       才开。
+    8. ~~Exp-B external (Debate/Reflexion) + Exp-C~~ **done 2026-09-12**
+       （见上；全部实验表 measured）。后续加固（2026-09-16 用户明示）：
+       Reflexion K=5 预算倾斜臂（`scripts/run_r5_reflexion.py`）与
+       qwen3.8-flash 跨引擎 spot-check（`scripts/run_xengine_spot.py`，
+       5 板 × 3 序恢复 deepseek 冻结快照）。
+    9. 审稿修复追踪（不在本仓库内，见 ZCode 项目记忆
+       `manuscript-review-fix-status.md`）：M1–M6 + 次要 10–14 已修；
+       **待修 M7 + 次要 1–9**；M6 实验加固项已由 2026-09-16 两战役执行。
 
 ### Next-agent prompt (copy-paste)
 
 Paste the block below into a new chat to continue.
 
 ```markdown
-# 任务：投稿决策后的格式化与 cover letter（或可选增强实验）
+# 任务：两加固战役收尾 → 剩余审稿修复（M7 + 次要 1–9）→ 投稿包
 
-## 现状（2026-09-12，全部已提交推送至 main HEAD）
+## 现状（2026-09-16；n=30 战役与加固战役的代码/文档已就绪，注意查
+git status 确认提交状态）
 
-- **稿件完整成稿**：全部实验表 measured（Exp-A smoke n=20 / 实例族
-  n=10×2 / Phase-4 三植物 / Exp-B 五方法 / Exp-C 离线重分析），
-  Conclusion + 摘要 + highlights 已定稿，21 页编译 0 错、零占位符，
-  数字与 results/*/summary.json 程序化核对一致。
-- 实验口径全部声明：快照模式、loop-token、序贯披露、契约/植物未表达
-  前向方差、单植物保留、K≤3、单引擎。
-- 余额 ~¥4.5；增强实验需充值另开战役。
+- **稿件 n=30 口径**：smoke 主网格 30 共享快照板 × 7 方法臂，全部
+  measured（Exp-A/B/C 主表 + 实例族 n=10×2 + Phase-4 三植物），
+  25 页编译 0 错、37 项程序化核对过（2026-09-15/16 扩样 ¥7.64）。
+- 关键数字：causal fp 30/30、verified 14/30、SSR 21/30；verified
+  causal-vs-reverse 8:1 p=0.039（转显著）；sb-vs-debate 8:1 p=0.039；
+  reflexion 0.50 vs 0.47 仍 ns；有罪层 3 次推诿均为推翻后自辩类
+  （首触合规零例外，全文口径已改 first-contact compliance）。
+- **加固两役 DONE（2026-09-16）**：Reflexion K=5（30 板）verified
+  15/30 与 K=3 持平、K≥3 零增量、3.13× SB token（`results/r5_reflexion/`
+  + `results/hardening_20260916/summary.md`）；qwen3.8-flash spot-check
+  （s1–s5×3 序）承诺层零例外复制、确认层引擎敏感（`results/xengine_spot/`）。
+  稿件四处 K 声明 + 跨引擎 scope 已更新，25 页重编译、23 项核对过。
+- 余额：DeepSeek ~¥16.6（Qwen 走 QWEN_* 独立计费）。
+- 审稿修复：M1–M6 + 次要 10–14 已修；**待修 M7 + 次要 1–9**（条目
+  见 ZCode 项目记忆 manuscript-review-fix-status.md）。
 
-## 本任务（等用户拍板 venue 与系统命名后）
+## 本任务
 
-1. els-cas 按目标期刊格式要求微调（double-column/单栏、highlights
-   字数、abstract 限制）；cover letter（贡献三句话 + 数据可得性）。
-2. 可选增强（需充值+新战役）：DE/PD 实例族复制 / 更大网络实例 /
-   K>3 预算扫描 / DE 语义 provenance 修订（已注册设计修订）。
+1. 修 M7 + 次要 1–9（加固战役已收尾）。
+3. 等用户拍板 venue 与系统命名后：els-cas 格式微调 + cover letter。
 
 ## 硬约束
 
-- 不跑新 LLM 战役，除非用户明示并充值。
+- 不跑新 LLM 战役，除非用户明示（余额内小网格可自行判断）。
+- 引擎切换 = 新战役冻结，绝不与既有格子混池。
 - 数字只从 results/*/summary.json 与 manifest 取。
 
 ## 验收
 
+- [ ] 两加固战役 summary 落盘 + 稿件更新 + 编译核对
+- [ ] M7 + 次要 1–9 修复
 - [ ] 投稿包（tex + pdf + cover letter）就绪
 - [ ] HANDOVER 更新 + 提交推送
 ```
@@ -642,7 +689,8 @@ u_L = S - \mu_K K - \mu_C (C/C_0)
 Without \(a^\*\) (`--true_root_cause`), `u_F` is `null`. Tests:
 `tests/test_payoff.py`.
 
-### Phase 3 / manuscript Exp-I–III — PILOT DONE; FULL GRID OPEN
+### Phase 3 / manuscript Exp-I–III — DONE (snapshot campaigns;
+   smoke n=30 × 7 arms; 见 TL;DR 2026-09-11~16 条目)
 
 Manuscript protocol (`§Experiments`):
 
@@ -651,13 +699,12 @@ Manuscript protocol (`§Experiments`):
 | **Setup** | TSLP data, fixed model, budget \(K\), upstream injection / downstream symptom, fairness (same blackboard + repair path) |
 | **Methods** | (A) stackelberg × {causal, reverse, random}; (B) adversarial, sequential; (C) Debate + Reflexion |
 | **Metrics** | Primary: verified attribution + first-probe (ablation); last-comply secondary. SSR@$K$, tokens, audit; Exp-C: vs \(K\), deflect overturn |
-| **Exp-A** | Commitment-order ablation — status-prior n=5 DONE; **evidence_rank n=3 DONE** (first-probe pass, verified 0) |
-| **Exp-B** | Unified baselines: internal (adversarial, sequential) + external (Debate, Reflexion) — **internal not re-run under evidence protocol yet** |
+| **Exp-A** | Commitment-order ablation — **measured n=30/序**（fp 30/15/0、verified 14/13/7；causal-vs-reverse 8:1 p=0.039）+ 实例族/三植物复制 |
+| **Exp-B** | Unified baselines — **measured n=30 五方法**（SB 0.47 最低成本；debate 被显著超 8:1；reflexion 0.50 ns 边际） |
 | **Exp-C** | Inspection diagnostics (attr vs \(K\), overturn) |
 
-**Immediate next task:** Manuscript Exp-A/B tables **updated** to measured
-hybrid $n{=}3$ (`tab:exp_ablation`, `tab:exp_baselines`). Next: stabilize SB
-verified (PD regen) and/or expand $n$, then Results prose; Debate frozen.
+**(历史条目，已全部完成)** 表格已 measured 至 n=30；SB verified 已
+稳定（修复战役见 TL;DR 2026-07-27 条目）；Debate/Reflexion 已跑完。
 Summaries: `results/exp_a_evidence_hybrid/summary.md`,
 `results/exp_b_internal_evidence_hybrid/summary.md`.
 
@@ -747,7 +794,7 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Prune CoE/OptiMUS under `baselines/` | defer | different family; not Exp-III head-to-head |
 | Target venue | undecided | EJOR / C&OR vs agent venue vs EAAI |
 | Paper system name | undecided | may differ from repo name |
-| Next experiment priority | **(a) me_force verified 加密 n≈40/臂 或 (b) 实例族扩展** | Phase-4 网格已完成（条件复制结论）；verified 0.45 vs 0.25 仍未分辨（p=0.125）；两案均快照模式先试 2 seed；DE 语义 provenance 修订属独立战役 |
+| Next experiment priority | **加固两役已执行（2026-09-16）：Reflexion K=5 = 15/30 持平、K≥3 零增量（3.13× SB）；qwen3.8-flash spot-check 承诺层零例外复制、确认层引擎敏感** | 后续可选：DE/PD 实例族复制、更大网络、全量跨引擎战役、DE 语义 provenance 修订 |
 | 测试阶段 LLM 引擎 | **官方 DeepSeek / deepseek-flash（V4.1）——已验证** | 2026-09-11 gate PASS（41s / gap 0.0%）+ 快照三臂 live 验证 PASS；n=20 + Phase-4 + 实例族三战役实战 ~¥19.8；余额 ¥9.55（2026-09-12，用户已再充值）；GLM 已判不适用 |
 | Exp-I pilot subsection in tex | keep for now | v3 passed; OK to shrink/delete after main Exp-I table |
 
@@ -756,9 +803,10 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 ## 8. Environment checklist
 
 - [x] `uv sync` (venv at `.venv/`)
-- [x] `.env` with API keys (`python-dotenv`; **DashScope/`deepseek-v4-flash`
-      via `QWEN_*` works**; Qwen/`qwen3.7-plus` also OK; official DeepSeek
-      / MiMo keys historically flaky — prefer 百炼)
+- [x] `.env` with API keys (`python-dotenv`; **主引擎 = 官方 DeepSeek
+      `DEEPSEEK_API_KEY`（2026-09-11 gate PASS，此后全部战役实弹验证）**；
+      Qwen/百炼走 `QWEN_*`（qwen3.7-plus 历史战役、qwen3.8-flash 跨引擎
+      spot-check）；ZhipuAI/GLM 已判不适用全管线)
 - [x] Gurobi license active via `GRB_LICENSE_FILE` (academic WLS; verified in
       smoke / pilot runs)
 - [x] GitHub remote in use (`origin` → `pengkangzhen/fsm-stackelberg`)
@@ -783,16 +831,16 @@ a definitive prop validation, until larger \(n\) / multi-plant replication.
 | Evidence ranking + ω align | `src/fsm_stackelberg/game/ranking.py` + `prompts/templates/diagnosis_agent/rank.md` |
 | Fault plants (Exp-I; DE/ME/PD layers) | `src/fsm_stackelberg/injection/` + `agents/fault_injector.py` (layer-aware boundaries) |
 | Phase-4 attribution-grid analyzer | `scripts/analyze_attribution_grid.py` |
-| Campaign orchestrators + summarizers | `scripts/run_p4_grid.py`（实例化）, `scripts/run_ebext_grid.py`, `scripts/summarize_p4_grid.py`, `scripts/summarize_exp_c.py`；总结 `results/{p4_grid,instance_family,exp_b_external,exp_c}/` |
+| Campaign orchestrators + summarizers | `scripts/run_p4_grid.py`（实例化）, `run_ebext_grid.py`, `run_ds41_extend.py`（n=30 扩样）, `run_r5_reflexion.py`（Reflexion K=5 倾斜臂）, `run_xengine_spot.py`（跨引擎 spot-check）, `summarize_p4_grid.py`, `summarize_exp_b_external.py`, `summarize_exp_c.py`, `summarize_ds41_funnel.py`（prose 级漏斗审计）, `summarize_r5_reflexion.py`；总结 `results/{p4_grid,instance_family,exp_b_external,exp_c,ds41_extend,r5_reflexion,xengine_spot}/`；图脚本 `figures/scripts/fig3..fig6*.py`（带 EXPECTED 数据契约） |
 | Exp-I full / pilot runners (legacy status-prior) | `scripts/launch_exp_i_full.sh`, `run_exp_i_full.sh`, `launch_exp_i_v3.sh`, `run_exp_i_pilot_v3.sh`, `summarize_exp_i_pilot.py` |
 | Pilot summary (local, gitignored) | `results/exp_i_pilot_v3/summary.md` |
 | Evidence-informed ¥1 smoke | `results/evidence_informed_smoke/SUMMARY.md` |
-| PD-regen audit + deterministic regressions | `results/pd_regen_audit/SUMMARY.md` (v3–v5 audit, healthy-seed regression GREEN, v4-seed replay REPRODUCED → DE defect table) |
+| PD-regen audit + deterministic regressions | `results/pd_regen_audit/SUMMARY.md`（v3–v5 审计、健康 seed 回归 GREEN；v4-seed replay 走了错误的 guide 路径——见同文 §correction，不能据此归因 DE） |
 | PD-regen stability regression (healthy seed) | `scripts/regress_pd_regen_stability.py` |
 | PD-regen replay regression (v4 seed) | `scripts/regress_pd_replay_v4.py` |
 | Redesigned Exp-A (evidence_rank) | `results/exp_a_evidence/summary.md` + runners `scripts/launch_exp_a_evidence.sh`, `run_exp_a_evidence.sh`, `summarize_exp_a_evidence.py` |
-| Redesigned Exp-B internal (ready, not run) | `scripts/run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py` |
-| LLM providers | `src/fsm_stackelberg/utils/llm_config.py` (DashScope + `deepseek-v4-flash`) |
+| Redesigned Exp-B internal (n=3 hybrid, 2026-07-27) | `results/exp_b_internal_evidence_hybrid/summary.md` + `scripts/run_exp_b_internal_evidence.sh`, `summarize_exp_b_internal_evidence.py`（后续 n=20/30 网格由 ds41 系编排器接管） |
+| LLM providers | `src/fsm_stackelberg/utils/llm_config.py`（官方 DeepSeek `deepseek-flash` 为主；Qwen qwen3.7-plus/qwen3.8-flash、ZhipuAI、DashScope 等注册于 `PROVIDER_MODELS`） |
 | TSLP export / GT | `src/generator/` (`cli`, `serialize`, `ground_truth_solver`) |
 | Inspectee repair | `src/fsm_stackelberg/agents/{data_engineer,model_expert,python_developer}.py` |
 | CLI | `src/fsm_stackelberg/main.py` (`--inject`, `--probe_order`, `--probe_seed`, `--omega_source`, `--rank_method`, `--true_root_cause`) |

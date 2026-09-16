@@ -1,8 +1,11 @@
 # Spec: Evidence-informed Stackelberg diagnosis
 
-> Status: **design locked for implementation** (2026-07-24).  
-> Do **not** burn Exp-B external (Debate) API until this ships and smoke shows non-zero
-> `verified_attribution_hit`.  
+> Status: **SHIPPED (2026-07-24/27) and superseded by measured campaigns** —
+> evidence-informed commitment is the implemented default
+> (`--omega_source evidence_rank --rank_method hybrid`); verified attribution
+> non-zero since the 07-27 repair fix; all manuscript grids since
+> (n=20→30, Phase-4, instance family, Exp-B external) run this design.
+> Kept as the historical design record.  
 > Companion: [`HANDOVER.md`](./HANDOVER.md), manuscript `§Experiments`.
 
 ---
@@ -308,5 +311,6 @@ Adversarial baseline unchanged (fair compare).
 
 ## 12. HANDOVER pointer
 
-Next agent: implement this spec starting at §9 step 1; update
-`HANDOVER.md` TL;DR when smoke passes.
+(Historical; implemented 2026-07-24/27 — see status header. The CLI
+example in §9 predates the engine decision: the validated engine is
+official DeepSeek `deepseek-flash`, not Qwen.)
